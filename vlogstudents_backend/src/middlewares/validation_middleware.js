@@ -6,7 +6,7 @@ class VlogStudentsValidationEngine {
     constructor() {
         this.passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         this.phoneRegex = /^\+?[1-9]\d{1,14}$/;
-        this.universityEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(edu|br)$/;
+        this.generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     }
 
     handleValidationResults(request, response, next) {
@@ -14,12 +14,10 @@ class VlogStudentsValidationEngine {
         if (!errors.isEmpty()) {
             const extractedErrors = [];
             errors.array().map(err => extractedErrors.push({ [err.path]: err.msg }));
-
             logger.warn(`Falha de validacao em ${request.originalUrl}: ${JSON.stringify(extractedErrors)}`);
-
             return response.status(422).json({
                 success: false,
-                message: 'Dados de entrada invalidos. Verifique os campos e tente novamente.',
+                message: 'Dados de entrada invalidos. Verifique os campos.',
                 error_code: 'VALIDATION_ERROR',
                 details: extractedErrors
             });
@@ -29,11 +27,11 @@ class VlogStudentsValidationEngine {
 
     validateRegistration() {
         return [
-            body('fullName').notEmpty().withMessage('O nome completo e obrigatorio.').trim().isLength({ min: 3, max: 100 }).withMessage('O nome deve ter entre 3 e 100 caracteres.'),
-            body('email').isEmail().withMessage('Informe um endereco de e-mail valido.').normalizeEmail().matches(this.universityEmailRegex).withMessage('E necessario um e-mail universitario (.edu ou .br).'),
-            body('password').matches(this.passwordRegex).withMessage('A senha deve conter no minimo 8 caracteres, incluindo letras maiusculas, minusculas, numeros e caracteres especiais.'),
-            body('university').notEmpty().withMessage('A universidade e obrigatoria.').isLength({ min: 2 }).withMessage('Nome da universidade invalido.'),
-            body('referralCode').optional().isAlphanumeric().isLength({ min: 5, max: 15 }).withMessage('Codigo de indicacao invalido.'),
+            body('fullName').notEmpty().withMessage('O nome completo e obrigatorio.').trim().isLength({ min: 3, max: 100 }),
+            body('email').isEmail().withMessage('Informe um endereco de e-mail valido.').normalizeEmail().matches(this.generalEmailRegex).withMessage('O formato do e-mail e invalido.'),
+            body('password').matches(this.passwordRegex).withMessage('A senha deve conter no minimo 8 caracteres, maiusculas, minusculas, numeros e simbolos.'),
+            body('university').notEmpty().withMessage('A universidade e obrigatoria.'),
+            body('referralCode').optional().isAlphanumeric(),
             this.handleValidationResults
         ];
     }
@@ -48,124 +46,119 @@ class VlogStudentsValidationEngine {
 
     validateProfileUpdate() {
         return [
-            body('fullName').optional().isLength({ min: 3, max: 100 }).withMessage('Nome muito curto ou longo.'),
-            body('phoneNumber').optional().matches(this.phoneRegex).withMessage('Formato de telefone internacional invalido.'),
+            body('fullName').optional().isLength({ min: 3, max: 100 }),
+            body('phoneNumber').optional().matches(this.phoneRegex),
             body('university').optional().isLength({ min: 2 }),
-            body('biography').optional().isLength({ max: 500 }).withMessage('A biografia deve ter no maximo 500 caracteres.'),
-            body('themePreference').optional().isIn(['light', 'dark']).withMessage('Tema invalido.'),
+            body('biography').optional().isLength({ max: 500 }),
+            body('themePreference').optional().isIn(['light', 'dark']),
             this.handleValidationResults
         ];
     }
 
     validateReelCreation() {
         return [
-            body('title').notEmpty().withMessage('O titulo do Reel e obrigatorio.').isLength({ max: 100 }).withMessage('O titulo nao pode exceder 100 caracteres.'),
-            body('description').optional().isLength({ max: 1000 }).withMessage('A descricao do Reel e muito longa.'),
-            body('hashtags').optional().isArray().withMessage('Hashtags devem ser enviadas como uma lista.'),
+            body('title').notEmpty().isLength({ max: 100 }),
+            body('description').optional().isLength({ max: 1000 }),
             this.handleValidationResults
         ];
     }
 
     validateCommentCreation() {
         return [
-            body('textContent').notEmpty().withMessage('O conteudo do comentario nao pode estar vazio.').isLength({ max: 500 }).withMessage('O comentario e muito longo.'),
-            body('postId').optional().isInt().withMessage('ID do Post invalido.'),
-            body('reelId').optional().isInt().withMessage('ID do Reel invalido.'),
-            body('parentId').optional().isInt().withMessage('ID do comentario pai invalido.'),
+            body('textContent').notEmpty().isLength({ max: 500 }),
+            body('targetId').optional().isInt(),
             this.handleValidationResults
         ];
     }
 
     validateChatRoomCreation() {
         return [
-            body('participants').isArray({ min: 1 }).withMessage('E necessario pelo menos um participante para criar um chat.'),
-            body('isGroup').optional().isBoolean().withMessage('Campo isGroup deve ser booleano.'),
-            body('roomName').optional().isString().isLength({ max: 50 }),
+            body('participants').isArray({ min: 1 }),
+            body('isGroup').optional().isBoolean(),
             this.handleValidationResults
         ];
     }
 
     validateChatMessage() {
         return [
-            body('roomId').isInt().withMessage('ID da sala invalido.'),
-            body('textBody').optional().isString().isLength({ max: 2000 }).withMessage('A mensagem excedeu o limite de 2000 caracteres.'),
-            body('type').optional().isIn(['text', 'image', 'video', 'audio', 'file']),
+            body('roomId').isInt(),
+            body('textBody').optional().isString().isLength({ max: 2000 }),
             this.handleValidationResults
         ];
     }
 
     validatePointTransaction() {
         return [
-            body('amount').isInt({ min: 1 }).withMessage('O valor de pontos deve ser um inteiro positivo.'),
-            body('reason').notEmpty().isString().withMessage('O motivo da transacao e obrigatorio.'),
+            body('amount').isInt({ min: 1 }),
+            body('reason').notEmpty(),
             this.handleValidationResults
         ];
     }
 
     validateReferralClaim() {
         return [
-            body('invitedEmail').isEmail().withMessage('E-mail do convidado invalido.'),
-            body('appliedCode').isAlphanumeric().isLength({ min: 5, max: 15 }),
+            body('invitedEmail').isEmail(),
+            body('appliedCode').isAlphanumeric(),
             this.handleValidationResults
         ];
     }
 
     validatePagination() {
         return [
-            query('page').optional().isInt({ min: 1 }).withMessage('Pagina invalida.'),
-            query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limite de itens invalido.'),
+            query('page').optional().isInt({ min: 1 }),
+            query('limit').optional().isInt({ min: 1, max: 100 }),
             this.handleValidationResults
         ];
     }
 
     validateIdParam(paramName = 'id') {
         return [
-            param(paramName).isInt().withMessage(`O parametro ${paramName} deve ser um numero inteiro.`),
+            param(paramName).isInt(),
             this.handleValidationResults
         ];
     }
 
     validateSearchQuery() {
         return [
-            query('q').notEmpty().withMessage('O termo de busca e obrigatorio.').isLength({ min: 2 }),
+            query('q').notEmpty().isLength({ min: 2 }),
             this.handleValidationResults
         ];
     }
 
     validateVideoCall() {
         return [
-            body('roomId').isInt().withMessage('ID da sala de video chamada invalido.'),
-            body('action').isIn(['start', 'join', 'end', 'reject']).withMessage('Acao de chamada invalida.'),
+            body('roomId').isInt(),
+            body('action').isIn(['start', 'join', 'end', 'reject']),
             this.handleValidationResults
         ];
     }
 
     validatePasswordRecovery() {
         return [
-            body('email').isEmail().withMessage('E-mail invalido para recuperacao.'),
+            body('email').isEmail(),
             this.handleValidationResults
         ];
     }
 
     validatePasswordReset() {
         return [
-            body('token').notEmpty().withMessage('Token de recuperacao ausente.'),
-            body('newPassword').matches(this.passwordRegex).withMessage('A nova senha nao atende aos requisitos de seguranca.'),
+            body('token').notEmpty(),
+            body('newPassword').matches(this.passwordRegex),
             this.handleValidationResults
         ];
     }
 
     validateLikeAction() {
         return [
-            body('targetId').isInt().withMessage('ID do alvo invalido.'),
-            body('targetType').isIn(['post', 'reel', 'comment']).withMessage('Tipo de alvo invalido.'),
+            body('targetId').isInt(),
+            body('targetType').isIn(['post', 'reel', 'comment']),
             this.handleValidationResults
         ];
     }
 
     validateFollowAction() {
         return [
-            body('targetUserId').isInt().withMessage('ID do usuario alvo invalido.'),
+            body('targetUserId').isInt(),
             this.handleValidationResults
         ];
     }
@@ -174,15 +167,7 @@ class VlogStudentsValidationEngine {
         return [
             body('targetId').isInt(),
             body('targetType').isIn(['post', 'reel', 'comment', 'user']),
-            body('reason').notEmpty().isLength({ max: 300 }),
-            this.handleValidationResults
-        ];
-    }
-
-    validateUniversityVerification() {
-        return [
-            body('universityId').notEmpty(),
-            body('studentCardImage').optional(),
+            body('reason').notEmpty(),
             this.handleValidationResults
         ];
     }
@@ -190,12 +175,11 @@ class VlogStudentsValidationEngine {
     validateFeedback() {
         return [
             body('rating').isInt({ min: 1, max: 5 }),
-            body('message').optional().isLength({ max: 1000 }),
             this.handleValidationResults
         ];
     }
 
-    validateNotificationSettings() {
+    validateNotifications() {
         return [
             body('pushEnabled').optional().isBoolean(),
             body('emailEnabled').optional().isBoolean(),
@@ -203,112 +187,44 @@ class VlogStudentsValidationEngine {
         ];
     }
 
-    validateGroupMemberManagement() {
-        return [
-            body('userId').isInt(),
-            body('action').isIn(['add', 'remove', 'make_admin']),
-            this.handleValidationResults
-        ];
-    }
-
-    validateMuteUser() {
-        return [
-            body('userId').isInt(),
-            body('duration').optional().isInt(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateBlockUser() {
-        return [
-            body('userId').isInt(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateThemeToggle() {
+    validateTheme() {
         return [
             body('theme').isIn(['light', 'dark']),
             this.handleValidationResults
         ];
     }
 
-    validateReelInteraction() {
-        return [
-            body('reelId').isInt(),
-            body('action').isIn(['view', 'share', 'download']),
-            this.handleValidationResults
-        ];
-    }
-
-    validatePointsRedemption() {
-        return [
-            body('rewardId').isInt(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateSecurityCheck() {
-        return [
-            body('currentPassword').notEmpty(),
-            this.handleValidationResults
-        ];
-    }
-
     validateEmailUpdate() {
         return [
-            body('newEmail').isEmail().matches(this.universityEmailRegex),
+            body('newEmail').isEmail().matches(this.generalEmailRegex),
             this.handleValidationResults
         ];
     }
 
-    validateUsernameUpdate() {
-        return [
-            body('newUsername').isAlphanumeric().isLength({ min: 3, max: 30 }),
-            this.handleValidationResults
-        ];
-    }
-
-    validatePollCreation() {
+    validatePoll() {
         return [
             body('question').notEmpty(),
-            body('options').isArray({ min: 2, max: 5 }),
+            body('options').isArray({ min: 2 }),
             this.handleValidationResults
         ];
     }
 
-    validateVote() {
-        return [
-            body('pollId').isInt(),
-            body('optionIndex').isInt(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateLocationTag() {
+    validateLocation() {
         return [
             body('latitude').isFloat(),
             body('longitude').isFloat(),
-            body('locationName').isString(),
             this.handleValidationResults
         ];
     }
 
-    validateMediaFilter() {
-        return [
-            query('type').optional().isIn(['image', 'video', 'all']),
-            this.handleValidationResults
-        ];
-    }
-
-    validateStatusUpdate() {
+    validateStatus() {
         return [
             body('status').isLength({ max: 50 }),
             this.handleValidationResults
         ];
     }
 
-    validateInviteToGroup() {
+    validateInvite() {
         return [
             body('groupId').isInt(),
             body('userEmails').isArray(),
@@ -316,34 +232,70 @@ class VlogStudentsValidationEngine {
         ];
     }
 
-    validatePrivacyUpdate() {
+    validatePrivacy() {
         return [
             body('isPrivate').isBoolean(),
             this.handleValidationResults
         ];
     }
 
-    validateLanguageUpdate() {
+    validateSecurity() {
         return [
-            body('language').isIn(['pt-BR', 'en-US', 'es-ES']),
+            body('currentPassword').notEmpty(),
             this.handleValidationResults
         ];
     }
 
-    validateApiAccess() {
+    validateUsername() {
         return [
-            header('x-api-key').optional().isString(),
+            body('newUsername').isAlphanumeric().isLength({ min: 3 }),
             this.handleValidationResults
         ];
     }
 
-    checkSystemIntegrity() {
-        logger.info('Validador de dados VlogStudents pronto para interceptar requisicoes.');
+    validateMedia() {
+        return [
+            query('type').optional().isIn(['image', 'video', 'all']),
+            this.handleValidationResults
+        ];
+    }
+
+    validateReset() {
+        return [
+            body('email').isEmail(),
+            body('code').isLength({ min: 6, max: 6 }),
+            body('newPassword').matches(this.passwordRegex),
+            this.handleValidationResults
+        ];
+    }
+
+    validateRegistrationFull() {
+        return this.validateRegistration();
+    }
+
+    validateLoginFull() {
+        return this.validateLogin();
+    }
+
+    validateRecovery() {
+        return this.validatePasswordRecovery();
+    }
+
+    validateVerification() {
+        return [
+            body('email').isEmail(),
+            body('code').isLength({ min: 6, max: 6 }),
+            this.handleValidationResults
+        ];
+    }
+
+    checkIntegrity() {
+        logger.info('Engine de Validacao VLOG: Atualizada para aceitar e-mails globais.');
     }
 }
 
 const validationEngine = new VlogStudentsValidationEngine();
-validationEngine.checkSystemIntegrity();
+validationEngine.checkIntegrity();
 
 module.exports = {
     register: validationEngine.validateRegistration(),
@@ -360,29 +312,22 @@ module.exports = {
     search: validationEngine.validateSearchQuery(),
     videoCall: validationEngine.validateVideoCall(),
     recovery: validationEngine.validatePasswordRecovery(),
-    reset: validationEngine.validatePasswordReset(),
+    reset: validationEngine.validateReset(),
     like: validationEngine.validateLikeAction(),
     follow: validationEngine.validateFollowAction(),
     report: validationEngine.validateReportCreation(),
-    university: validationEngine.validateUniversityVerification(),
     feedback: validationEngine.validateFeedback(),
-    notifications: validationEngine.validateNotificationSettings(),
-    groupMember: validationEngine.validateGroupMemberManagement(),
-    mute: validationEngine.validateMuteUser(),
-    block: validationEngine.validateBlockUser(),
-    theme: validationEngine.validateThemeToggle(),
-    reelInteraction: validationEngine.validateReelInteraction(),
-    redemption: validationEngine.validatePointsRedemption(),
-    security: validationEngine.validateSecurityCheck(),
+    notifications: validationEngine.validateNotifications(),
+    theme: validationEngine.validateTheme(),
     emailUpdate: validationEngine.validateEmailUpdate(),
-    usernameUpdate: validationEngine.validateUsernameUpdate(),
-    poll: validationEngine.validatePollCreation(),
-    vote: validationEngine.validateVote(),
-    location: validationEngine.validateLocationTag(),
-    mediaFilter: validationEngine.validateMediaFilter(),
-    status: validationEngine.validateStatusUpdate(),
-    invite: validationEngine.validateInviteToGroup(),
-    privacy: validationEngine.validatePrivacyUpdate(),
-    language: validationEngine.validateLanguageUpdate(),
+    poll: validationEngine.validatePoll(),
+    location: validationEngine.validateLocation(),
+    status: validationEngine.validateStatus(),
+    invite: validationEngine.validateInvite(),
+    privacy: validationEngine.validatePrivacy(),
+    security: validationEngine.validateSecurity(),
+    usernameUpdate: validationEngine.validateUsername(),
+    mediaFilter: validationEngine.validateMedia(),
+    verify: validationEngine.validateVerification(),
     instance: validationEngine
 };
