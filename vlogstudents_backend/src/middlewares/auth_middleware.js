@@ -342,7 +342,7 @@ class VlogStudentsAuthenticationMiddleware {
 
     async validateUserUniversityEmail(request, response, next) {
         const email = request.user.email;
-        if (!email.endsWith('.edu') && !email.endsWith('.br')) {
+        if (!email.endsWith('.com') && !email.endsWith('.ao')) {
             logger.warn(`Aviso: Usuário ${email} autenticado sem e-mail educacional padrão.`);
         }
         next();
