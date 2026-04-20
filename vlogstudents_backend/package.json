@@ -28,7 +28,6 @@
     "security:audit": "npm audit",
     "security:scan": "njsscan .",
     "logs:clean": "rm -rf logs/*.log",
-    "prepare": "husky install",
     "precommit": "lint-staged",
     "deploy:render": "npm install && npm run db:migrate && npm run cluster",
     "env:validate": "node src/utils/env_validator.js",
