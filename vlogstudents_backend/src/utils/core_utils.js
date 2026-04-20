@@ -10,11 +10,11 @@ class VlogStudentsQRGenerator {
         this.baseOptions = {
             errorCorrectionLevel: 'H',
             type: 'image/png',
-            quality: 0.92,
+            quality: 0.95,
             margin: 1,
             color: {
                 dark: '#CCFF00',
-                light: '#121212'
+                light: '#000000'
             }
         };
     }
@@ -44,8 +44,8 @@ class VlogStudentsQRGenerator {
 }
 
 class VlogStudentsDataValidator {
-    static isUniversityEmail(email) {
-        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(edu|br)$/;
+    static isValidEmail(email) {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return regex.test(email);
     }
 
@@ -55,17 +55,17 @@ class VlogStudentsDataValidator {
     }
 
     static sanitizeUsername(name) {
-        return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').substring(0, 30);
     }
 
     static validateReelDuration(duration) {
-        return duration >= 3 && duration <= 60;
+        return duration >= 1 && duration <= 60;
     }
 
     static checkMimeType(mime, type) {
         const allowed = {
-            video: ['video/mp4', 'video/quicktime', 'video/x-matroska'],
-            image: ['image/jpeg', 'image/png', 'image/webp']
+            video: ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm'],
+            image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
         };
         return allowed[type].includes(mime);
     }
@@ -80,7 +80,8 @@ class VlogStudentsSystemDiagnostics {
             freeMemory: `${Math.round(os.freemem() / 1024 / 1024)}MB`,
             totalMemory: `${Math.round(os.totalmem() / 1024 / 1024)}MB`,
             uptime: `${Math.round(os.uptime() / 3600)}h`,
-            loadAverage: os.loadavg()
+            loadAverage: os.loadavg(),
+            nodeVersion: process.version
         };
     }
 
@@ -96,14 +97,10 @@ class VlogStudentsSystemDiagnostics {
         }
         return results;
     }
-
-    static async checkDiskSpace() {
-        return { status: 'monitoring_active' };
-    }
 }
 
 class VlogStudentsSecurityUtils {
-    static generateSecureToken(length = 32) {
+    static generateSecureToken(length = 64) {
         return crypto.randomBytes(length).toString('hex');
     }
 
@@ -113,20 +110,24 @@ class VlogStudentsSecurityUtils {
 
     static encrypt(text, secret) {
         const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(secret), iv);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(secret.substring(0, 32)), iv);
         let encrypted = cipher.update(text);
         encrypted = Buffer.concat([encrypted, cipher.final()]);
         return iv.toString('hex') + ':' + encrypted.toString('hex');
     }
 
     static decrypt(text, secret) {
-        const textParts = text.split(':');
-        const iv = Buffer.from(textParts.shift(), 'hex');
-        const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(secret), iv);
-        let decrypted = decipher.update(encryptedText);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        return decrypted.toString();
+        try {
+            const textParts = text.split(':');
+            const iv = Buffer.from(textParts.shift(), 'hex');
+            const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+            const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(secret.substring(0, 32)), iv);
+            let decrypted = decipher.update(encryptedText);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+            return decrypted.toString();
+        } catch (e) {
+            return null;
+        }
     }
 }
 
@@ -197,7 +198,7 @@ class VlogStudentsDateUtils {
         if (minutes < 60) return `ha ${minutes}m`;
         const hours = Math.floor(minutes / 60);
         if (hours < 24) return `ha ${hours}h`;
-        return new Date(date).toLocaleDateString();
+        return new Date(date).toLocaleDateString('pt-BR');
     }
 }
 
@@ -214,18 +215,6 @@ class VlogStudentsObjectSanitizer {
 
     static deepClone(obj) {
         return JSON.parse(JSON.stringify(obj));
-    }
-}
-
-class VlogStudentsLoggerHelper {
-    static logRequestMetadata(req) {
-        return {
-            method: req.method,
-            path: req.path,
-            ip: req.ip,
-            userAgent: req.get('User-Agent'),
-            userId: req.user ? req.user.id : 'guest'
-        };
     }
 }
 
@@ -263,57 +252,17 @@ class VlogStudentsFileHandler {
     }
 }
 
-class VlogStudentsUniversityManager {
-    constructor() {
-        this.supportedDomains = ['.edu', '.edu.br', '.ac.uk', '.mit.edu', '.harvard.edu'];
-    }
-
-    isAuthorizedDomain(email) {
-        return this.supportedDomains.some(domain => email.endsWith(domain));
-    }
-
-    getUniversityFromEmail(email) {
-        const domain = email.split('@')[1];
-        return domain.split('.')[0].toUpperCase();
-    }
-}
-
 class VlogStudentsColorPalette {
     static getThemeColors(theme) {
         return theme === 'dark' ? {
-            background: '#121212',
+            background: '#000000',
             primary: '#CCFF00',
             text: '#FFFFFF'
         } : {
             background: '#FFFFFF',
             primary: '#CCFF00',
-            text: '#121212'
+            text: '#000000'
         };
-    }
-}
-
-class VlogStudentsSocialIntelligence {
-    static calculateEngagementRate(likes, comments, views) {
-        if (views === 0) return 0;
-        return ((likes + comments) / views) * 100;
-    }
-
-    static detectMention(text) {
-        const regex = /@(\w+)/g;
-        return text.match(regex) || [];
-    }
-
-    static extractHashtags(text) {
-        const regex = /#(\w+)/g;
-        return text.match(regex) || [];
-    }
-}
-
-class VlogStudentsGamificationEngine {
-    static calculateLevelProgress(points, currentLevelMin, nextLevelMin) {
-        const range = nextLevelMin - currentLevelMin;
-        const earned = points - currentLevelMin;
-        return Math.min((earned / range) * 100, 100);
     }
 }
 
@@ -333,89 +282,9 @@ class VlogStudentsAsyncHandler {
     }
 }
 
-class VlogStudentsValidationPresets {
-    static get profileUpdateSchema() {
-        return {
-            fullName: { type: 'string', min: 3, max: 100 },
-            biography: { type: 'string', max: 500 },
-            university: { type: 'string', min: 2 }
-        };
-    }
-}
-
-class VlogStudentsTokenGenerator {
-    static generateNumericCode(length = 6) {
-        let code = '';
-        for (let i = 0; i < length; i++) {
-            code += Math.floor(Math.random() * 10).toString();
-        }
-        return code;
-    }
-}
-
-class VlogStudentsHardwareAudit {
-    static performCheck() {
-        const stats = VlogStudentsSystemDiagnostics.getHardwareStats();
-        if (parseInt(stats.freeMemory) < 200) {
-            logger.warn('Alerta Critico de Memoria RAM no Servidor');
-        }
-        return stats;
-    }
-}
-
-class VlogStudentsStreamHelper {
-    static async pumpStream(source, destination) {
-        return new Promise((resolve, reject) => {
-            source.pipe(destination);
-            source.on('end', resolve);
-            source.on('error', reject);
-        });
-    }
-}
-
-class VlogStudentsMetricCollector {
-    constructor() {
-        this.start = Date.now();
-    }
-
-    getDuration() {
-        return Date.now() - this.start;
-    }
-}
-
-class VlogStudentsBatchProcessor {
-    static async processInChunks(items, chunkSize, processor) {
-        for (let i = 0; i < items.length; i += chunkSize) {
-            const chunk = items.slice(i, i + chunkSize);
-            await Promise.all(chunk.map(item => processor(item)));
-        }
-    }
-}
-
-class VlogStudentsJsonSanitizer {
-    static parseSafe(json) {
-        try {
-            return JSON.parse(json);
-        } catch (e) {
-            return {};
-        }
-    }
-}
-
-class VlogStudentsUrlHelper {
-    static isValidUrl(url) {
-        try {
-            new URL(url);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-}
-
-class VlogStudentsEmojiFilter {
-    static removeEmoji(text) {
-        return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+class VlogStudentsBitrateCalculator {
+    static estimateVideoSize(durationSeconds, bitrateKbps) {
+        return (durationSeconds * bitrateKbps) / 8;
     }
 }
 
@@ -425,33 +294,7 @@ class VlogStudentsUuidGenerator {
     }
 }
 
-class VlogStudentsPathResolver {
-    static getUploadPath(category) {
-        return path.join(process.cwd(), 'uploads', category);
-    }
-}
-
-class VlogStudentsBitrateCalculator {
-    static estimateVideoSize(durationSeconds, bitrateKbps) {
-        return (durationSeconds * bitrateKbps) / 8;
-    }
-}
-
-class VlogStudentsPerformanceMonitor {
-    static trackEvent(name) {
-        const mark = performance.mark(name);
-        return mark;
-    }
-}
-
-class VlogStudentsGlobalConstants {
-    static get APP_NAME() { return 'VlogStudents'; }
-    static get VERSION() { return '1.0.0'; }
-    static get MAX_REEL_SIZE() { return 100 * 1024 * 1024; }
-}
-
 const qrGenerator = new VlogStudentsQRGenerator();
-const universityManager = new VlogStudentsUniversityManager();
 
 module.exports = {
     QR: qrGenerator,
@@ -462,27 +305,10 @@ module.exports = {
     Pagination: VlogStudentsPaginationHelper,
     Date: VlogStudentsDateUtils,
     Sanitizer: VlogStudentsObjectSanitizer,
-    Logger: VlogStudentsLoggerHelper,
     Response: VlogStudentsResponseWrapper,
     File: VlogStudentsFileHandler,
-    University: universityManager,
     Colors: VlogStudentsColorPalette,
-    Social: VlogStudentsSocialIntelligence,
-    Gamification: VlogStudentsGamificationEngine,
     Async: VlogStudentsAsyncHandler,
-    Token: VlogStudentsTokenGenerator,
-    Audit: VlogStudentsHardwareAudit,
-    Stream: VlogStudentsStreamHelper,
-    Metrics: VlogStudentsMetricCollector,
-    Batch: VlogStudentsBatchProcessor,
-    Json: VlogStudentsJsonSanitizer,
-    Url: VlogStudentsUrlHelper,
-    Emoji: VlogStudentsEmojiFilter,
     Uuid: VlogStudentsUuidGenerator,
-    Path: VlogStudentsPathResolver,
-    Video: VlogStudentsBitrateCalculator,
-    Performance: VlogStudentsPerformanceMonitor,
-    Constants: VlogStudentsGlobalConstants
+    Video: VlogStudentsBitrateCalculator
 };
-
-logger.info('VlogStudents Utility Core v1.0.0 carregado com sucesso.');
