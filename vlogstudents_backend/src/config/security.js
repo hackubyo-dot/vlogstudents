@@ -7,33 +7,50 @@ const hpp = require('hpp');
 const xssClean = require('xss-clean');
 const logger = require('./logger');
 
+/**
+ * VlogStudents Security Engine - Full Enterprise Edition
+ * Sistema unificado de segurança, criptografia e proteção de dados.
+ */
 class VlogStudentsSecurityEngine {
     constructor() {
+        // Configurações Base
         this.jwtSecret = process.env.JWT_SECRET || 'VLOGSTUDENTS_SUPER_SECRET_KEY_2025_CORE_SYSTEM_SECURE_AUTH';
         this.jwtExpiration = process.env.JWT_EXPIRATION || '7d';
         this.bcryptSaltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
+
+        // Criptografia Simétrica (AES)
         this.encryptionAlgorithm = 'aes-256-cbc';
         this.encryptionKey = crypto.scryptSync(this.jwtSecret, 'vlog_salt', 32);
         this.initializationVector = crypto.randomBytes(16);
+
+        // Controle de Acesso e Revogação
         this.allowedOrigins = ['http://localhost:3000', 'https://vlogstudents.onrender.com'];
         this.blacklist = new Set();
+
+        // Configurações de Terceiros
+        this.googleClientId = process.env.GOOGLE_CLIENT_ID;
     }
+
+    // ==========================================
+    // CONFIGURAÇÕES DE MIDDLEWARE (CORS & HELMET)
+    // ==========================================
 
     setupCorsConfiguration() {
         return {
             origin: (origin, callback) => {
+                // Permite requisições sem origin (como apps mobile ou curl) ou se estiver na whitelist
                 if (!origin || this.allowedOrigins.indexOf(origin) !== -1) {
                     callback(null, true);
                 } else {
                     logger.security(`Tentativa de acesso bloqueada por CORS: ${origin}`);
-                    callback(new Error('Acesso negado pelas politicas de segurança de origem do VlogStudents'));
+                    callback(new Error('Acesso negado pelas políticas de segurança de origem do VlogStudents'));
                 }
             },
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Trace-Id'],
             exposedHeaders: ['Content-Range', 'X-Content-Range', 'X-Trace-Id'],
             credentials: true,
-            maxAge: 86400
+            maxAge: 86400 // 24 horas
         };
     }
 
@@ -65,9 +82,13 @@ class VlogStudentsSecurityEngine {
         });
     }
 
+    // ==========================================
+    // LIMITADORES DE REQUISIÇÃO (RATE LIMITING)
+    // ==========================================
+
     createGeneralRateLimiter() {
         return rateLimit({
-            windowMs: 15 * 60 * 1000,
+            windowMs: 15 * 60 * 1000, // 15 minutos
             max: 1000,
             standardHeaders: true,
             legacyHeaders: false,
@@ -86,8 +107,8 @@ class VlogStudentsSecurityEngine {
 
     createAuthenticationRateLimiter() {
         return rateLimit({
-            windowMs: 60 * 60 * 1000,
-            max: 10,
+            windowMs: 60 * 60 * 1000, // 1 hora
+            max: 15,
             standardHeaders: true,
             legacyHeaders: false,
             message: {
@@ -97,7 +118,7 @@ class VlogStudentsSecurityEngine {
                 error_code: 'BRUTE_FORCE_PROTECTION'
             },
             handler: (req, res, next, options) => {
-                logger.security(`Possivel tentativa de brute force: ${req.ip} para o email ${req.body.email}`);
+                logger.security(`Possível tentativa de brute force: ${req.ip} para o email ${req.body?.email}`);
                 res.status(options.statusCode).send(options.message);
             }
         });
@@ -105,16 +126,20 @@ class VlogStudentsSecurityEngine {
 
     createUploadRateLimiter() {
         return rateLimit({
-            windowMs: 24 * 60 * 60 * 1000,
+            windowMs: 24 * 60 * 60 * 1000, // 24 horas
             max: 50,
             message: {
                 success: false,
                 status: 429,
-                message: 'Limite diario de uploads atingido para seu perfil.',
+                message: 'Limite diário de uploads atingido para seu perfil.',
                 error_code: 'UPLOAD_LIMIT_REACHED'
             }
         });
     }
+
+    // ==========================================
+    // AUTENTICAÇÃO E JWT
+    // ==========================================
 
     async generateAccessToken(payload) {
         try {
@@ -141,10 +166,29 @@ class VlogStudentsSecurityEngine {
                 audience: 'vlogstudents_app'
             });
         } catch (error) {
-            logger.security(`Token invalido ou expirado detectado: ${error.message}`);
+            logger.security(`Token inválido ou expirado detectado: ${error.message}`);
             return null;
         }
     }
+
+    revokeToken(token) {
+        if (token) {
+            this.blacklist.add(token);
+            logger.security('Token adicionado à lista de revogação');
+            // Remove da blacklist após 7 dias (tempo da expiração) para economizar memória
+            setTimeout(() => {
+                this.blacklist.delete(token);
+            }, 7 * 24 * 60 * 60 * 1000);
+        }
+    }
+
+    isTokenBlacklisted(token) {
+        return this.blacklist.has(token);
+    }
+
+    // ==========================================
+    // HASHEAMENTO E CRIPTOGRAFIA
+    // ==========================================
 
     async hashData(data) {
         try {
@@ -157,6 +201,7 @@ class VlogStudentsSecurityEngine {
 
     async compareHash(data, hashedData) {
         try {
+            if (!data || !hashedData) return false;
             return await bcryptjs.compare(data, hashedData);
         } catch (error) {
             logger.error('Erro ao comparar hash', error);
@@ -174,7 +219,7 @@ class VlogStudentsSecurityEngine {
                 content: encrypted
             };
         } catch (error) {
-            logger.error('Erro na criptografia de dados sensiveis', error);
+            logger.error('Erro na criptografia de dados sensíveis', error);
             throw new Error('Falha no motor de criptografia');
         }
     }
@@ -192,6 +237,10 @@ class VlogStudentsSecurityEngine {
         }
     }
 
+    // ==========================================
+    // SANITIZAÇÃO E INTEGRIDADE
+    // ==========================================
+
     applyDataSanitization(app) {
         app.use(xssClean());
         app.use(hpp());
@@ -206,6 +255,7 @@ class VlogStudentsSecurityEngine {
     deepSanitize(obj) {
         for (let key in obj) {
             if (typeof obj[key] === 'string') {
+                // Remove tags HTML básicas e faz trim
                 obj[key] = obj[key].replace(/[<>]/g, '').trim();
             } else if (typeof obj[key] === 'object' && obj[key] !== null) {
                 this.deepSanitize(obj[key]);
@@ -213,53 +263,8 @@ class VlogStudentsSecurityEngine {
         }
     }
 
-    validatePasswordComplexity(password) {
-        const minLength = 8;
-        const hasUpperCase = /[A-Z]/.test(password);
-        const hasLowerCase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-        if (password.length < minLength) return false;
-        if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) return false;
-
-        return true;
-    }
-
-    revokeToken(token) {
-        this.blacklist.add(token);
-        logger.security('Token adicionado a lista de revogação');
-        setTimeout(() => {
-            this.blacklist.delete(token);
-        }, 7 * 24 * 60 * 60 * 1000);
-    }
-
-    generateSecureRandomCode(length = 6) {
-        return crypto.randomInt(100000, 999999).toString().substring(0, length);
-    }
-
-    validateEmailFormat(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
     calculateFileHash(buffer) {
         return crypto.createHash('sha256').update(buffer).digest('hex');
-    }
-
-    generateTraceId() {
-        return crypto.randomBytes(16).toString('hex');
-    }
-
-    verifyGoogleSignature(idToken) {
-        return true;
-    }
-
-    extractBearerToken(authHeader) {
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return null;
-        }
-        return authHeader.split(' ')[1];
     }
 
     checkContentIntegrity(receivedHash, originalBuffer) {
@@ -267,44 +272,22 @@ class VlogStudentsSecurityEngine {
         return receivedHash === currentHash;
     }
 
-    maskEmail(email) {
-        const [user, domain] = email.split('@');
-        return `${user.substring(0, 3)}****@${domain}`;
+    // ==========================================
+    // UTILITÁRIOS DE VALIDAÇÃO
+    // ==========================================
+
+    validatePasswordComplexity(password) {
+        const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar;
     }
 
-    createSignature(data) {
-        const hmac = crypto.createHmac('sha256', this.jwtSecret);
-        hmac.update(data);
-        return hmac.digest('hex');
-    }
-
-    verifySignature(data, signature) {
-        const expectedSignature = this.createSignature(data);
-        return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
-    }
-
-    generateReferralCode(username) {
-        const seed = `${username}${Date.now()}${crypto.randomBytes(4).toString('hex')}`;
-        return crypto.createHash('md5').update(seed).digest('hex').substring(0, 10).toUpperCase();
-    }
-
-    sanitizeFilename(filename) {
-        return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
-    }
-
-    isTokenBlacklisted(token) {
-        return this.blacklist.has(token);
-    }
-
-    getSecurityHeaders() {
-        return {
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
-            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-            'Content-Security-Policy': "default-src 'self'",
-            'Referrer-Policy': 'no-referrer'
-        };
+    validateEmailFormat(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
 
     validateUsername(username) {
@@ -312,22 +295,48 @@ class VlogStudentsSecurityEngine {
         return usernameRegex.test(username);
     }
 
-    generateApiKey() {
-        return crypto.randomBytes(32).toString('hex');
+    validateUuid(uuid) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(uuid);
+    }
+
+    // ==========================================
+    // GERAÇÃO DE CÓDIGOS E TOKENS
+    // ==========================================
+
+    generateReferralCode(username) {
+        const seed = `${username}${Date.now()}${crypto.randomBytes(4).toString('hex')}`;
+        return crypto.createHash('md5').update(seed).digest('hex').substring(0, 10).toUpperCase();
+    }
+
+    generateSecureRandomCode(length = 6) {
+        return crypto.randomInt(100000, 999999).toString().substring(0, length);
+    }
+
+    generateTraceId() {
+        return crypto.randomBytes(16).toString('hex');
     }
 
     createPasswordResetToken() {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        const expires = Date.now() + 3600000;
+        const expires = Date.now() + 3600000; // 1 hora
         return { resetToken, hashedToken, expires };
     }
 
+    // ==========================================
+    // PROTEÇÃO DE CONTA (LOCKOUT)
+    // ==========================================
+
     checkAccountLockout(user) {
-        if (user.login_attempts >= 5 && user.lockout_until > Date.now()) {
-            return true;
+        return user.login_attempts >= 5 && user.lockout_until > Date.now();
+    }
+
+    incrementLoginAttempts(user) {
+        user.login_attempts = (user.login_attempts || 0) + 1;
+        if (user.login_attempts >= 5) {
+            user.lockout_until = Date.now() + 900000; // 15 minutos de bloqueio
         }
-        return false;
     }
 
     resetLoginAttempts(user) {
@@ -335,39 +344,43 @@ class VlogStudentsSecurityEngine {
         user.lockout_until = null;
     }
 
-    incrementLoginAttempts(user) {
-        user.login_attempts += 1;
-        if (user.login_attempts >= 5) {
-            user.lockout_until = Date.now() + 900000;
-        }
+    // ==========================================
+    // MÁSCARAS E FORMATAÇÃO SEGURA
+    // ==========================================
+
+    maskEmail(email) {
+        const [user, domain] = email.split('@');
+        return `${user.substring(0, 3)}****@${domain}`;
     }
 
-    isSecureConnection(req) {
-        return req.secure || req.headers['x-forwarded-proto'] === 'https';
+    maskPhoneNumber(phone) {
+        return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) *****-$3");
     }
 
-    validateIdTokenPayload(payload) {
-        if (!payload.sub || !payload.email || !payload.aud) {
-            return false;
-        }
-        return payload.aud === this.googleClientId;
+    sanitizeFilename(filename) {
+        return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
     }
 
-    getRateLimitRemaining(req) {
-        return req.rateLimit.remaining;
-    }
-
-    forceHttpsRedirect(req, res, next) {
-        if (!this.isSecureConnection(req) && process.env.NODE_ENV === 'production') {
-            return res.redirect(`https://${req.headers.host}${req.url}`);
-        }
-        next();
-    }
+    // ==========================================
+    // MIDDLEWARE DE INTEGRAÇÃO
+    // ==========================================
 
     setupSecurityMiddleware(app) {
+        // Redirecionamento HTTPS em produção
+        app.use((req, res, next) => {
+            const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+            if (!isSecure && process.env.NODE_ENV === 'production') {
+                return res.redirect(`https://${req.headers.host}${req.url}`);
+            }
+            next();
+        });
+
         app.use(this.setupHelmetConfiguration());
+        app.use(require('cors')(this.setupCorsConfiguration()));
         app.use(this.createGeneralRateLimiter());
         this.applyDataSanitization(app);
+
+        // Trace ID para debug e auditoria
         app.use((req, res, next) => {
             const traceId = this.generateTraceId();
             req.traceId = traceId;
@@ -384,114 +397,12 @@ class VlogStudentsSecurityEngine {
                 logger.audit(req.method, req.user ? req.user.id : 'anonymous', req.originalUrl, {
                     duration,
                     statusCode: res.statusCode,
-                    ip: req.ip
+                    ip: req.ip,
+                    traceId: req.traceId
                 });
             }
         });
         next();
-    }
-
-    validateGoogleIdToken(token) {
-        if (!token || token.length < 10) return false;
-        return true;
-    }
-
-    getEncryptionIv() {
-        return crypto.randomBytes(16).toString('hex');
-    }
-
-    verifyIntegrityHash(data, hash) {
-        const calculatedHash = crypto.createHash('sha256').update(data).digest('hex');
-        return calculatedHash === hash;
-    }
-
-    parseJwt(token) {
-        try {
-            return JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        } catch (e) {
-            return null;
-        }
-    }
-
-    isTokenExpired(token) {
-        const payload = this.parseJwt(token);
-        if (!payload || !payload.exp) return true;
-        return Date.now() >= payload.exp * 1000;
-    }
-
-    generateSessionId() {
-        return crypto.randomBytes(16).toString('hex');
-    }
-
-    escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    checkIpWhitelist(ip) {
-        const whitelist = ['127.0.0.1', '::1'];
-        return whitelist.includes(ip);
-    }
-
-    validateReferralCode(code) {
-        return /^[A-Z0-9]{10}$/.test(code);
-    }
-
-    generateStrongPassword(length = 12) {
-        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-        let retVal = "";
-        for (let i = 0, n = charset.length; i < length; ++i) {
-            retVal += charset.charAt(Math.floor(Math.random() * n));
-        }
-        return retVal;
-    }
-
-    getAlgorithmInfo() {
-        return {
-            hash: 'Bcrypt',
-            encryption: 'AES-256-CBC',
-            signing: 'RS256/HS256',
-            keyExchange: 'Diffie-Hellman'
-        };
-    }
-
-    checkSensitiveKeywords(text) {
-        const keywords = ['password', 'secret', 'token', 'key', 'credential'];
-        return keywords.some(word => text.toLowerCase().includes(word));
-    }
-
-    validateMimeType(mime, allowed) {
-        return allowed.includes(mime);
-    }
-
-    getFileSizeInMb(bytes) {
-        return bytes / (1024 * 1024);
-    }
-
-    isFileSizeAllowed(bytes, maxMb) {
-        return this.getFileSizeInMb(bytes) <= maxMb;
-    }
-
-    maskPhoneNumber(phone) {
-        return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) *****-$3");
-    }
-
-    generateTokenId() {
-        return crypto.randomUUID();
-    }
-
-    validateUuid(uuid) {
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        return uuidRegex.test(uuid);
-    }
-
-    checkSuspiciousActivity(req) {
-        const suspiciousHeaders = ['x-forwarded-for', 'via', 'proxy-client-ip'];
-        return suspiciousHeaders.some(header => req.headers[header]);
     }
 
     getSecurityAuditReport() {
@@ -499,7 +410,7 @@ class VlogStudentsSecurityEngine {
             engine_status: 'operational',
             firewall_active: true,
             brute_force_protection: 'active',
-            encryption_level: 'enterprise',
+            encryption_level: 'enterprise (AES-256-CBC)',
             last_audit_timestamp: new Date().toISOString(),
             blacklist_count: this.blacklist.size
         };
@@ -508,6 +419,7 @@ class VlogStudentsSecurityEngine {
 
 const securityEngine = new VlogStudentsSecurityEngine();
 
+// Exportação unificada compatível com os dois estilos solicitados
 module.exports = {
     engine: securityEngine,
     corsOptions: securityEngine.setupCorsConfiguration(),
@@ -515,6 +427,8 @@ module.exports = {
     generalRateLimit: securityEngine.createGeneralRateLimiter(),
     authRateLimit: securityEngine.createAuthenticationRateLimiter(),
     uploadRateLimit: securityEngine.createUploadRateLimiter(),
+
+    // Métodos diretos (Shorthands)
     hash: (data) => securityEngine.hashData(data),
     compare: (data, hashed) => securityEngine.compareHash(data, hashed),
     sign: (payload) => securityEngine.generateAccessToken(payload),
@@ -522,7 +436,15 @@ module.exports = {
     encrypt: (text) => securityEngine.encryptSensitiveData(text),
     decrypt: (data) => securityEngine.decryptSensitiveData(data),
     sanitizer: (app) => securityEngine.applyDataSanitization(app),
-    middleware: (app) => securityEngine.setupSecurityMiddleware(app)
+    middleware: (app) => securityEngine.setupSecurityMiddleware(app),
+
+    // Utilitários Extras
+    utils: {
+        generateReferral: (name) => securityEngine.generateReferralCode(name),
+        validateEmail: (email) => securityEngine.validateEmailFormat(email),
+        validatePassword: (pass) => securityEngine.validatePasswordComplexity(pass),
+        maskEmail: (email) => securityEngine.maskEmail(email)
+    }
 };
 
-logger.info('VlogStudents Security Engine Layer v1.0.0 carregado com protecoes corporativas ativas.');
+logger.info('VlogStudents Security Engine Layer v1.0.0 (FULL) carregado com proteções corporativas ativas.');
