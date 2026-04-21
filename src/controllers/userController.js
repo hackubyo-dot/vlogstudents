@@ -1,9 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE MASTER USER CONTROLLER v7.0.0
+ * VLOGSTUDENTS ENTERPRISE MASTER USER CONTROLLER v8.0.0
  * FULL IDENTITY, GAMIFICATION (VOICES) & STREAMING PROXY
- * * STATUS: ALFA OMEGA ACTIVE
- * CORREÇÃO: PROTOCOLO DE STREAMING PARA VÍDEOS REELS (FIX: BUFFER & RANGE)
  * ============================================================================
  */
 
@@ -72,8 +70,8 @@ const userController = {
     },
 
     /**
-     * streamMedia - O CORAÇÃO DO STREAMING (FIX REELS)
-     * Atua como Proxy binário entre Google Drive e Flutter VideoPlayer
+     * streamMedia - PROXY DE VÍDEO (FIX: BUFFER & RANGE)
+     * Essencial para o VideoPlayer do Flutter carregar instantaneamente.
      */
     streamMedia: async (req, res) => {
         const { fileId } = req.params;
@@ -94,7 +92,7 @@ const userController = {
 
                 const driveStream = await driveService.getVideoStream(fileId);
 
-                // Cabeçalhos Críticos para evitar o "Giro Infinito" no Mobile
+                // Status 206: Partial Content (Essencial para streaming)
                 res.writeHead(206, {
                     'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                     'Accept-Ranges': 'bytes',
@@ -119,7 +117,7 @@ const userController = {
     },
 
     /**
-     * uploadAvatar - Persistência de Identidade Visual
+     * uploadAvatar - Persistência de Identidade Visual no Google Drive
      */
     uploadAvatar: async (req, res) => {
         const userId = req.user.id;
@@ -136,7 +134,7 @@ const userController = {
     },
 
     /**
-     * getPointsBalance & getPointsHistory - Economia de Voices
+     * getPointsBalance - Saldo de Voices
      */
     getPointsBalance: async (req, res) => {
         try {
@@ -145,6 +143,9 @@ const userController = {
         } catch (e) { res.status(500).json({ success: false }); }
     },
 
+    /**
+     * getPointsHistory - Extrato de Transações
+     */
     getPointsHistory: async (req, res) => {
         try {
             const query = `
@@ -161,7 +162,7 @@ const userController = {
     },
 
     /**
-     * getSocialMetrics - Seguidores e Engajamento
+     * getSocialMetrics - Seguidores, Seguindo e Posts
      */
     getSocialMetrics: async (req, res) => {
         const userId = req.user.id;
@@ -185,7 +186,7 @@ const userController = {
     },
 
     /**
-     * redeemPoints - Sistema de Recompensas (Atomic Transaction)
+     * redeemPoints - Sistema de Recompensa com Transação Atômica
      */
     redeemPoints: async (req, res) => {
         const userId = req.user.id;
@@ -214,7 +215,7 @@ const userController = {
     },
 
     /**
-     * getUserProfile - Visualização Pública de Terceiros
+     * getUserProfile - Visualização Pública de Perfil
      */
     getUserProfile: async (req, res) => {
         const targetId = req.params.id;
@@ -233,6 +234,17 @@ const userController = {
             if (result.rows.length === 0) return res.status(404).json({ success: false });
             res.status(200).json({ success: true, data: result.rows[0] });
         } catch (error) { res.status(500).json({ success: false }); }
+    },
+
+    /**
+     * updateSettings - Preferências de tema e conta
+     */
+    updateSettings: async (req, res) => {
+        const { theme } = req.body;
+        try {
+            await db.query('UPDATE users SET theme_pref = $1 WHERE id = $2', [theme, req.user.id]);
+            res.status(200).json({ success: true });
+        } catch (e) { res.status(500).json({ success: false }); }
     }
 };
 
