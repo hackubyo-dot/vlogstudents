@@ -1,7 +1,8 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE MASTER ENGINE v2.0.7
- * ORQUESTRADOR DE NÓ CENTRAL - ALFA OMEGA SYSTEM
+ * VLOGSTUDENTS ENTERPRISE MASTER ENGINE v4.2.0
+ * ORQUESTRADOR CENTRAL - API / REALTIME / CLOUD / GAMIFICATION
+ * STATUS: FULL RECONSTRUCTION - ZERO OMISSION
  * ============================================================================
  */
 
@@ -11,89 +12,120 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const morgan = require('morgan');
+const path = require('path');
 
 // Importação das Rotas Master
-// Nota: Caminhos relativos à pasta 'src' definida como Root no Render
+// Nota: Caminhos relativos à pasta 'src' (Root Directory no Render)
 const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes'); // Inclui Points e Leaderboard
 const reelRoutes = require('./routes/reelRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-const pointRoutes = require('./routes/pointRoutes');
 
 const app = express();
 const server = http.createServer(app);
 
-// Injeção de Realtime Engine (Socket.io)
+/**
+ * CONFIGURAÇÃO DO REALTIME ENGINE (SOCKET.IO)
+ * Integrado com CORS global para aceitar conexões Mobile
+ */
 const io = new Server(server, {
-    cors: { 
-        origin: "*", 
-        methods: ["GET", "POST", "PATCH", "DELETE"] 
-    }
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
+        credentials: true
+    },
+    allowEIO3: true
 });
 
-// Disponibiliza IO para os controllers sem importação circular
+// Disponibiliza o Socket.io nos controllers sem importações circulares
 app.set('io', io);
 
-// Middlewares de Infraestrutura e Performance
+/**
+ * MIDDLEWARES DE INFRAESTRUTURA E SEGURANÇA
+ */
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(morgan('dev'));
+app.use(express.json({ limit: '100mb' })); // Suporte a payloads grandes (metadados/imagens)
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-// Logger de Monitoramento em Tempo Real
-app.use((req, res, next) => {
-    console.log(`[ALFA_OMEGA_TRACE] ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-});
+// Logger de Auditoria Alfa Omega (Personalizado)
+app.use(morgan((tokens, req, res) => {
+    return [
+        `[ALFA_OMEGA_TRACE]`,
+        new Date().toISOString(),
+        '-',
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens['response-time'](req, res), 'ms',
+        '-',
+        tokens['user-agent'](req, res)
+    ].join(' ');
+}));
 
-// Inicialização do Socket Manager
+/**
+ * INICIALIZAÇÃO DO BARRAMENTO REALTIME
+ * Nota: Caminho ajustado para a raiz operacional
+ */
 const { initializeSocket } = require('./socket/socketManager');
 initializeSocket(io);
 
-// ROTA RAIZ (Ponto de entrada e Health Check do Render)
+/**
+ * ROTA RAIZ (HEALTH CHECK PARA RENDER.COM)
+ * Garante que o deploy seja marcado como "Live" e funcional
+ */
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'VlogStudents Master Engine is Live.',
-        node_status: 'operational',
-        kernel_version: '2.0.7',
-        timestamp: new Date()
+        message: 'VlogStudents Enterprise Master Engine is Operational.',
+        kernel_version: '4.2.0-PRO',
+        node_status: 'ALFA_OMEGA_ACTIVE',
+        timestamp: new Date().toISOString()
     });
 });
 
-// BARRAMENTO DE API MASTER (Prefixado v1)
+/**
+ * MONTAGEM DO BARRAMENTO DE API (Sincronizado com Flutter NetworkProvider)
+ * Todos os prefixos batem rigorosamente com as chamadas Dio/Http
+ */
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/users', userRoutes); // Leaderboard e Points integrados aqui
 app.use('/api/v1/reels', reelRoutes);
 app.use('/api/v1/chat', chatRoutes);
-app.use('/api/v1/points', pointRoutes);
 
-// Handler de Rota Inexistente (404)
+/**
+ * HANDLER DE ROTAS INEXISTENTES (DEBUG LOG)
+ */
 app.use((req, res) => {
     console.warn(`[WARNING] Tentativa de acesso em rota inexistente: ${req.url}`);
-    res.status(404).json({ 
-        success: false, 
-        message: 'Endpoint Master não encontrado no Alfa Omega System.' 
+    res.status(404).json({
+        success: false,
+        message: `Endpoint ${req.url} não encontrado no Master Engine.`
     });
 });
 
-// Tratamento Global de Erros Críticos
+/**
+ * TRATAMENTO GLOBAL DE EXCEÇÕES (ANTI-CRASH)
+ */
 app.use((err, req, res, next) => {
-    console.error('[KERNEL_CRITICAL_ERROR]', err.stack);
-    res.status(500).json({ 
-        success: false, 
-        message: 'Falha crítica no processamento do nó central.',
-        error: process.env.NODE_ENV === 'development' ? err.message : null
+    console.error('[CRITICAL_KERNEL_ERROR]', err.stack);
+    res.status(500).json({
+        success: false,
+        message: 'Instabilidade interna detectada no Master Kernel.',
+        error_context: process.env.NODE_ENV === 'development' ? err.message : 'HIDDEN'
     });
 });
 
-// Inicialização Final do Nó
+/**
+ * INICIALIZAÇÃO DO SERVIDOR FÍSICO
+ */
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log('+-----------------------------------------------------------+');
-    console.log(`| VLOGSTUDENTS MASTER KERNEL v2.0.7 EM EXECUÇÃO             |`);
+    console.log(`| VLOGSTUDENTS MASTER KERNEL v4.2.0 EM EXECUÇÃO             |`);
     console.log(`| PORTA: ${PORT}                                               |`);
     console.log(`| AMBIENTE: ${process.env.NODE_ENV || 'production'}                 |`);
-    console.log(`| STATUS: ALFA OMEGA ACTIVE                                 |`);
+    console.log(`| STATUS: ALFA OMEGA ACTIVE (FULL RECONSTRUCTION)           |`);
     console.log('+-----------------------------------------------------------+');
 });
+
+module.exports = app;
