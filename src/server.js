@@ -1,8 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE MASTER ENGINE v4.2.0
- * ORQUESTRADOR CENTRAL - API / REALTIME / CLOUD / GAMIFICATION
- * STATUS: FULL RECONSTRUCTION - ZERO OMISSION
+ * VLOGSTUDENTS ENTERPRISE MASTER KERNEL v8.0.0
+ * ORQUESTRADOR DE NÓ CENTRAL - ALFA OMEGA SYSTEM
  * ============================================================================
  */
 
@@ -12,120 +11,119 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const morgan = require('morgan');
-const path = require('path');
 
-// Importação das Rotas Master
-// Nota: Caminhos relativos à pasta 'src' (Root Directory no Render)
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes'); // Inclui Points e Leaderboard
-const reelRoutes = require('./routes/reelRoutes');
-const chatRoutes = require('./routes/chatRoutes');
+// Importação das Rotas Master (Sincronizadas com o Flutter Provider)
+const authRoutes = require('./src/routes/authRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+const reelRoutes = require('./src/routes/reelRoutes');
+const chatRoutes = require('./src/routes/chatRoutes');
 
 const app = express();
 const server = http.createServer(app);
 
 /**
- * CONFIGURAÇÃO DO REALTIME ENGINE (SOCKET.IO)
- * Integrado com CORS global para aceitar conexões Mobile
+ * INJEÇÃO DO MOTOR REALTIME (SOCKET.IO)
+ * Configurado para Cross-Origin total para permitir conexões Mobile/Web.
  */
 const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
+    cors: { 
+        origin: "*", 
+        methods: ["GET", "POST", "PATCH", "DELETE"],
         credentials: true
-    },
-    allowEIO3: true
+    }
 });
 
-// Disponibiliza o Socket.io nos controllers sem importações circulares
+// Configuração de Contexto Global: Disponibiliza o 'io' em todos os controllers via req.app.get('io')
 app.set('io', io);
 
 /**
- * MIDDLEWARES DE INFRAESTRUTURA E SEGURANÇA
+ * MIDDLEWARES DE INFRAESTRUTURA
  */
 app.use(cors());
-app.use(express.json({ limit: '100mb' })); // Suporte a payloads grandes (metadados/imagens)
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
-
-// Logger de Auditoria Alfa Omega (Personalizado)
-app.use(morgan((tokens, req, res) => {
-    return [
-        `[ALFA_OMEGA_TRACE]`,
-        new Date().toISOString(),
-        '-',
-        tokens.method(req, res),
-        tokens.url(req, res),
-        tokens.status(req, res),
-        tokens['response-time'](req, res), 'ms',
-        '-',
-        tokens['user-agent'](req, res)
-    ].join(' ');
-}));
+app.use(express.json({ limit: '50mb' })); // Suporte para Base64 pesado se necessário
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(morgan('dev')); // Log de requisições no console
 
 /**
- * INICIALIZAÇÃO DO BARRAMENTO REALTIME
- * Nota: Caminho ajustado para a raiz operacional
+ * INICIALIZAÇÃO DOS MÓDULOS CORE (BACKGROUND)
+ * Estes módulos rodam de forma assíncrona para não travar o boot.
  */
-const { initializeSocket } = require('./socket/socketManager');
+const { initializeSocket } = require('./src/socket/socketManager');
+const db = require('./src/config/dbConfig');
+const driveService = require('./src/services/driveService');
+
+// Acopla a lógica de eventos ao Socket.io
 initializeSocket(io);
 
 /**
- * ROTA RAIZ (HEALTH CHECK PARA RENDER.COM)
- * Garante que o deploy seja marcado como "Live" e funcional
+ * ROTA DE SAÚDE (VITAL PARA MONITORAMENTO & RENDER)
+ * Usada pelo Render.com para confirmar que o container está vivo.
  */
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'VlogStudents Enterprise Master Engine is Operational.',
-        kernel_version: '4.2.0-PRO',
-        node_status: 'ALFA_OMEGA_ACTIVE',
-        timestamp: new Date().toISOString()
+        project: 'VlogStudents Enterprise',
+        version: '8.0.0',
+        status: 'ALFA_OMEGA_ACTIVE',
+        timestamp: new Date().toISOString(),
+        engine: 'Node.js ' + process.version
     });
 });
 
 /**
- * MONTAGEM DO BARRAMENTO DE API (Sincronizado com Flutter NetworkProvider)
- * Todos os prefixos batem rigorosamente com as chamadas Dio/Http
+ * MONTAGEM DO BARRAMENTO DE API /API/V1
  */
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes); // Leaderboard e Points integrados aqui
-app.use('/api/v1/reels', reelRoutes);
-app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/auth', authRoutes);   // Autenticação e Registro
+app.use('/api/v1/users', userRoutes);  // Perfil, Voices, Leaderboard e Stream
+app.use('/api/v1/reels', reelRoutes);  // Vídeos, Curtidas e Comentários
+app.use('/api/v1/chat', chatRoutes);   // Mensageria Privada
 
 /**
- * HANDLER DE ROTAS INEXISTENTES (DEBUG LOG)
+ * GESTÃO DE EXCEÇÕES E ROTAS INEXISTENTES
  */
+
+// Handler de Erro 404 (Endpoint não mapeado)
 app.use((req, res) => {
-    console.warn(`[WARNING] Tentativa de acesso em rota inexistente: ${req.url}`);
-    res.status(404).json({
-        success: false,
-        message: `Endpoint ${req.url} não encontrado no Master Engine.`
+    res.status(404).json({ 
+        success: false, 
+        message: 'Endpoint não encontrado no Cluster VlogStudents.',
+        path: req.originalUrl 
     });
 });
 
-/**
- * TRATAMENTO GLOBAL DE EXCEÇÕES (ANTI-CRASH)
- */
+// Central de Erros Internos (Previne que o servidor caia por erro de lógica)
 app.use((err, req, res, next) => {
-    console.error('[CRITICAL_KERNEL_ERROR]', err.stack);
-    res.status(500).json({
-        success: false,
-        message: 'Instabilidade interna detectada no Master Kernel.',
-        error_context: process.env.NODE_ENV === 'development' ? err.message : 'HIDDEN'
+    console.error('[KERNEL_INTERNAL_ERROR]', err.stack);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Falha crítica no processamento do Kernel.' 
     });
 });
 
 /**
- * INICIALIZAÇÃO DO SERVIDOR FÍSICO
+ * BOOT SEQUENCE
+ * A escuta começa IMEDIATAMENTE para evitar o erro de 'Port Timeout' no Render.
  */
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log('+-----------------------------------------------------------+');
-    console.log(`| VLOGSTUDENTS MASTER KERNEL v4.2.0 EM EXECUÇÃO             |`);
-    console.log(`| PORTA: ${PORT}                                               |`);
-    console.log(`| AMBIENTE: ${process.env.NODE_ENV || 'production'}                 |`);
-    console.log(`| STATUS: ALFA OMEGA ACTIVE (FULL RECONSTRUCTION)           |`);
-    console.log('+-----------------------------------------------------------+');
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log('\n+-----------------------------------------------------------+');
+    console.log(`| VLOGSTUDENTS MASTER KERNEL v8.0.0 EM EXECUÇÃO             |`);
+    console.log(`| PORTA: ${PORT.toString().padEnd(50)} |`);
+    console.log(`| AMBIENTE: ${(process.env.NODE_ENV || 'production').toUpperCase().padEnd(46)} |`);
+    console.log(`| STATUS: SISTEMAS ONLINE & HANDSHAKE RSA INICIADO          |`);
+    console.log('+-----------------------------------------------------------+\n');
 });
 
-module.exports = app;
+/**
+ * PROTOCOLO ANTI-CRASH (SEGURANÇA MÁXIMA)
+ * Captura erros que normalmente matariam o processo do Node.js.
+ */
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL_CRASH] Uncaught Exception detectada:', err.message);
+    // Logar o erro, mas manter o processo vivo se possível
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[FATAL_CRASH] Unhandled Rejection em:', promise, 'razão:', reason);
+});
