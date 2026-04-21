@@ -1,33 +1,45 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v2.0.7
- * SISTEMA DE PERSISTÊNCIA COM PROTOCOLO DE AUTO-HEALING E CRIAÇÃO SEQUENCIAL
+ * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v4.5.0
+ * SISTEMA DE PERSISTÊNCIA COM AUTO-HEALING E AUTO-SEEDING DE TESTE
+ * 
+ * STATUS: ALFA OMEGA OPERATIONAL
+ * REEL DE TESTE INTEGRADO: 1i9JVHDig6JiRticxx7ScSf98JitH69D9
  * ============================================================================
  */
 
 const { Pool } = require('pg');
 
-const pool = new Pool({
+/**
+ * Configuração de Conectividade Industrial
+ * Suporte a Cold Start e SSL obrigatório para ambiente de nuvem
+ */
+const poolConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false 
     },
-    max: 20,
+    max: 20, // Pool de conexões para alta demanda
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 15000, 
-    statement_timeout: 15000,
-});
+    statement_timeout: 30000, // Tempo máximo por query
+};
+
+const pool = new Pool(poolConfig);
 
 /**
- * Script de Inicialização Mestre
- * Resolve o erro de "column id referenced does not exist" através de execução atômica
+ * PROTOCOLO DE INICIALIZAÇÃO MASTER
+ * Gerencia a criação de tabelas e a inserção de dados de teste (Seeding)
  */
 const initializeDatabase = async () => {
-    const client = await pool.connect();
+    let client;
     try {
-        console.log('[MASTER_DB] Iniciando protocolo de integridade de dados...');
+        console.log('[MASTER_DB] Iniciando auditoria de integridade de dados...');
+        client = await pool.connect();
 
-        // 1. Criação da Tabela de Usuários (Âncora Primária)
+        await client.query('BEGIN');
+
+        // 1. CAMADA DE IDENTIDADE: USUÁRIOS
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -51,7 +63,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 2. Tabela de Reels (Depende de users)
+        // 2. CAMADA DE CONTEÚDO: REELS
         await client.query(`
             CREATE TABLE IF NOT EXISTS reels (
                 id SERIAL PRIMARY KEY,
@@ -70,7 +82,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 3. Tabela de Comentários (Depende de users e reels)
+        // 3. CAMADA DE ENGAJAMENTO: COMENTÁRIOS
         await client.query(`
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -82,7 +94,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 4. Tabelas de Interação (Likes e Follows)
+        // 4. CAMADA SOCIAL: LIKES E SEGUIDORES
         await client.query(`
             CREATE TABLE IF NOT EXISTS likes (
                 id SERIAL PRIMARY KEY,
@@ -101,7 +113,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 5. Motor de Chat (Rooms, Participantes e Mensagens)
+        // 5. CAMADA REALTIME: CHAT E MENSAGENS
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id SERIAL PRIMARY KEY,
@@ -129,7 +141,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 6. Transações de Voices (Gamificação)
+        // 6. CAMADA ECONÔMICA: POINT TRANSACTIONS (VOICES)
         await client.query(`
             CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
@@ -141,17 +153,40 @@ const initializeDatabase = async () => {
             );
         `);
 
-        console.log('[MASTER_DB] Todas as camadas relacionais foram curadas e sincronizadas.');
+        console.log('[MASTER_DB] Estrutura verificada. Iniciando Auto-Seeding de teste...');
+
+        /**
+         * LÓGICA DE SEEDING: INJEÇÃO DO REEL DE TESTE
+         * Garante que o app já abra com o vídeo enviado para teste.
+         */
+        
+        // A. Inserir Usuário Master se não existir
+        await client.query(`
+            INSERT INTO users (full_name, email, university_name, referral_code, points_total, isactive)
+            VALUES ('Vlog Master Admin', 'admin@vlogstudents.com', 'Universidade Master', 'VLOG_MASTER_2026', 1000, true)
+            ON CONFLICT (email) DO NOTHING;
+        `);
+
+        // B. Inserir o Reel manual (ID: 1i9JVHDig6JiRticxx7ScSf98JitH69D9)
+        await client.query(`
+            INSERT INTO reels (author_id, drive_file_id, title, description, duration, views_count, likes_count)
+            SELECT id, '1i9JVHDig6JiRticxx7ScSf98JitH69D9', '🚀 Bem-vindo ao VlogStudents!', 'Este é um Reel de teste injetado para validar o streaming via Google Drive Cloud Cluster.', 15, 1200, 450
+            FROM users WHERE email = 'admin@vlogstudents.com'
+            AND NOT EXISTS (SELECT 1 FROM reels WHERE drive_file_id = '1i9JVHDig6JiRticxx7ScSf98JitH69D9');
+        `);
+
+        await client.query('COMMIT');
+        console.log('[MASTER_DB] Protocolo concluído. Dados de teste sincronizados.');
 
     } catch (error) {
-        console.error('[MASTER_DB_ERROR] Falha crítica na estruturação:', error.message);
-        // Não encerramos o processo aqui para permitir que o servidor responda 500 em vez de crashar o deploy
+        if (client) await client.query('ROLLBACK');
+        console.error('[MASTER_DB_ERROR] Falha na estruturação:', error.message);
     } finally {
-        client.release();
+        if (client) client.release();
     }
 };
 
-// Execução imediata no boot do Kernel
+// Disparo imediato do Kernel de Dados
 initializeDatabase();
 
 module.exports = {
