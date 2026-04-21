@@ -1,19 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const pointController = require('../controllers/pointController'); // IMPORTAÇÃO OBRIGATÓRIA
 const authMiddleware = require('../middlewares/authMiddleware');
+const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
-// Rotas de Perfil e Stream (Sincronizado com NetworkProvider do Flutter)
+/**
+ * ============================================================================
+ * ROTAS DE USUÁRIO - SINCRONIZAÇÃO TOTAL COM FLUTTER
+ * PREFIXO: /api/v1/users
+ * ============================================================================
+ */
+
+// Perfil
 router.get('/profile/me', authMiddleware, userController.getMyProfile);
-router.get('/media/stream/:fileId', userController.streamMedia); // PÚBLICO PARA PLAYER
+router.patch('/profile/update', authMiddleware, userController.updateProfile);
+router.patch('/profile/settings', authMiddleware, userController.updateSettings);
+router.post('/profile/avatar', authMiddleware, uploadMiddleware.single('file'), userController.uploadAvatar);
+router.get('/profile/:id', authMiddleware, userController.getUserProfile);
 
-// Rotas de Pontos e Recompensas
+// Social e Mídia
+router.get('/social/metrics', authMiddleware, userController.getSocialMetrics);
+router.get('/media/stream/:fileId', userController.streamMedia);
+
+// Voices e Pontos (Callbacks garantidos no userController)
 router.get('/points/balance', authMiddleware, userController.getPointsBalance);
 router.get('/points/history', authMiddleware, userController.getPointsHistory);
+router.post('/points/redeem', authMiddleware, userController.redeemPoints);
+router.get('/referrals/stats', authMiddleware, userController.getReferralStats);
 
-// Rotas de Leaderboard (Mapeadas para bater com o log 404 anterior)
-const pointController = require('../controllers/pointController');
-router.get('/leaderboard/global', authMiddleware, pointController.getGlobalLeaderboard);
+// Leaderboard (Callbacks garantidos no pointController)
 router.get('/leaderboard/university', authMiddleware, pointController.getUniversityLeaderboard);
+router.get('/leaderboard/global', authMiddleware, pointController.getGlobalLeaderboard);
 
 module.exports = router;
