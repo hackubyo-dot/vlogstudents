@@ -1,23 +1,36 @@
 const { body, query, param, validationResult } = require('express-validator');
 const logger = require('../config/logger');
-const { AppError } = require('./error_middleware');
 
+/**
+ * VlogStudents Validation Engine - Enterprise Edition
+ * Responsável por garantir a integridade de todos os dados que entram na API.
+ */
 class VlogStudentsValidationEngine {
     constructor() {
+        // Regex para senha forte: Mínimo 8 caracteres, pelo menos uma maiúscula, uma minúscula, um número e um caractere especial
         this.passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+        // Regex para Telefone Internacional (E.164)
         this.phoneRegex = /^\+?[1-9]\d{1,14}$/;
+
+        // Regex de E-mail Permissiva: Aceita qualquer domínio válido globalmente
         this.generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     }
 
+    /**
+     * Centralizador de resultados de validação
+     */
     handleValidationResults(request, response, next) {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
             const extractedErrors = [];
             errors.array().map(err => extractedErrors.push({ [err.path]: err.msg }));
-            logger.warn(`Falha de validacao em ${request.originalUrl}: ${JSON.stringify(extractedErrors)}`);
+
+            logger.warn(`Falha de validação em ${request.originalUrl}: ${JSON.stringify(extractedErrors)}`);
+
             return response.status(422).json({
                 success: false,
-                message: 'Dados de entrada invalidos. Verifique os campos.',
+                message: 'Dados de entrada inválidos. Verifique os campos preenchidos.',
                 error_code: 'VALIDATION_ERROR',
                 details: extractedErrors
             });
@@ -25,29 +38,65 @@ class VlogStudentsValidationEngine {
         next();
     }
 
+    // ==========================================
+    // AUTENTICAÇÃO E CONTA
+    // ==========================================
+
     validateRegistration() {
         return [
-            body('fullName').notEmpty().withMessage('O nome completo e obrigatorio.').trim().isLength({ min: 3, max: 100 }),
-            body('email').isEmail().withMessage('Informe um endereco de e-mail valido.').normalizeEmail().matches(this.generalEmailRegex).withMessage('O formato do e-mail e invalido.'),
-            body('password').matches(this.passwordRegex).withMessage('A senha deve conter no minimo 8 caracteres, maiusculas, minusculas, numeros e simbolos.'),
-            body('university').notEmpty().withMessage('A universidade e obrigatoria.'),
-            body('referralCode').optional().isAlphanumeric(),
+            body('fullName').notEmpty().withMessage('O nome completo é obrigatório.').trim().isLength({ min: 3, max: 100 }),
+            body('email')
+                .isEmail().withMessage('Informe um endereço de e-mail válido.')
+                .normalizeEmail()
+                .matches(this.generalEmailRegex).withMessage('O formato do e-mail é inválido.'),
+            body('password').matches(this.passwordRegex).withMessage('A senha deve conter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos.'),
+            body('university').notEmpty().withMessage('A instituição de ensino é obrigatória.'),
+            body('referralCode').optional().isAlphanumeric().withMessage('Código de indicação inválido.'),
             this.handleValidationResults
         ];
     }
 
     validateLogin() {
         return [
-            body('email').isEmail().withMessage('E-mail invalido.').normalizeEmail(),
-            body('password').notEmpty().withMessage('A senha e obrigatoria.'),
+            body('email').isEmail().withMessage('E-mail inválido.').normalizeEmail(),
+            body('password').notEmpty().withMessage('A senha é obrigatória.'),
             this.handleValidationResults
         ];
     }
 
+    validateVerification() {
+        return [
+            body('email').isEmail().normalizeEmail(),
+            body('code').isLength({ min: 6, max: 6 }).withMessage('O código de verificação deve ter 6 dígitos.'),
+            this.handleValidationResults
+        ];
+    }
+
+    validatePasswordRecovery() {
+        return [
+            body('email').isEmail().withMessage('Informe um e-mail válido para recuperação.'),
+            this.handleValidationResults
+        ];
+    }
+
+    validatePasswordReset() {
+        return [
+            body('email').optional().isEmail(),
+            body('code').optional().isLength({ min: 6, max: 6 }),
+            body('token').optional().notEmpty(), // Aceita token (link) ou código
+            body('newPassword').matches(this.passwordRegex).withMessage('A nova senha não atende aos critérios de segurança.'),
+            this.handleValidationResults
+        ];
+    }
+
+    // ==========================================
+    // PERFIL E CONFIGURAÇÕES
+    // ==========================================
+
     validateProfileUpdate() {
         return [
-            body('fullName').optional().isLength({ min: 3, max: 100 }),
-            body('phoneNumber').optional().matches(this.phoneRegex),
+            body('fullName').optional().trim().isLength({ min: 3, max: 100 }),
+            body('phoneNumber').optional().matches(this.phoneRegex).withMessage('Formato de telefone inválido.'),
             body('university').optional().isLength({ min: 2 }),
             body('biography').optional().isLength({ max: 500 }),
             body('themePreference').optional().isIn(['light', 'dark']),
@@ -55,9 +104,27 @@ class VlogStudentsValidationEngine {
         ];
     }
 
+    validateUsernameUpdate() {
+        return [
+            body('newUsername').isAlphanumeric().isLength({ min: 3, max: 30 }).withMessage('O nome de usuário deve ser alfanumérico.'),
+            this.handleValidationResults
+        ];
+    }
+
+    validateEmailUpdate() {
+        return [
+            body('newEmail').isEmail().matches(this.generalEmailRegex).withMessage('Informe um novo e-mail válido.'),
+            this.handleValidationResults
+        ];
+    }
+
+    // ==========================================
+    // CONTEÚDO (REELS, COMENTÁRIOS, LIKES)
+    // ==========================================
+
     validateReelCreation() {
         return [
-            body('title').notEmpty().isLength({ max: 100 }),
+            body('title').notEmpty().isLength({ max: 100 }).trim(),
             body('description').optional().isLength({ max: 1000 }),
             this.handleValidationResults
         ];
@@ -65,15 +132,27 @@ class VlogStudentsValidationEngine {
 
     validateCommentCreation() {
         return [
-            body('textContent').notEmpty().isLength({ max: 500 }),
-            body('targetId').optional().isInt(),
+            body('textContent').notEmpty().withMessage('O comentário não pode estar vazio.').isLength({ max: 500 }),
+            body('targetId').notEmpty().withMessage('ID do alvo é necessário.'),
             this.handleValidationResults
         ];
     }
 
+    validateLikeAction() {
+        return [
+            body('targetId').notEmpty(),
+            body('targetType').isIn(['post', 'reel', 'comment', 'story']),
+            this.handleValidationResults
+        ];
+    }
+
+    // ==========================================
+    // COMUNICAÇÃO (CHAT E VIDEO)
+    // ==========================================
+
     validateChatRoomCreation() {
         return [
-            body('participants').isArray({ min: 1 }),
+            body('participants').isArray({ min: 1 }).withMessage('Selecione ao menos um participante.'),
             body('isGroup').optional().isBoolean(),
             this.handleValidationResults
         ];
@@ -81,27 +160,23 @@ class VlogStudentsValidationEngine {
 
     validateChatMessage() {
         return [
-            body('roomId').isInt(),
-            body('textBody').optional().isString().isLength({ max: 2000 }),
+            body('roomId').notEmpty(),
+            body('textBody').notEmpty().isLength({ max: 2000 }),
             this.handleValidationResults
         ];
     }
 
-    validatePointTransaction() {
+    validateVideoCall() {
         return [
-            body('amount').isInt({ min: 1 }),
-            body('reason').notEmpty(),
+            body('roomId').notEmpty(),
+            body('action').isIn(['start', 'join', 'end', 'reject']),
             this.handleValidationResults
         ];
     }
 
-    validateReferralClaim() {
-        return [
-            body('invitedEmail').isEmail(),
-            body('appliedCode').isAlphanumeric(),
-            this.handleValidationResults
-        ];
-    }
+    // ==========================================
+    // UTILITÁRIOS E SISTEMA
+    // ==========================================
 
     validatePagination() {
         return [
@@ -113,221 +188,102 @@ class VlogStudentsValidationEngine {
 
     validateIdParam(paramName = 'id') {
         return [
-            param(paramName).isInt(),
+            param(paramName).notEmpty().withMessage(`O parâmetro ${paramName} é obrigatório.`),
             this.handleValidationResults
         ];
     }
 
     validateSearchQuery() {
         return [
-            query('q').notEmpty().isLength({ min: 2 }),
+            query('q').notEmpty().isLength({ min: 2 }).withMessage('A busca deve ter pelo menos 2 caracteres.'),
             this.handleValidationResults
         ];
     }
 
-    validateVideoCall() {
+    validatePointTransaction() {
         return [
-            body('roomId').isInt(),
-            body('action').isIn(['start', 'join', 'end', 'reject']),
-            this.handleValidationResults
-        ];
-    }
-
-    validatePasswordRecovery() {
-        return [
-            body('email').isEmail(),
-            this.handleValidationResults
-        ];
-    }
-
-    validatePasswordReset() {
-        return [
-            body('token').notEmpty(),
-            body('newPassword').matches(this.passwordRegex),
-            this.handleValidationResults
-        ];
-    }
-
-    validateLikeAction() {
-        return [
-            body('targetId').isInt(),
-            body('targetType').isIn(['post', 'reel', 'comment']),
-            this.handleValidationResults
-        ];
-    }
-
-    validateFollowAction() {
-        return [
-            body('targetUserId').isInt(),
+            body('amount').isInt({ min: 1 }),
+            body('reason').notEmpty().trim(),
             this.handleValidationResults
         ];
     }
 
     validateReportCreation() {
         return [
-            body('targetId').isInt(),
+            body('targetId').notEmpty(),
             body('targetType').isIn(['post', 'reel', 'comment', 'user']),
-            body('reason').notEmpty(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateFeedback() {
-        return [
-            body('rating').isInt({ min: 1, max: 5 }),
-            this.handleValidationResults
-        ];
-    }
-
-    validateNotifications() {
-        return [
-            body('pushEnabled').optional().isBoolean(),
-            body('emailEnabled').optional().isBoolean(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateTheme() {
-        return [
-            body('theme').isIn(['light', 'dark']),
-            this.handleValidationResults
-        ];
-    }
-
-    validateEmailUpdate() {
-        return [
-            body('newEmail').isEmail().matches(this.generalEmailRegex),
+            body('reason').notEmpty().isLength({ min: 5 }),
             this.handleValidationResults
         ];
     }
 
     validatePoll() {
         return [
-            body('question').notEmpty(),
-            body('options').isArray({ min: 2 }),
+            body('question').notEmpty().isLength({ max: 255 }),
+            body('options').isArray({ min: 2, max: 10 }).withMessage('A enquete deve ter entre 2 e 10 opções.'),
             this.handleValidationResults
         ];
     }
 
     validateLocation() {
         return [
-            body('latitude').isFloat(),
-            body('longitude').isFloat(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateStatus() {
-        return [
-            body('status').isLength({ max: 50 }),
-            this.handleValidationResults
-        ];
-    }
-
-    validateInvite() {
-        return [
-            body('groupId').isInt(),
-            body('userEmails').isArray(),
-            this.handleValidationResults
-        ];
-    }
-
-    validatePrivacy() {
-        return [
-            body('isPrivate').isBoolean(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateSecurity() {
-        return [
-            body('currentPassword').notEmpty(),
-            this.handleValidationResults
-        ];
-    }
-
-    validateUsername() {
-        return [
-            body('newUsername').isAlphanumeric().isLength({ min: 3 }),
-            this.handleValidationResults
-        ];
-    }
-
-    validateMedia() {
-        return [
-            query('type').optional().isIn(['image', 'video', 'all']),
-            this.handleValidationResults
-        ];
-    }
-
-    validateReset() {
-        return [
-            body('email').isEmail(),
-            body('code').isLength({ min: 6, max: 6 }),
-            body('newPassword').matches(this.passwordRegex),
-            this.handleValidationResults
-        ];
-    }
-
-    validateRegistrationFull() {
-        return this.validateRegistration();
-    }
-
-    validateLoginFull() {
-        return this.validateLogin();
-    }
-
-    validateRecovery() {
-        return this.validatePasswordRecovery();
-    }
-
-    validateVerification() {
-        return [
-            body('email').isEmail(),
-            body('code').isLength({ min: 6, max: 6 }),
+            body('latitude').isFloat({ min: -90, max: 90 }),
+            body('longitude').isFloat({ min: -180, max: 180 }),
             this.handleValidationResults
         ];
     }
 
     checkIntegrity() {
-        logger.info('Engine de Validacao VLOG: Atualizada para aceitar e-mails globais.');
+        logger.info('VlogStudents Validation Engine Layer v1.0.0 carregada: E-mails globais habilitados.');
     }
 }
 
-const validationEngine = new VlogStudentsValidationEngine();
-validationEngine.checkIntegrity();
+const engine = new VlogStudentsValidationEngine();
+engine.checkIntegrity();
 
+// Exportação organizada por contexto
 module.exports = {
-    register: validationEngine.validateRegistration(),
-    login: validationEngine.validateLogin(),
-    profile: validationEngine.validateProfileUpdate(),
-    reel: validationEngine.validateReelCreation(),
-    comment: validationEngine.validateCommentCreation(),
-    chatRoom: validationEngine.validateChatRoomCreation(),
-    chatMessage: validationEngine.validateChatMessage(),
-    point: validationEngine.validatePointTransaction(),
-    referral: validationEngine.validateReferralClaim(),
-    pagination: validationEngine.validatePagination(),
-    id: (name) => validationEngine.validateIdParam(name),
-    search: validationEngine.validateSearchQuery(),
-    videoCall: validationEngine.validateVideoCall(),
-    recovery: validationEngine.validatePasswordRecovery(),
-    reset: validationEngine.validateReset(),
-    like: validationEngine.validateLikeAction(),
-    follow: validationEngine.validateFollowAction(),
-    report: validationEngine.validateReportCreation(),
-    feedback: validationEngine.validateFeedback(),
-    notifications: validationEngine.validateNotifications(),
-    theme: validationEngine.validateTheme(),
-    emailUpdate: validationEngine.validateEmailUpdate(),
-    poll: validationEngine.validatePoll(),
-    location: validationEngine.validateLocation(),
-    status: validationEngine.validateStatus(),
-    invite: validationEngine.validateInvite(),
-    privacy: validationEngine.validatePrivacy(),
-    security: validationEngine.validateSecurity(),
-    usernameUpdate: validationEngine.validateUsername(),
-    mediaFilter: validationEngine.validateMedia(),
-    verify: validationEngine.validateVerification(),
-    instance: validationEngine
+    // Auth
+    register: engine.validateRegistration(),
+    login: engine.validateLogin(),
+    verify: engine.validateVerification(),
+    recovery: engine.validatePasswordRecovery(),
+    reset: engine.validatePasswordReset(),
+
+    // Perfil
+    profile: engine.validateProfileUpdate(),
+    usernameUpdate: engine.validateUsernameUpdate(),
+    emailUpdate: engine.validateEmailUpdate(),
+    theme: [body('theme').isIn(['light', 'dark']), engine.handleValidationResults],
+    privacy: [body('isPrivate').isBoolean(), engine.handleValidationResults],
+    security: [body('currentPassword').notEmpty(), engine.handleValidationResults],
+
+    // Social & Conteúdo
+    reel: engine.validateReelCreation(),
+    comment: engine.validateCommentCreation(),
+    like: engine.validateLikeAction(),
+    follow: [body('targetUserId').notEmpty(), engine.handleValidationResults],
+    report: engine.validateReportCreation(),
+    poll: engine.validatePoll(),
+    status: [body('status').isLength({ max: 50 }), engine.handleValidationResults],
+    mediaFilter: [query('type').optional().isIn(['image', 'video', 'all']), engine.handleValidationResults],
+
+    // Comunicação
+    chatRoom: engine.validateChatRoomCreation(),
+    chatMessage: engine.validateChatMessage(),
+    videoCall: engine.validateVideoCall(),
+    invite: [body('groupId').notEmpty(), body('userEmails').isArray(), engine.handleValidationResults],
+
+    // Sistema
+    pagination: engine.validatePagination(),
+    id: (name) => engine.validateIdParam(name),
+    search: engine.validateSearchQuery(),
+    point: engine.validatePointTransaction(),
+    referral: [body('invitedEmail').isEmail(), body('appliedCode').isAlphanumeric(), engine.handleValidationResults],
+    feedback: [body('rating').isInt({ min: 1, max: 5 }), engine.handleValidationResults],
+    notifications: [body('pushEnabled').optional().isBoolean(), body('emailEnabled').optional().isBoolean(), engine.handleValidationResults],
+    location: engine.validateLocation(),
+
+    // Instância
+    instance: engine
 };
