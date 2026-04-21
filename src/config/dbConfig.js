@@ -1,11 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v5.0.0
- * SISTEMA DE PERSISTÊNCIA COM AUTO-HEALING E SEEDING DE ALTA FIDELIDADE
- * 
- * STATUS: ALFA OMEGA OPERATIONAL
- * USUÁRIO ALVO: hackubyo@gmail.com
- * REEL DE TESTE: 1i9JVHDig6JiRticxx7ScSf98JitH69D9
+ * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR v8.0.0
+ * NEON POSTGRESQL CONNECTIVITY HUB & AUTO-HEALING SCHEMA
  * ============================================================================
  */
 
@@ -26,6 +22,7 @@ const pool = new Pool(poolConfig);
 
 /**
  * PROTOCOLO DE INICIALIZAÇÃO E SEEDING MASTER
+ * Garante que o banco de dados esteja sempre pronto para o Flutter.
  */
 const initializeDatabase = async () => {
     let client;
@@ -35,7 +32,7 @@ const initializeDatabase = async () => {
 
         await client.query('BEGIN');
 
-        // 1. ESTRUTURA DE USUÁRIOS
+        // 1. ESTRUTURA DE USUÁRIOS (Sincronizado com VlogUser do Flutter)
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -59,7 +56,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 2. ESTRUTURA DE REELS
+        // 2. ESTRUTURA DE REELS (O coração do feed)
         await client.query(`
             CREATE TABLE IF NOT EXISTS reels (
                 id SERIAL PRIMARY KEY,
@@ -78,7 +75,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 3. ESTRUTURA DE COMENTÁRIOS
+        // 3. ESTRUTURA DE COMENTÁRIOS E SOCIAL
         await client.query(`
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -87,16 +84,14 @@ const initializeDatabase = async () => {
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW()
             );
-        `);
 
-        // 4. ESTRUTURA DE LIKES / FOLLOWS
-        await client.query(`
             CREATE TABLE IF NOT EXISTS likes (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                 reel_id INTEGER REFERENCES reels(id) ON DELETE CASCADE,
                 UNIQUE(user_id, reel_id)
             );
+
             CREATE TABLE IF NOT EXISTS follows (
                 id SERIAL PRIMARY KEY,
                 follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -105,7 +100,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 5. ESTRUTURA DE CHAT
+        // 4. ESTRUTURA DE CHAT REALTIME
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id SERIAL PRIMARY KEY,
@@ -129,61 +124,47 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 6. ESTRUTURA DE TRANSAÇÕES
+        // 5. ESTRUTURA DE ECONOMIA (VOICES)
         await client.query(`
             CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                 amount INTEGER NOT NULL,
                 reason VARCHAR(100) NOT NULL,
+                reference_id TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
 
-        console.log('[MASTER_DB] Estrutura verificada. Iniciando Sincronização de Dados Reais...');
+        console.log('[MASTER_DB] Esquema validado. Iniciando Seeding de Dados...');
 
         /**
-         * LÓGICA DE SEEDING: CONFIGURAÇÃO DE USUÁRIOS E REELS REAIS
+         * LÓGICA DE SEEDING: CONFIGURAÇÃO DE ACESSO VIP
          */
         
-        // A. Garantir Usuário Principal (hackubyo@gmail.com)
-        const avatarUrl = "https://img.freepik.com/psd-premium/ilustracao-3d-de-avatar_235528-2093.jpg?semt=ais_hybrid&w=740&q=80";
+        // Garantir Usuário Principal (hackubyo@gmail.com)
+        const defaultAvatar = "https://img.freepik.com/psd-premium/ilustracao-3d-de-avatar_235528-2093.jpg?w=740";
         
         await client.query(`
             INSERT INTO users (full_name, email, university_name, referral_code, points_total, avatar_url, isactive)
             VALUES ('Hackubyo VIP', 'hackubyo@gmail.com', 'Cyber University', 'HACK_MASTER_VLOG', 5000, $1, true)
-            ON CONFLICT (email) DO UPDATE SET avatar_url = $1;
-        `, [avatarUrl]);
+            ON CONFLICT (email) DO UPDATE SET avatar_url = EXCLUDED.avatar_url;
+        `, [defaultAvatar]);
 
-        // B. Garantir Usuário Admin Secundário
-        await client.query(`
-            INSERT INTO users (full_name, email, university_name, referral_code, points_total, avatar_url, isactive)
-            VALUES ('Vlog Admin', 'admin@vlogstudents.com', 'Universidade Master', 'ADMIN_VLOG', 1000, $1, true)
-            ON CONFLICT (email) DO NOTHING;
-        `, [avatarUrl]);
-
-        // C. Inserir Reel para hackubyo@gmail.com
+        // Inserir Reel de Teste (1i9JVHDig6JiRticxx7ScSf98JitH69D9) para o usuário VIP
         await client.query(`
             INSERT INTO reels (author_id, drive_file_id, title, description, views_count, likes_count)
-            SELECT id, '1i9JVHDig6JiRticxx7ScSf98JitH69D9', '🔥 Teste de Streaming hackubyo', 'Validando o motor de vídeo do VlogStudents.', 2500, 890
+            SELECT id, '1i9JVHDig6JiRticxx7ScSf98JitH69D9', '🔥 Teste de Streaming Master', 'Validando v8.0.0 no Flutter.', 2500, 890
             FROM users WHERE email = 'hackubyo@gmail.com'
-            AND NOT EXISTS (SELECT 1 FROM reels WHERE author_id = users.id AND drive_file_id = '1i9JVHDig6JiRticxx7ScSf98JitH69D9');
-        `);
-
-        // D. Inserir Reel para o Admin (Mesmo vídeo)
-        await client.query(`
-            INSERT INTO reels (author_id, drive_file_id, title, description, views_count, likes_count)
-            SELECT id, '1i9JVHDig6JiRticxx7ScSf98JitH69D9', '🚀 Admin Check System', 'Vídeo espelhado para teste de carga.', 500, 120
-            FROM users WHERE email = 'admin@vlogstudents.com'
-            AND NOT EXISTS (SELECT 1 FROM reels WHERE author_id = users.id AND drive_file_id = '1i9JVHDig6JiRticxx7ScSf98JitH69D9');
+            AND NOT EXISTS (SELECT 1 FROM reels WHERE drive_file_id = '1i9JVHDig6JiRticxx7ScSf98JitH69D9');
         `);
 
         await client.query('COMMIT');
-        console.log('[MASTER_DB] Sincronização concluída. hackubyo@gmail.com está ativo com avatar e vídeo.');
+        console.log('[MASTER_DB] Sincronização concluída com sucesso.');
 
     } catch (error) {
         if (client) await client.query('ROLLBACK');
-        console.error('[MASTER_DB_ERROR] Falha crítica:', error.message);
+        console.error('[MASTER_DB_ERROR] Falha na sincronização:', error.message);
     } finally {
         if (client) client.release();
     }
