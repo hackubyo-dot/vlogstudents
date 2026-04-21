@@ -1,228 +1,212 @@
 class VlogBuildEngine {
     generateSuccessTemplate(routes) {
-        const routesHtml = routes.map(route => `
-            <div class="route-card">
-                <span class="method">${route.method}</span>
-                <span class="path">${route.path}</span>
-                <span class="status-badge">${route.status}</span>
+        const routeCards = routes.map(r => `
+            <div class="vlog-route-item">
+                <div class="vlog-method-tag">${r.method}</div>
+                <div class="vlog-path-text">${r.path}</div>
+                <div class="vlog-status-dot"></div>
+                <div class="vlog-status-label">${r.status}</div>
             </div>
         `).join('');
 
         return `
-            <!DOCTYPE html>
-            <html lang="pt-br">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>VlogStudents - Server Active</title>
-                <style>
-                    :root {
-                        --neon-lime: #CCFF00;
-                        --deep-black: #000000;
-                        --glass-bg: rgba(255, 255, 255, 0.05);
-                        --glass-border: rgba(255, 255, 255, 0.1);
-                    }
+        <!DOCTYPE html>
+        <html lang="pt-br">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>VlogStudents - Master Engine Active</title>
+            <style>
+                :root {
+                    --neon: #CCFF00;
+                    --bg: #000000;
+                    --glass: rgba(255, 255, 255, 0.05);
+                    --border: rgba(255, 255, 255, 0.1);
+                }
 
-                    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-                    body {
-                        background-color: var(--deep-black);
-                        color: white;
-                        overflow-x: hidden;
-                        min-height: 100vh;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                    }
+                body {
+                    background-color: var(--bg);
+                    color: white;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    overflow: hidden;
+                }
 
-                    .space-container {
-                        position: fixed;
-                        top: 0; left: 0; width: 100%; height: 100%;
-                        background: radial-gradient(circle at center, #111 0%, #000 100%);
-                        z-index: -1;
-                    }
+                .space-bg {
+                    position: fixed;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background: radial-gradient(circle at center, #111 0%, #000 100%);
+                    z-index: -1;
+                }
 
-                    .star {
-                        position: absolute;
-                        background: white;
-                        border-radius: 50%;
-                        opacity: 0.5;
-                        animation: twinkle var(--duration) infinite ease-in-out;
-                    }
+                .vlog-star {
+                    position: absolute;
+                    background: white;
+                    border-radius: 50%;
+                    opacity: 0.3;
+                    animation: twinkle var(--speed) infinite alternate;
+                }
 
-                    @keyframes twinkle {
-                        0%, 100% { opacity: 0.3; transform: scale(1); }
-                        50% { opacity: 1; transform: scale(1.2); }
-                    }
+                @keyframes twinkle { from { opacity: 0.1; } to { opacity: 1; } }
 
-                    .main-frame {
-                        width: 90%;
-                        max-width: 900px;
-                        background: var(--glass-bg);
-                        backdrop-filter: blur(20px);
-                        border: 1px solid var(--glass-border);
-                        border-radius: 40px;
-                        padding: 60px;
-                        text-align: center;
-                        box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-                        position: relative;
-                        overflow: hidden;
-                    }
+                .vlog-main-container {
+                    width: 90%;
+                    max-width: 850px;
+                    background: var(--glass);
+                    backdrop-filter: blur(40px);
+                    border: 1px solid var(--border);
+                    border-radius: 40px;
+                    padding: 60px;
+                    text-align: center;
+                    position: relative;
+                    box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+                }
 
-                    .glow-orb {
-                        position: absolute;
-                        width: 300px;
-                        height: 300px;
-                        background: var(--neon-lime);
-                        filter: blur(150px);
-                        opacity: 0.1;
-                        top: -150px;
-                        right: -150px;
-                    }
+                .vlog-glow {
+                    position: absolute;
+                    top: -100px; right: -100px;
+                    width: 300px; height: 300px;
+                    background: var(--neon);
+                    filter: blur(150px);
+                    opacity: 0.15;
+                }
 
-                    .status-header {
-                        margin-bottom: 40px;
-                    }
+                .vlog-title {
+                    font-size: 80px;
+                    font-weight: 900;
+                    letter-spacing: -3px;
+                    background: linear-gradient(to bottom, #fff, #444);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
 
-                    .success-title {
-                        font-size: 80px;
-                        font-weight: 900;
-                        letter-spacing: -4px;
-                        margin-bottom: 10px;
-                        background: linear-gradient(to bottom, #fff 0%, #888 100%);
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                    }
+                .vlog-subtitle {
+                    color: var(--neon);
+                    font-size: 20px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 6px;
+                    margin-bottom: 40px;
+                }
 
-                    .success-subtitle {
-                        font-size: 24px;
-                        font-weight: 600;
-                        color: var(--neon-lime);
-                        text-transform: uppercase;
-                        letter-spacing: 4px;
-                    }
+                .vlog-astronaut {
+                    width: 200px;
+                    height: 200px;
+                    margin: 20px auto;
+                    filter: drop-shadow(0 0 20px rgba(204, 255, 0, 0.4));
+                    animation: floating 5s infinite ease-in-out;
+                }
 
-                    .astronaut-svg {
-                        width: 250px;
-                        height: 250px;
-                        margin: 20px 0;
-                        filter: drop-shadow(0 0 30px rgba(204, 255, 0, 0.3));
-                        animation: float 6s infinite ease-in-out;
-                    }
+                @keyframes floating {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-25px); }
+                }
 
-                    @keyframes float {
-                        0%, 100% { transform: translateY(0) rotate(0); }
-                        50% { transform: translateY(-20px) rotate(5deg); }
-                    }
+                .vlog-description {
+                    color: #888;
+                    line-height: 1.6;
+                    margin: 30px auto;
+                    max-width: 500px;
+                    font-size: 15px;
+                }
 
-                    .description {
-                        color: #aaa;
-                        line-height: 1.6;
-                        max-width: 600px;
-                        margin: 0 auto 40px;
-                        font-size: 16px;
-                    }
+                .vlog-routes-grid {
+                    background: rgba(0,0,0,0.4);
+                    border-radius: 20px;
+                    padding: 15px;
+                    text-align: left;
+                    border: 1px solid var(--border);
+                }
 
-                    .routes-table {
-                        text-align: left;
-                        background: rgba(0,0,0,0.3);
-                        border-radius: 24px;
-                        padding: 20px;
-                        border: 1px solid var(--glass-border);
-                    }
+                .vlog-route-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                }
 
-                    .route-card {
-                        display: flex;
-                        align-items: center;
-                        padding: 12px 16px;
-                        border-bottom: 1px solid rgba(255,255,255,0.05);
-                    }
+                .vlog-route-item:last-child { border-bottom: none; }
 
-                    .route-card:last-child { border-bottom: none; }
+                .vlog-method-tag {
+                    background: var(--neon);
+                    color: black;
+                    font-size: 10px;
+                    font-weight: 900;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    margin-right: 20px;
+                    min-width: 60px;
+                    text-align: center;
+                }
 
-                    .method {
-                        background: var(--neon-lime);
-                        color: black;
-                        font-size: 10px;
-                        font-weight: 900;
-                        padding: 4px 8px;
-                        border-radius: 6px;
-                        margin-right: 15px;
-                        min-width: 50px;
-                        text-align: center;
-                    }
+                .vlog-path-text { font-family: 'Courier New', monospace; flex: 1; color: #ccc; font-size: 13px; }
 
-                    .path { font-family: 'Courier New', monospace; font-size: 14px; color: #eee; flex: 1; }
+                .vlog-status-dot { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px #00ff00; }
 
-                    .status-badge { color: #55ff55; font-size: 12px; font-weight: bold; }
+                .vlog-status-label { font-size: 11px; color: #00ff00; font-weight: bold; }
 
-                    .footer-actions {
-                        margin-top: 50px;
-                        display: flex;
-                        gap: 20px;
-                        justify-content: center;
-                    }
+                .vlog-btn {
+                    margin-top: 40px;
+                    padding: 18px 40px;
+                    background: var(--neon);
+                    color: black;
+                    text-decoration: none;
+                    font-weight: 800;
+                    border-radius: 100px;
+                    display: inline-block;
+                    transition: 0.3s;
+                    box-shadow: 0 10px 30px rgba(204, 255, 0, 0.2);
+                }
 
-                    .btn {
-                        padding: 16px 32px;
-                        border-radius: 100px;
-                        text-decoration: none;
-                        font-weight: bold;
-                        transition: 0.3s;
-                    }
+                .vlog-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(204, 255, 0, 0.4); }
 
-                    .btn-primary { background: var(--neon-lime); color: black; box-shadow: 0 10px 30px rgba(204, 255, 0, 0.2); }
-                    .btn-primary:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(204, 255, 0, 0.4); }
+            </style>
+        </head>
+        <body>
+            <div class="space-bg" id="space"></div>
+            <div class="vlog-main-container">
+                <div class="vlog-glow"></div>
+                <h1 class="vlog-title">200 OK</h1>
+                <p class="vlog-subtitle">Engine Online</p>
 
-                    .btn-secondary { background: var(--glass-bg); color: white; border: 1px solid var(--glass-border); }
-                    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-                </style>
-            </head>
-            <body>
-                <div class="space-container" id="space"></div>
-                
-                <div class="main-frame">
-                    <div class="glow-orb"></div>
-                    <div class="status-header">
-                        <h1 class="success-title">200 OK</h1>
-                        <p class="success-subtitle">Master Engine is Live</p>
-                    </div>
-
-                    <svg class="astronaut-svg" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 464c-114.7 0-208-93.3-208-208S141.3 48 256 48s208 93.3 208 208-93.3 208-208 208z" fill="#CCFF00" opacity="0.2"/>
-                        <circle cx="256" cy="180" r="60" fill="#CCFF00"/>
-                        <path d="M256 260c-60 0-110 40-110 90v40h220v-40c0-50-50-90-110-90z" fill="#CCFF00"/>
+                <div class="vlog-astronaut">
+                    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z" fill="#CCFF00" fill-opacity="0.1"/>
+                        <circle cx="256" cy="180" r="70" fill="#CCFF00"/>
+                        <path d="M256 280c-70 0-130 50-130 110v30h260v-30c0-60-60-110-130-110z" fill="#CCFF00"/>
                     </svg>
-
-                    <p class="description">
-                        O ecossistema universitário <b>VlogStudents</b> foi compilado com sucesso. Todas as camadas de rede, segurança e persistência em nuvem estão operando em regime de alta disponibilidade.
-                    </p>
-
-                    <div class="routes-table">
-                        ${routesHtml}
-                    </div>
-
-                    <div class="footer-actions">
-                        <a href="https://vlogstudents.onrender.com/health" class="btn btn-primary">Verificar Saude</a>
-                        <a href="#" class="btn btn-secondary">Documentacao API</a>
-                    </div>
                 </div>
 
-                <script>
-                    const space = document.getElementById('space');
-                    for (let i = 0; i < 150; i++) {
-                        const star = document.createElement('div');
-                        star.className = 'star';
-                        star.style.width = Math.random() * 3 + 'px';
-                        star.style.height = star.style.width;
-                        star.style.left = Math.random() * 100 + '%';
-                        star.style.top = Math.random() * 100 + '%';
-                        star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
-                        space.appendChild(star);
-                    }
-                </script>
-            </body>
-            </html>
+                <p class="vlog-description">
+                    O servidor Master do <b>VlogStudents</b> foi implantado com integridade total. O banco de dados NeonDB e o Cloud Storage estão prontos para processar tráfego universitário em tempo real.
+                </p>
+
+                <div class="vlog-routes-grid">
+                    ${routeCards}
+                </div>
+
+                <a href="https://vlogstudents.onrender.com/health" class="vlog-btn">VERIFICAR LATÊNCIA</a>
+            </div>
+
+            <script>
+                const space = document.getElementById('space');
+                for (let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'vlog-star';
+                    star.style.width = Math.random() * 3 + 'px';
+                    star.style.height = star.style.width;
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.setProperty('--speed', (Math.random() * 2 + 1) + 's');
+                    space.appendChild(star);
+                }
+            </script>
+        </body>
+        </html>
         `;
     }
 }
