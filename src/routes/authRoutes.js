@@ -1,31 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const userController = require('../controllers/userController');
 const authMiddleware = require('../middlewares/authMiddleware');
+const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
 /**
  * ============================================================================
- * ROTAS DE AUTENTICAÇÃO MASTER
- * PREFIXO: /api/v1/auth
+ * ROTAS DE USUÁRIO - SINCRONIZAÇÃO TOTAL COM CONTROLLER
  * ============================================================================
  */
 
-// Acesso Público
-router.post('/login', authController.login);
-router.post('/register', authController.register);
-router.post('/google', authController.googleAuth);
+router.get('/profile/me', authMiddleware, userController.getMyProfile);
+router.get('/profile/:id', authMiddleware, userController.getUserProfile);
+router.patch('/profile/update', authMiddleware, userController.updateProfile);
 
-// Recuperação de Conta (Fluxo de e-mail)
-router.post('/recovery/request', authController.requestRecovery);
-router.post('/recovery/verify', authController.verifyRecoveryCode);
-router.post('/recovery/reset', authController.resetPassword);
+// Rota de configurações visuais (CORRIGIDA)
+router.patch('/profile/settings', authMiddleware, userController.updateSettings);
 
-// Acesso Protegido (Validação de Sessão)
-router.get('/validate-session', authMiddleware, authController.validateSession);
+// Rota de Avatar com Multer
+router.post('/profile/avatar', authMiddleware, uploadMiddleware.single('file'), userController.uploadAvatar);
 
-// Logout (Opcional no backend, geralmente limpo no frontend)
-router.post('/logout', authMiddleware, (req, res) => {
-    res.status(200).json({ success: true, message: 'Sessão encerrada no Master Kernel.' });
-});
+// Métricas e Gamificação
+router.get('/social/metrics', authMiddleware, userController.getSocialMetrics);
+router.get('/points/balance', authMiddleware, userController.getPointsBalance);
+router.get('/points/history', authMiddleware, userController.getPointsHistory);
+router.post('/points/redeem', authMiddleware, userController.redeemPoints);
+router.get('/referrals/stats', authMiddleware, userController.getReferralStats);
 
 module.exports = router;
