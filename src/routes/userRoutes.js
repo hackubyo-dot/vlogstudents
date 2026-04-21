@@ -36,6 +36,7 @@ router.get('/social/metrics', authMiddleware, userController.getSocialMetrics);
 router.get('/points/balance', authMiddleware, userController.getPointsBalance);
 router.get('/points/history', authMiddleware, userController.getPointsHistory);
 router.post('/points/redeem', authMiddleware, userController.redeemPoints);
+router.get('/media/stream/:fileId', userController.streamMedia);
 
 // --- RANKINGS (LEADERBOARD) ---
 // Note: Flutter chama /api/v1/users/leaderboard/...
