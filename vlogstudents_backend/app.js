@@ -9,6 +9,7 @@ const winston = require('winston');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { google } = require('googleapis');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
@@ -24,42 +25,44 @@ const chat_routes = require('./src/routes/chat_routes');
 const point_routes = require('./src/routes/point_routes');
 const media_routes = require('./src/routes/media_routes');
 
-class VlogStudentsCoreEngine {
+class VlogStudentsGlobalServer {
     constructor() {
         this.app = express();
         this.server = http.createServer(this.app);
-
-        this.oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-        this.databasePool = new Pool({
+        
+        this.oauth2Client = new OAuth2Client(GOOGLE_CLIENT_ID);
+        this.neonDatabasePool = new Pool({
             connectionString: DATABASE_URL,
             ssl: { rejectUnauthorized: false },
             max: 100,
+            min: 10,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 5000
+            connectionTimeoutMillis: 10000,
+            maxUses: 10000
         });
 
-        this.configureLogging();
-        this.initializeCORS();
-        this.initializeGoogleDrive();
-        this.applySecurityLayers();
-        this.setupGlobalMiddlewares();
-        this.initializeSocketEngine();
-        this.buildRoutingTable();
-        this.setupSystemDiagnostics();
-        this.injectGlobalErrorHandler();
-        this.setupGracefulShutdown();
+        this.configureWinstonLogger();
+        this.initializeCorsProtocol();
+        this.initializeCloudStorage();
+        this.applySecurityOrchestration();
+        this.setupCoreMiddlewares();
+        this.bootstrapRealtimeEngine();
+        this.mapInfrastructureRoutes();
+        this.initializeHardwareMonitor();
+        this.injectGlobalErrorInterceptors();
+        this.configureLifecycleHooks();
     }
 
-    configureLogging() {
+    configureWinstonLogger() {
         this.logger = winston.createLogger({
             level: 'info',
             format: winston.format.combine(
-                winston.format.timestamp(),
+                winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
                 winston.format.json()
             ),
             transports: [
-                new winston.transports.File({ filename: 'logs/critical_errors.log', level: 'error' }),
-                new winston.transports.File({ filename: 'logs/vlog_activity.log' }),
+                new winston.transports.File({ filename: 'logs/system_error.log', level: 'error' }),
+                new winston.transports.File({ filename: 'logs/server_traffic.log' }),
                 new winston.transports.Console({
                     format: winston.format.combine(
                         winston.format.colorize(),
@@ -70,10 +73,10 @@ class VlogStudentsCoreEngine {
         });
     }
 
-    initializeCORS() {
-        this.app.use(cors({
+    initializeCorsProtocol() {
+        const corsOptions = {
             origin: function (origin, callback) {
-                return callback(null, true);
+                callback(null, true);
             },
             methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             allowedHeaders: [
@@ -84,18 +87,22 @@ class VlogStudentsCoreEngine {
                 "Origin",
                 "X-App-Version",
                 "X-App-Platform",
-                "X-Trace-Id"
+                "X-Trace-Id",
+                "Access-Control-Allow-Origin"
             ],
-            exposedHeaders: ["X-Trace-Id", "Content-Disposition"],
+            exposedHeaders: ["X-Trace-Id", "Content-Disposition", "X-Vlog-Status"],
             credentials: true,
             preflightContinue: false,
             optionsSuccessStatus: 204
-        }));
+        };
+
+        this.app.use(cors(corsOptions));
 
         this.app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
             res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With, Accept, Origin, X-App-Version, X-App-Platform, X-Trace-Id');
+            res.header('Access-Control-Allow-Credentials', 'true');
             if (req.method === 'OPTIONS') {
                 return res.sendStatus(204);
             }
@@ -103,30 +110,32 @@ class VlogStudentsCoreEngine {
         });
     }
 
-    initializeGoogleDrive() {
-        const credentialsPath = path.join(__dirname, 'credentials.json');
-        if (!fs.existsSync(credentialsPath)) {
-            this.logger.error('ERRO FATAL: credentials.json nao localizado na raiz.');
+    initializeCloudStorage() {
+        const keyPath = path.join(__dirname, 'credentials.json');
+        if (!fs.existsSync(keyPath)) {
+            this.logger.error('VLOG_STORAGE_ERROR: credentials.json is missing in root.');
             return;
         }
 
-        this.googleAuth = new google.auth.GoogleAuth({
-            keyFile: credentialsPath,
+        this.googleCredentials = new google.auth.GoogleAuth({
+            keyFile: keyPath,
             scopes: [
                 'https://www.googleapis.com/auth/drive.file',
-                'https://www.googleapis.com/auth/drive.readonly'
+                'https://www.googleapis.com/auth/drive.readonly',
+                'https://www.googleapis.com/auth/drive.metadata'
             ]
         });
 
-        this.driveClient = google.drive({ version: 'v3', auth: this.googleAuth });
-        this.logger.info('VLOG_DRIVE: Engine de storage inicializada.');
+        this.googleDriveInstance = google.drive({ version: 'v3', auth: this.googleCredentials });
+        this.logger.info('VLOG_STORAGE_STABLE: Google Drive engine connected.');
     }
 
-    applySecurityLayers() {
+    applySecurityOrchestration() {
         this.app.use(helmet({
             contentSecurityPolicy: false,
             crossOriginResourcePolicy: { policy: "cross-origin" },
             crossOriginEmbedderPolicy: false,
+            crossOriginOpenerPolicy: false,
             frameguard: { action: "deny" },
             hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
             noSniff: true,
@@ -134,36 +143,36 @@ class VlogStudentsCoreEngine {
             xssFilter: true
         }));
 
-        const globalRateLimit = rateLimit({
+        const limiter = rateLimit({
             windowMs: 15 * 60 * 1000,
-            max: 5000,
-            message: { success: false, message: 'Limite de conexoes atingido.' },
+            max: 10000,
+            message: { success: false, message: 'Excessive requests from this IP.' },
             standardHeaders: true,
             legacyHeaders: false
         });
-        this.app.use('/api/', globalRateLimit);
+        this.app.use('/api/', limiter);
     }
 
-    setupGlobalMiddlewares() {
+    setupCoreMiddlewares() {
         this.app.use(compression());
-        this.app.use(express.json({ limit: '150mb' }));
-        this.app.use(express.urlencoded({ extended: true, limit: '150mb' }));
-        this.app.use(morgan('dev'));
+        this.app.use(express.json({ limit: '200mb' }));
+        this.app.use(express.urlencoded({ extended: true, limit: '200mb' }));
+        this.app.use(morgan('combined', { stream: { write: message => this.logger.info(message.trim()) } }));
 
         this.app.use((req, res, next) => {
-            req.db = this.databasePool;
-            req.drive = this.driveClient;
-            req.logger = this.logger;
-            req.io = this.io;
-            const traceId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-            req.traceId = traceId;
-            res.setHeader('X-Trace-Id', traceId);
+            req.database = this.neonDatabasePool;
+            req.storage = this.googleDriveInstance;
+            req.systemLogger = this.logger;
+            req.realtime = this.socketServer;
+            const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+            req.vlogTraceId = requestId;
+            res.setHeader('X-Trace-Id', requestId);
             next();
         });
     }
 
-    initializeSocketEngine() {
-        this.io = socketIo(this.server, {
+    bootstrapRealtimeEngine() {
+        this.socketServer = socketIo(this.server, {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST", "PUT", "DELETE"],
@@ -171,60 +180,69 @@ class VlogStudentsCoreEngine {
             },
             pingTimeout: 60000,
             pingInterval: 25000,
+            connectTimeout: 60000,
             transports: ['websocket', 'polling']
         });
 
-        this.io.on('connection', (socket) => {
-            this.logger.info(`VLOG_SOCKET: Nova conexao -> ${socket.id}`);
+        this.socketServer.on('connection', (socket) => {
+            this.logger.info(`VLOG_REALTIME_SESSION: New link established -> ${socket.id}`);
 
-            socket.on('authenticate_vlog', (data) => {
-                socket.userId = data.userId;
-                socket.join(`user_room_${data.userId}`);
-                this.logger.info(`VLOG_SOCKET: Usuario ${data.userId} autenticado.`);
+            socket.on('vlog_auth_handshake', (payload) => {
+                socket.studentId = payload.userId;
+                socket.join(`student_node_${payload.userId}`);
+                this.logger.info(`VLOG_REALTIME_SESSION: Student ${payload.userId} mapped to socket.`);
             });
 
-            socket.on('dispatch_chat_message', (payload) => {
-                const { roomId, content, senderId } = payload;
-                this.io.to(roomId).emit('receive_new_message', {
-                    id: Date.now(),
-                    content,
-                    senderId,
-                    timestamp: new Date().toISOString()
+            socket.on('vlog_message_broadcast', (data) => {
+                const { destinationRoom, messageObject } = data;
+                this.socketServer.to(destinationRoom).emit('vlog_receive_message', {
+                    ...messageObject,
+                    serverTime: new Date().toISOString()
                 });
             });
 
-            socket.on('webrtc_signal', (data) => {
-                const { targetId, signal } = data;
-                this.io.to(`user_room_${targetId}`).emit('webrtc_signal_received', {
-                    signal,
-                    from: socket.userId
+            socket.on('vlog_call_signal', (payload) => {
+                const { targetStudentId, rtcOffer } = payload;
+                this.socketServer.to(`student_node_${targetStudentId}`).emit('vlog_incoming_signal', {
+                    rtcOffer,
+                    originatorId: socket.studentId
                 });
             });
 
-            socket.on('disconnect', () => {
-                this.logger.info(`VLOG_SOCKET: Conexao encerrada -> ${socket.id}`);
+            socket.on('vlog_typing_event', (event) => {
+                socket.to(event.roomId).emit('vlog_remote_typing', {
+                    studentId: socket.studentId,
+                    status: event.isTyping
+                });
+            });
+
+            socket.on('disconnect', (reason) => {
+                this.logger.info(`VLOG_REALTIME_SESSION: Link closed -> ${socket.id} | Reason: ${reason}`);
             });
         });
     }
 
-    buildRoutingTable() {
-        this.app.get('/api/v1/health', (req, res) => {
+    mapInfrastructureRoutes() {
+        this.app.get('/health', (req, res) => {
             res.status(200).json({
                 status: 'operational',
-                service: 'VlogStudents Master API',
-                database: 'connected',
-                storage: 'active',
+                engine: 'NodeJS V8 Runtime',
+                database: 'Neon PostgreSQL Linked',
+                storage: 'Google Cloud Drive Connected',
+                realtime: 'Socket.io Core Active',
+                cors: 'Universal Open',
                 timestamp: new Date().toISOString(),
                 uptime: process.uptime()
             });
         });
 
-        this.app.get('/api/v1/info', (req, res) => {
+        this.app.get('/api/v1/system/info', (req, res) => {
             res.json({
-                app: 'VlogStudents',
-                version: '1.0.0',
+                systemName: 'VlogStudents Enterprise',
+                version: '1.0.0-Stable',
                 environment: process.env.NODE_ENV || 'production',
-                cors: 'unrestricted'
+                corsPolicy: 'Full Cross-Origin Access',
+                buildDate: '2025-01-21'
             });
         });
 
@@ -238,297 +256,294 @@ class VlogStudentsCoreEngine {
         this.app.use('*', (req, res) => {
             res.status(404).json({
                 success: false,
-                message: `Rota ${req.originalUrl} nao existe no ecossistema VlogStudents.`,
-                timestamp: new Date().toISOString()
+                message: `The resource ${req.originalUrl} does not exist in VlogStudents domain.`,
+                errorCode: 'RESOURCE_NOT_FOUND',
+                traceId: req.vlogTraceId
             });
         });
     }
 
-    setupSystemDiagnostics() {
+    initializeHardwareMonitor() {
         setInterval(() => {
-            const memory = process.memoryUsage();
-            const rss = Math.round(memory.rss / 1024 / 1024);
-            const heap = Math.round(memory.heapUsed / 1024 / 1024);
-            this.logger.info(`SYSTEM_DIAGNOSTIC: RSS ${rss}MB | HEAP ${heap}MB | UPTIME ${Math.round(process.uptime())}s`);
-
-            if (rss > 450) {
-                this.logger.error('SYSTEM_CRITICAL: Uso de memoria acima de 450MB detectado.');
+            const memoryStats = process.memoryUsage();
+            const cpuStats = os.loadavg();
+            const rssUsage = Math.round(memoryStats.rss / 1024 / 1024);
+            const heapTotal = Math.round(memoryStats.heapTotal / 1024 / 1024);
+            const heapUsed = Math.round(memoryStats.heapUsed / 1024 / 1024);
+            
+            this.logger.info(`VLOG_DIAGNOSTIC: RAM RSS ${rssUsage}MB | HEAP ${heapUsed}/${heapTotal}MB | CPU ${cpuStats[0].toFixed(2)}`);
+            
+            if (rssUsage > 480) {
+                this.logger.error('VLOG_DIAGNOSTIC_ALERT: Memory utilization critical. Threshold 480MB exceeded.');
             }
-        }, 300000);
+        }, 600000);
     }
 
-    injectGlobalErrorHandler() {
-        this.app.use((err, req, res, next) => {
-            const statusCode = err.statusCode || 500;
+    injectGlobalErrorInterceptors() {
+        this.app.use((error, req, res, next) => {
+            const code = error.statusCode || 500;
             this.logger.error({
-                traceId: req.traceId,
-                status: statusCode,
-                message: err.message,
-                stack: err.stack,
-                url: req.originalUrl,
-                ip: req.ip
+                traceId: req.vlogTraceId,
+                httpCode: code,
+                internalMessage: error.message,
+                stackTrace: error.stack,
+                originPath: req.originalUrl,
+                remoteIp: req.ip
             });
 
-            res.status(statusCode).json({
+            res.status(code).json({
                 success: false,
-                traceId: req.traceId,
-                message: process.env.NODE_ENV === 'production' ? 'Erro interno no servidor VlogStudents.' : err.message,
-                timestamp: new Date().toISOString()
+                traceId: req.vlogTraceId,
+                message: process.env.NODE_ENV === 'production' ? 'Internal gateway error in VlogStudents engine.' : error.message,
+                timestamp: new Date().toISOString(),
+                protocol: 'V1-MASTER'
             });
         });
     }
 
-    setupGracefulShutdown() {
-        const shutdown = async (signal) => {
-            this.logger.info(`SHUTDOWN_SEQUENCE: Sinal ${signal} recebido.`);
+    configureLifecycleHooks() {
+        const terminate = async (signal) => {
+            this.logger.info(`LIFECYCLE_SIGNAL: ${signal} detected. Initiating clean exit.`);
             this.server.close(() => {
-                this.logger.info('SHUTDOWN_SEQUENCE: Servidor HTTP encerrado.');
-                this.databasePool.end().then(() => {
-                    this.logger.info('SHUTDOWN_SEQUENCE: Conexoes NeonDB finalizadas.');
+                this.logger.info('LIFECYCLE_EXIT: Express server closed.');
+                this.neonDatabasePool.end().then(() => {
+                    this.logger.info('LIFECYCLE_EXIT: NeonDB pool drained successfully.');
                     process.exit(0);
                 });
             });
 
             setTimeout(() => {
-                this.logger.error('SHUTDOWN_SEQUENCE: Forcando encerramento por timeout.');
+                this.logger.error('LIFECYCLE_FATAL: Forced shutdown triggered due to process hang.');
                 process.exit(1);
-            }, 15000);
+            }, 20000);
         };
 
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT', () => shutdown('SIGINT'));
-    }
-}
+        process.on('SIGTERM', () => terminate('SIGTERM'));
+        process.on('SIGINT', () => terminate('SIGINT'));
+        
+        process.on('unhandledRejection', (reason, promise) => {
+            this.logger.error('CORE_UNHANDLED_REJECTION: Exception at promise level.', { reason, promise });
+        });
 
-class VlogResponseWrapper {
-    static send(res, data, message = 'Operacao concluida', status = 200) {
-        return res.status(status).json({
-            success: true,
-            message,
-            data,
-            timestamp: new Date().toISOString()
+        process.on('uncaughtException', (err) => {
+            this.logger.error('CORE_UNCAUGHT_EXCEPTION: Critical process failure.', { err: err.message, stack: err.stack });
+            terminate('CRITICAL_EXCEPTION');
         });
     }
 }
 
-class VlogDatabaseManager {
-    static async executeQuery(pool, sql, params) {
+class VlogEngineDiagnostics {
+    static async checkLatency(pool) {
+        const start = Date.now();
         const client = await pool.connect();
         try {
-            return await client.query(sql, params);
+            await client.query('SELECT 1');
+            return Date.now() - start;
         } finally {
             client.release();
         }
     }
 }
 
-const engine = new VlogStudentsCoreEngine();
-const PORT = process.env.PORT || 3000;
+class VlogResponseFactory {
+    static build(res, content, msg = 'Request processed', status = 200) {
+        return res.status(status).json({
+            success: true,
+            message: msg,
+            data: content,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
 
-if (process.env.NODE_ENV !== 'test') {
-    engine.server.listen(PORT, () => {
+const masterServer = new VlogStudentsGlobalServer();
+const APP_PORT = process.env.PORT || 3000;
+
+if (process.env.NODE_ENV !== 'testing') {
+    masterServer.server.listen(APP_PORT, () => {
         console.log(`+-----------------------------------------------------------+`);
-        console.log(`| VLOGSTUDENTS ENTERPRISE BACKEND v1.0.0                    |`);
+        console.log(`| VLOGSTUDENTS ENTERPRISE ECOSYSTEM v1.0.0                  |`);
         console.log(`+-----------------------------------------------------------+`);
-        console.log(`| STATUS: TOTALMENTE OPERACIONAL                            |`);
-        console.log(`| PORTA: ${PORT}                                               |`);
+        console.log(`| ENGINE STATUS: FULLY OPERATIONAL                          |`);
+        console.log(`| NETWORK PORT: ${APP_PORT}                                        |`);
         console.log(`| DATABASE: POSTGRESQL (NEON.TECH)                          |`);
-        console.log(`| CORS: LIBERADO (MODO FULL ACCESS)                         |`);
-        console.log(`| STORAGE: GOOGLE DRIVE API v3                              |`);
-        console.log(`| REALTIME: SOCKET.IO ACTIVE                                |`);
+        console.log(`| CORS: GLOBAL ACCESS GRANTED (0.0.0.0/0)                   |`);
+        console.log(`| CLOUD STORAGE: GOOGLE DRIVE V3                            |`);
+        console.log(`| REALTIME: SOCKET.IO BARRIER ACTIVE                        |`);
+        console.log(`| SYSTEM THEME: NEON LIME DARK MODE                         |`);
         console.log(`+-----------------------------------------------------------+`);
     });
 }
 
-function initializeApplicationState() {
-    const logPath = path.join(__dirname, 'logs');
-    const uploadPath = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(logPath)) fs.mkdirSync(logPath);
-    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
+function initializeDirectorySafety() {
+    const logsDir = path.join(__dirname, 'logs');
+    const storageDir = path.join(__dirname, 'uploads');
+    const tempDir = path.join(__dirname, 'uploads/temp');
+    
+    [logsDir, storageDir, tempDir].forEach(dir => {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    });
 }
 
-initializeApplicationState();
+initializeDirectorySafety();
 
-const trafficAuditMiddleware = (req, res, next) => {
-    const start = process.hrtime();
+const performanceAuditor = (req, res, next) => {
+    const startMark = process.hrtime();
     res.on('finish', () => {
-        const diff = process.hrtime(start);
-        const ms = (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(3);
-        if (ms > 1000) {
-            engine.logger.warn(`PERFORMANCE_ALERT: Requisicao ${req.method} ${req.originalUrl} demorou ${ms}ms`);
+        const delta = process.hrtime(startMark);
+        const ms = (delta[0] * 1000 + delta[1] / 1000000).toFixed(3);
+        if (ms > 1500) {
+            masterServer.logger.warn(`LATENCY_WARNING: ${req.method} ${req.originalUrl} - ${ms}ms`);
         }
     });
     next();
 };
 
-engine.app.use(trafficAuditMiddleware);
+masterServer.app.use(performanceAuditor);
 
-const securityHeaderFix = (req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+const metadataInjector = (req, res, next) => {
+    res.setHeader('Server', 'VlogStudents-Master-Node');
+    res.setHeader('X-Vlog-Status', 'Stable');
     next();
 };
 
-engine.app.use(securityHeaderFix);
+masterServer.app.use(metadataInjector);
 
-function validateSystemVariables() {
-    const required = ['PORT', 'DATABASE_URL', 'GOOGLE_DRIVE_FOLDER_ID'];
-    required.forEach(v => {
-        if (!process.env[v]) {
-            console.warn(`WARNING: Variavel de ambiente ${v} nao configurada.`);
+function runSanitization(object) {
+    if (!object || typeof object !== 'object') return object;
+    Object.keys(object).forEach(key => {
+        if (typeof object[key] === 'string') {
+            object[key] = object[key].trim().replace(/[<>]/g, '');
+        } else if (typeof object[key] === 'object') {
+            runSanitization(object[key]);
         }
     });
+    return object;
 }
 
-validateSystemVariables();
-
-const deepSanitizer = (obj) => {
-    if (typeof obj !== 'object' || obj === null) return obj;
-    Object.keys(obj).forEach(key => {
-        if (typeof obj[key] === 'string') {
-            obj[key] = obj[key].replace(/[<>]/g, '').trim();
-        } else if (typeof obj[key] === 'object') {
-            deepSanitizer(obj[key]);
-        }
-    });
-    return obj;
-};
-
-engine.app.use((req, res, next) => {
-    if (req.body) deepSanitizer(req.body);
-    if (req.query) deepSanitizer(req.query);
+masterServer.app.use((req, res, next) => {
+    if (req.body) runSanitization(req.body);
+    if (req.query) runSanitization(req.query);
     next();
 });
 
-const socketActivityTracker = () => {
-    const count = engine.io.sockets.sockets.size;
-    engine.logger.info(`REALTIME_METRIC: ${count} conexoes de socket ativas.`);
+const activeConnectionMonitor = () => {
+    const activeSockets = masterServer.socketServer.sockets.size;
+    masterServer.logger.info(`TELEMETRY: ${activeSockets} students currently in realtime sync.`);
 };
 
-setInterval(socketActivityTracker, 600000);
+setInterval(activeConnectionMonitor, 300000);
 
-engine.app.get('/api/v1/system/ping', (req, res) => {
-    res.status(200).send('PONG_VLOG');
+masterServer.app.get('/api/v1/ping', (req, res) => {
+    res.status(200).send('VLOG_MASTER_PONG');
 });
 
-const requestIdMiddleware = (req, res, next) => {
-    const id = `VS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    req.vlogRequestId = id;
-    res.setHeader('X-Vlog-Request-ID', id);
+const tracingHeaderMiddleware = (req, res, next) => {
+    const traceId = `VLOG-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
+    req.internalTraceId = traceId;
+    res.setHeader('X-Vlog-Request-ID', traceId);
     next();
 };
 
-engine.app.use(requestIdMiddleware);
+masterServer.app.use(tracingHeaderMiddleware);
 
-function monitorThreadHealth() {
+function cleanupMemoryThreads() {
     if (global.gc) {
         setInterval(() => {
             global.gc();
-        }, 3600000);
+        }, 1800000);
     }
 }
 
-monitorThreadHealth();
+cleanupMemoryThreads();
 
-const appVersionInterceptor = (req, res, next) => {
-    const clientVersion = req.headers['x-app-version'];
-    if (clientVersion && clientVersion !== '1.0.0') {
-        engine.logger.warn(`VERSION_MISMATCH: Cliente utilizando versao ${clientVersion}`);
+const clientComplianceCheck = (req, res, next) => {
+    const version = req.headers['x-app-version'];
+    if (version && version !== '1.0.0') {
+        masterServer.logger.warn(`COMPLIANCE: Legacy client detected: ${version}`);
     }
     next();
 };
 
-engine.app.use(appVersionInterceptor);
+masterServer.app.use(clientComplianceCheck);
 
-const logRotationJob = () => {
-    const logFile = path.join(__dirname, 'logs/vlog_activity.log');
-    if (fs.existsSync(logFile)) {
-        const stats = fs.statSync(logFile);
-        if (stats.size > 50 * 1024 * 1024) {
-            fs.renameSync(logFile, path.join(__dirname, `logs/vlog_activity_${Date.now()}.log`));
+const nightlyCleanupTask = () => {
+    const logPath = path.join(__dirname, 'logs/server_traffic.log');
+    if (fs.existsSync(logPath)) {
+        const stats = fs.statSync(logPath);
+        if (stats.size > 80 * 1024 * 1024) {
+            fs.renameSync(logPath, path.join(__dirname, `logs/archive_traffic_${Date.now()}.log`));
         }
     }
 };
 
-setInterval(logRotationJob, 86400000);
+setInterval(nightlyCleanupTask, 86400000);
 
-const systemMaintenanceCheck = (req, res, next) => {
-    const isMaintenance = false;
-    if (isMaintenance && !req.url.includes('/health')) {
-        return res.status(503).json({ success: false, message: 'Sistema em manutencao programada.' });
+const cloudIntegrityAudit = () => {
+    if (masterServer.googleDriveInstance) {
+        masterServer.googleDriveInstance.about.get({ fields: 'storageQuota' })
+            .then(() => masterServer.logger.info('INTEGRITY_CHECK: Google Drive Cloud communication verified.'))
+            .catch(e => masterServer.logger.error('INTEGRITY_CHECK: Google Drive Cloud communication failure.', e));
     }
-    next();
 };
 
-engine.app.use(systemMaintenanceCheck);
+setTimeout(cloudIntegrityAudit, 10000);
 
-const payloadIntegrityCheck = (req, res, next) => {
+masterServer.app.get('/api/v1/auth/origin-test', (req, res) => {
+    res.status(200).json({
+        receivedOrigin: req.get('origin'),
+        receivedHost: req.get('host'),
+        protocol: req.protocol
+    });
+});
+
+const protocolValidationMiddleware = (req, res, next) => {
     if (req.method === 'POST' && !req.is('json') && !req.is('multipart/form-data')) {
-        return res.status(415).json({ success: false, message: 'Formato de midia nao suportado.' });
+        return res.status(415).json({ success: false, message: 'Unsupported media protocol.' });
     }
     next();
 };
 
-engine.app.use(payloadIntegrityCheck);
+masterServer.app.use(protocolValidationMiddleware);
 
-function logEnvironmentBoot() {
-    engine.logger.info(`VLOG_BOOT: Engine iniciada em modo ${process.env.NODE_ENV || 'development'}`);
-    engine.logger.info(`VLOG_BOOT: Memoria total disponivel: ${Math.round(require('os').totalmem() / 1024 / 1024)}MB`);
+function logEngineStatus() {
+    masterServer.logger.info(`VLOG_CORE: Environment is ${process.env.NODE_ENV || 'production'}`);
+    masterServer.logger.info(`VLOG_CORE: Platform ${os.platform()} Architecture ${os.arch()}`);
 }
 
-logEnvironmentBoot();
+logEngineStatus();
 
-engine.app.get('/favicon.ico', (req, res) => res.status(204));
+const responseBindingMiddleware = (req, res, next) => {
+    res.vlogSuccess = (data, message) => VlogResponseFactory.build(res, data, message, 200);
+    res.vlogCreated = (data, message) => VlogResponseFactory.build(res, data, message, 201);
+    next();
+};
 
-const securityHeadersAudit = (req, res, next) => {
+masterServer.app.use(responseBindingMiddleware);
+
+const securityAuditPass = (req, res, next) => {
     res.removeHeader('X-Powered-By');
-    res.setHeader('Server', 'VlogStudents-Core');
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     next();
 };
 
-engine.app.use(securityHeadersAudit);
+masterServer.app.use(securityAuditPass);
 
-function monitorNetworkLatency() {
-    setInterval(async () => {
-        try {
-            const start = Date.now();
-            await engine.databasePool.query('SELECT 1');
-            const end = Date.now();
-            if (end - start > 500) {
-                engine.logger.warn(`DB_LATENCY: Atraso de rede com NeonDB detectado: ${end - start}ms`);
-            }
-        } catch (e) {}
-    }, 60000);
-}
-
-monitorNetworkLatency();
-
-const requestContextBinder = (req, res, next) => {
-    res.sendSuccess = (data, msg) => VlogResponseWrapper.send(res, data, msg, 200);
-    res.sendCreated = (data, msg) => VlogResponseWrapper.send(res, data, msg, 201);
+const latencyTracker = async (req, res, next) => {
+    try {
+        const latency = await VlogEngineDiagnostics.checkLatency(masterServer.neonDatabasePool);
+        if (latency > 600) {
+            masterServer.logger.warn(`CLOUD_DB_LATENCY: Connection to NeonDB is slow (${latency}ms).`);
+        }
+    } catch (e) {}
     next();
 };
 
-engine.app.use(requestContextBinder);
+masterServer.app.use(latencyTracker);
 
-function verifyCloudStorageConnection() {
-    if (engine.driveClient) {
-        engine.driveClient.about.get({ fields: 'user' })
-            .then(() => engine.logger.info('VLOG_STORAGE: Conexao com Google Drive validada.'))
-            .catch(err => engine.logger.error('VLOG_STORAGE: Falha na validacao do Drive.', err));
-    }
-}
+const masterBootTimestamp = new Date().toISOString();
+masterServer.logger.info(`VLOG_CORE_ENGINE_READY: Initialized on ${masterBootTimestamp}`);
 
-setTimeout(verifyCloudStorageConnection, 5000);
-
-const finalMiddlewareAudit = (req, res, next) => {
-    next();
-};
-
-engine.app.use(finalMiddlewareAudit);
-
-const bootTimestamp = new Date().toISOString();
-engine.logger.info(`VLOG_CORE_STABLE: Inicializado em ${bootTimestamp}`);
-
-module.exports = engine.app;
+module.exports = masterServer.app;
