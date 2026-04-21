@@ -268,37 +268,36 @@ class VlogMasterBuildEngine {
 
                 <div class="vlog-header">
                     <h1 class="vlog-kernel-title">SUCCESS</h1>
-                    <p class="vlog-kernel-subtitle">Master Node Online</p>
+                    <p class="vlog-kernel-subtitle">Master Engine Online</p>
                 </div>
 
                 <div class="vlog-astronaut-container">
                     <div class="vlog-planet-orb"></div>
                     <svg class="vlog-astronaut-svg" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z" fill="var(--neon)" fill-opacity="0.05"/>
-                        <circle cx="256" cy="180" r="75" fill="var(--neon)"/>
-                        <path d="M256 270c-80 0-150 60-150 140v30h300v-30c0-80-70-140-150-140z" fill="var(--neon)"/>
-                        <circle cx="256" cy="180" r="90" stroke="white" stroke-width="2" stroke-opacity="0.1"/>
+                        <circle cx="256" cy="180" r="80" fill="white" fill-opacity="0.1"/>
+                        <circle cx="256" cy="180" r="65" fill="var(--neon)"/>
+                        <path d="M256 260c-80 0-140 60-140 130v40h280v-40c0-70-60-130-140-130z" fill="var(--neon)"/>
                     </svg>
                 </div>
 
                 <p class="vlog-manifest-text">
-                    A infraestrutura <b>VlogStudents Enterprise</b> foi compilada com integridade total. O cluster Neon PostgreSQL e o Cloud Storage foram mapeados com sucesso. O sistema está em regime de alta disponibilidade (99.9% Uptime).
+                    A infraestrutura <b>VlogStudents Enterprise</b> foi compilada com integridade total. O sistema está em regime de alta disponibilidade (99.9% Uptime).
                 </p>
 
                 <div class="vlog-inventory-grid">
                     ${apiCardsHtml}
                 </div>
 
-                <a href="https://vlogstudents.onrender.com/health" class="vlog-master-btn">VERIFICAR KERNEL</a>
+                <a href="https://vlogstudents.onrender.com/api/v1/health" class="vlog-master-btn">VERIFICAR LATÊNCIA</a>
 
-                <div style="margin-top: 50px; color: #333; font-size: 11px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;">
-                    © 2025 VLOGSTUDENTS TECHNOLOGY GROUP - KERNEL v1.4
+                <div style="margin-top: 50px; color: #333; font-size: 11px; font-weight: 900; letter-spacing: 3px;">
+                    © 2025 VLOGSTUDENTS TECH GROUP
                 </div>
             </div>
 
             <script>
                 const galaxy = document.getElementById('galaxy');
-                for (let i = 0; i < 180; i++) {
+                for (let i = 0; i < 200; i++) {
                     const p = document.createElement('div');
                     p.className = 'vlog-particle';
                     const size = Math.random() * 3 + 'px';
