@@ -1,561 +1,443 @@
 const express = require('express');
-const { google } = require('googleapis');
-const { OAuth2Client } = require('google-auth-library');
-const { Pool } = require('pg');
-const multer = require('multer');
+const http = require('http');
+const socketIo = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const morgan = require('morgan');
+const winston = require('winston');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const stream = require('stream');
-const dotenv = require('dotenv');
+const { google } = require('googleapis');
+const { Pool } = require('pg');
+const { OAuth2Client } = require('google-auth-library');
 
-dotenv.config();
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE MASTER SERVER ENGINE v4.5.0
+ * DESENVOLVIDO PARA ALTA DISPONIBILIDADE E INTEGRAÇÃO TOTAL FRONT-BACK
+ * ============================================================================
+ */
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_tzKG1cYOg2JV@ep-billowing-scene-amoqz4x7-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// --- CONFIGURAÇÕES DE AMBIENTE E SEGURANÇA ---
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'VLOG_STUDENTS_SUPER_ENCRYPT_MASTER_KEY_2025_RELEASE';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_tzKG1cYOg2JV@ep-billowing-scene-amoqz4x7-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require';
 const GOOGLE_DRIVE_FOLDER_ID = '1xruw6C-kgoT8A56TXFAiT6CukCpSJMBQ';
 const GOOGLE_CLIENT_ID = '435332250244-vh9rravt3cmf1vmng29rbbs4vj3iccle.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = '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';
-const SERVICE_ACCOUNT_EMAIL = 'vlogstudentes@vlogstudentes.iam.gserviceaccount.com';
 
-const app = express();
-const oauth2Client = new OAuth2Client(GOOGLE_CLIENT_ID);
+class VlogStudentsEnterpriseMaster {
+    constructor() {
+        this.app = express();
+        this.server = http.createServer(this.app);
 
-const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    },
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000
-});
+        // Inicialização de Motores Externos
+        this.googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+        this.pool = new Pool({
+            connectionString: DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+            max: 100, // Pool de conexões industrial
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 5000,
+        });
 
-const storage = multer.memoryStorage();
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 100 * 1024 * 1024
-    }
-});
+        // Configuração de Mídia
+        this.storage = multer.memoryStorage();
+        this.upload = multer({
+            storage: this.storage,
+            limits: { fileSize: 100 * 1024 * 1024 } // 100MB por Reel
+        });
 
-const googleAuth = new google.auth.GoogleAuth({
-    keyFile: path.join(__dirname, 'credentials.json'),
-    scopes: ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.readonly']
-});
-
-const driveService = google.drive({ version: 'v3', auth: googleAuth });
-
-app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-const allowedOrigins = ['http://localhost:3000', 'https://vlogstudents.onrender.com'];
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Acesso negado pelo CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true
-}));
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(morgan('combined'));
-
-class VlogStudentsBackendService {
-    static async verifyGoogleToken(idToken) {
-        try {
-            const ticket = await oauth2Client.verifyIdToken({
-                idToken: idToken,
-                audience: GOOGLE_CLIENT_ID
-            });
-            return ticket.getPayload();
-        } catch (error) {
-            throw new Error('Falha na verificacao do token Google: ' + error.message);
-        }
+        this.bootstrap();
     }
 
-    static async getOrCreateUser(payload) {
-        const { email, name, picture, sub } = payload;
-        const query = `
-            INSERT INTO users (google_id, email, name, profile_picture, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            ON CONFLICT (email) DO UPDATE
-            SET name = $3, profile_picture = $4, updated_at = NOW()
-            RETURNING *;
-        `;
-        const values = [sub, email, name, picture];
-        const result = await pool.query(query, values);
-        return result.rows[0];
+    async bootstrap() {
+        this.setupLogger();
+        this.applySecurityMiddlewares();
+        this.initializeCloudSystems();
+        this.setupSocketIO();
+        this.configureInfrastructureRoutes();
+        this.mapBusinessRoutes();
+        this.setupErrorHandler();
+        this.startHardwareAudit();
     }
 
-    static async uploadToDrive(fileBuffer, fileName, mimeType) {
-        const bufferStream = new stream.PassThrough();
-        bufferStream.end(fileBuffer);
+    // ----------------------------------------------------------------------------
+    // 1. SISTEMA DE LOGS E TELEMETRIA
+    // ----------------------------------------------------------------------------
+    setupLogger() {
+        this.logger = winston.createLogger({
+            level: 'info',
+            format: winston.format.combine(
+                winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                winston.format.json()
+            ),
+            transports: [
+                new winston.transports.Console({
+                    format: winston.format.combine(winston.format.colorize(), winston.format.simple())
+                }),
+                new winston.transports.File({ filename: 'logs/security.log', level: 'warn' }),
+                new winston.transports.File({ filename: 'logs/api_traffic.log' })
+            ]
+        });
+    }
 
-        const media = {
-            mimeType: mimeType,
-            body: bufferStream
+    // ----------------------------------------------------------------------------
+    // 2. MIDDLEWARES DE SEGURANÇA E REDE
+    // ----------------------------------------------------------------------------
+    applySecurityMiddlewares() {
+        // Proteção de Headers
+        this.app.use(helmet({
+            contentSecurityPolicy: false,
+            crossOriginResourcePolicy: { policy: "cross-origin" }
+        }));
+
+        // Compressão de Gzip para economia de dados móveis
+        this.app.use(compression());
+
+        // CORS CONFIGURATION (FIM DO ERRO XMLHTTPREQUEST)
+        const corsOptions = {
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-App-Version'],
+            credentials: true
         };
+        this.app.use(cors(corsOptions));
 
-        const fileMetadata = {
-            name: `vlog_${Date.now()}_${fileName}`,
-            parents: [GOOGLE_DRIVE_FOLDER_ID]
-        };
+        this.app.use(express.json({ limit: '50mb' }));
+        this.app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-        try {
-            const response = await driveService.files.create({
-                requestBody: fileMetadata,
-                media: media,
-                fields: 'id'
+        // Logger de Requisições
+        this.app.use(morgan('combined', { stream: { write: msg => this.logger.info(msg.trim()) } }));
+
+        // Injeção de Contexto
+        this.app.use((req, res, next) => {
+            req.io = this.io;
+            req.db = this.pool;
+            next();
+        });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. INTEGRAÇÃO GOOGLE CLOUD (DRIVE & OAUTH)
+    // ----------------------------------------------------------------------------
+    initializeCloudSystems() {
+        const credentialsPath = path.join(__dirname, 'credentials.json');
+        if (!fs.existsSync(credentialsPath)) {
+            this.logger.error('CRITICAL: Google credentials.json is missing.');
+            return;
+        }
+
+        const auth = new google.auth.GoogleAuth({
+            keyFile: credentialsPath,
+            scopes: [
+                'https://www.googleapis.com/auth/drive.file',
+                'https://www.googleapis.com/auth/drive.readonly'
+            ]
+        });
+
+        this.drive = google.drive({ version: 'v3', auth });
+        this.logger.info('VLOG_CLOUD: Google Drive engine connected.');
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. MOTOR REALTIME (WEBSOCKETS) - CHAT & CALLS
+    // ----------------------------------------------------------------------------
+    setupSocketIO() {
+        this.io = socketIo(this.server, {
+            cors: { origin: "*", methods: ["GET", "POST"] },
+            pingTimeout: 60000,
+            transports: ['websocket', 'polling']
+        });
+
+        this.io.on('connection', (socket) => {
+            this.logger.info(`SOCKET_CONNECT: ID ${socket.id}`);
+
+            // Handshake de Identidade do Estudante
+            socket.on('auth_handshake', (payload) => {
+                socket.userId = payload.userId;
+                socket.join(`room_user_${payload.userId}`);
+                this.logger.info(`SOCKET_SYNC: User ${payload.userId} linked to ${socket.id}`);
             });
-            return response.data.id;
-        } catch (error) {
-            throw new Error('Erro no upload para Google Drive: ' + error.message);
-        }
-    }
 
-    static async savePostToDatabase(userId, username, content, driveKey) {
-        const query = `
-            INSERT INTO posts (user_id, username, content, drive_key, created_at)
-            VALUES ($1, $2, $3, $4, NOW())
-            RETURNING *;
-        `;
-        const values = [userId, username, content, driveKey];
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
+            // Mensageria Direta
+            socket.on('vlog_send_message', (data) => {
+                const { roomId, message } = data;
+                this.io.to(`chat_${roomId}`).emit('vlog_receive_message', message);
+            });
 
-    static async awardPoints(userId, points, reason) {
-        const query = `
-            INSERT INTO points (user_id, amount, reason, created_at)
-            VALUES ($1, $2, $3, NOW())
-            RETURNING *;
-        `;
-        await pool.query(query, [userId, points, reason]);
-    }
-}
+            // Indicador de Digitação
+            socket.on('chat_typing_indicator', (data) => {
+                socket.to(`chat_${data.roomId}`).emit('remote_typing', data);
+            });
 
-app.post('/api/auth/google', async (req, res) => {
-    try {
-        const { idToken } = req.body;
-        if (!idToken) {
-            return res.status(400).json({ success: false, message: 'ID Token ausente' });
-        }
+            // Sinalização de Vídeo Chamada (WebRTC Signaling)
+            socket.on('initiate_video_call', (data) => {
+                this.io.to(`room_user_${data.targetUserId}`).emit('incoming_video_call', data);
+            });
 
-        const payload = await VlogStudentsBackendService.verifyGoogleToken(idToken);
-        const user = await VlogStudentsBackendService.getOrCreateUser(payload);
-
-        res.status(200).json({
-            success: true,
-            data: user,
-            message: 'Autenticacao realizada com sucesso'
+            socket.on('disconnect', () => {
+                this.logger.info(`SOCKET_DISCONNECT: ID ${socket.id}`);
+            });
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
     }
-});
 
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const { username, content, userId } = req.body;
-        const file = req.file;
+    // ----------------------------------------------------------------------------
+    // 5. MIDDLEWARE DE AUTENTICAÇÃO (GUARD)
+    // ----------------------------------------------------------------------------
+    vlogAuthGuard = (req, res, next) => {
+        const header = req.headers.authorization;
+        if (!header) return res.status(401).json({ success: false, message: 'Autenticação necessária.' });
 
-        if (!file || !username || !userId) {
-            return res.status(400).json({ success: false, message: 'Dados incompletos para postagem' });
+        const token = header.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            req.user = decoded;
+            next();
+        } catch (err) {
+            res.status(403).json({ success: false, message: 'Sessão expirada.' });
         }
+    };
 
-        await client.query('BEGIN');
+    // ----------------------------------------------------------------------------
+    // 6. MAPEAMENTO DE ROTAS DA API (SINCRO TOTAL COM FLUTTER)
+    // ----------------------------------------------------------------------------
+    mapBusinessRoutes() {
+        const v1 = express.Router();
 
-        const driveFileId = await VlogStudentsBackendService.uploadToDrive(
-            file.buffer,
-            file.originalname,
-            file.mimetype
-        );
+        // --- MÓDULO: AUTENTICAÇÃO ---
 
-        const post = await VlogStudentsBackendService.savePostToDatabase(
-            userId,
-            username,
-            content,
-            driveFileId
-        );
+        v1.post('/auth/register', async (req, res) => {
+            const { user_full_name, user_email_address, password, user_university_name, user_referral_code } = req.body;
+            try {
+                const hashedPassword = await bcrypt.hash(password, 12);
+                const query = `
+                    INSERT INTO users (user_full_name, user_email_address, password, user_university_name)
+                    VALUES ($1, $2, $3, $4) RETURNING *;
+                `;
+                const result = await this.pool.query(query, [user_full_name, user_email_address, hashedPassword, user_university_name]);
+                const user = result.rows[0];
+                const token = jwt.sign({ id: user.user_identification }, JWT_SECRET, { expiresIn: '30d' });
 
-        await VlogStudentsBackendService.awardPoints(userId, 10, 'NOVO_POST_VLOG');
-
-        await client.query('COMMIT');
-
-        res.status(201).json({
-            success: true,
-            data: post,
-            message: 'Postagem criada com sucesso no Arrenda App'
+                res.status(201).json({ success: true, data: { user, token } });
+            } catch (err) {
+                res.status(400).json({ success: false, message: 'E-mail já cadastrado no sistema.' });
+            }
         });
-    } catch (error) {
-        await client.query('ROLLBACK');
-        res.status(500).json({ success: false, message: 'Falha na operacao: ' + error.message });
-    } finally {
-        client.release();
-    }
-});
 
-app.get('/api/media/:fileId', async (req, res) => {
-    try {
-        const { fileId } = req.params;
-        const response = await driveService.files.get(
-            { fileId: fileId, alt: 'media' },
-            { responseType: 'stream' }
-        );
+        v1.post('/auth/login', async (req, res) => {
+            const { user_email_address, password } = req.body;
+            try {
+                const result = await this.pool.query('SELECT * FROM users WHERE user_email_address = $1', [user_email_address]);
+                if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
 
-        res.setHeader('Content-Type', response.headers['content-type']);
-        response.data
-            .on('end', () => {})
-            .on('error', (err) => {
-                res.status(500).end();
-            })
-            .pipe(res);
-    } catch (error) {
-        res.status(404).json({ success: false, message: 'Arquivo nao encontrado ou erro no stream' });
-    }
-});
+                const user = result.rows[0];
+                const isMatch = await bcrypt.compare(password, user.password);
+                if (!isMatch) return res.status(401).json({ success: false, message: 'Senha incorreta.' });
 
-app.get('/api/feed', async (req, res) => {
-    try {
-        const query = `
-            SELECT p.*, u.profile_picture, u.name as display_name
-            FROM posts p
-            JOIN users u ON p.user_id = u.id
-            ORDER BY p.created_at DESC
-            LIMIT 50;
-        `;
-        const result = await pool.query(query);
-        res.status(200).json({
-            success: true,
-            data: result.rows
+                const token = jwt.sign({ id: user.user_identification }, JWT_SECRET, { expiresIn: '30d' });
+                res.json({ success: true, data: { user, token } });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Erro no motor de autenticação.' });
+            }
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
-app.get('/api/points/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const query = `
-            SELECT COALESCE(SUM(amount), 0) as total_points
-            FROM points
-            WHERE user_id = $1;
-        `;
-        const result = await pool.query(query, [userId]);
-        res.status(200).json({
-            success: true,
-            balance: parseInt(result.rows[0].total_points)
+        v1.post('/auth/google', async (req, res) => {
+            const { googleToken } = req.body;
+            try {
+                const ticket = await this.googleClient.verifyIdToken({ idToken: googleToken, audience: GOOGLE_CLIENT_ID });
+                const payload = ticket.getPayload();
+                const result = await this.pool.query(
+                    'INSERT INTO users (google_id_reference, user_email_address, user_full_name, user_profile_picture_url) VALUES ($1, $2, $3, $4) ON CONFLICT (user_email_address) DO UPDATE SET google_id_reference = $1 RETURNING *',
+                    [payload.sub, payload.email, payload.name, payload.picture]
+                );
+                const user = result.rows[0];
+                const token = jwt.sign({ id: user.user_identification }, JWT_SECRET, { expiresIn: '30d' });
+                res.json({ success: true, data: { user, token } });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Falha no Google Handshake.' });
+            }
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
-        service: 'VlogStudents Core',
-        timestamp: new Date().toISOString()
-    });
-});
-
-const initializeDatabase = async () => {
-    const createUsersTable = `
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            google_id VARCHAR(255) UNIQUE NOT NULL,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            profile_picture TEXT,
-            university VARCHAR(255),
-            bio TEXT,
-            points_balance INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    const createPostsTable = `
-        CREATE TABLE IF NOT EXISTS posts (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            username VARCHAR(255) NOT NULL,
-            content TEXT,
-            drive_key VARCHAR(255) NOT NULL,
-            likes_count INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    const createPointsTable = `
-        CREATE TABLE IF NOT EXISTS points (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            amount INTEGER NOT NULL,
-            reason VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    const createCommentsTable = `
-        CREATE TABLE IF NOT EXISTS comments (
-            id SERIAL PRIMARY KEY,
-            post_id INTEGER REFERENCES posts(id),
-            user_id INTEGER REFERENCES users(id),
-            text TEXT NOT NULL,
-            parent_id INTEGER REFERENCES comments(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    try {
-        await pool.query(createUsersTable);
-        await pool.query(createPostsTable);
-        await pool.query(createPointsTable);
-        await pool.query(createCommentsTable);
-        console.log('Tabelas sincronizadas no NeonDB');
-    } catch (error) {
-        console.error('Erro ao inicializar banco de dados:', error);
-    }
-};
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, async () => {
-    console.log('------------------------------------------------');
-    console.log('VLOGSTUDENTS SERVER STARTING');
-    console.log(`URL: https://vlogstudents.onrender.com`);
-    console.log(`PORT: ${PORT}`);
-    console.log('THEME: DARK MODE / NEON LIME #CCFF00');
-    console.log('------------------------------------------------');
-    await initializeDatabase();
-});
-
-function monitorMemoryUsage() {
-    setInterval(() => {
-        const used = process.memoryUsage().heapUsed / 1024 / 1024;
-        if (used > 400) {
-            console.warn(`Alerta de Memoria: ${Math.round(used * 100) / 100} MB sendo usados.`);
-        }
-    }, 60000);
-}
-
-monitorMemoryUsage();
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Promessa nao tratada em:', promise, 'motivo:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-    console.error('Excecao nao capturada:', error);
-    process.exit(1);
-});
-
-app.use((err, req, res, next) => {
-    const statusCode = err.status || 500;
-    res.status(statusCode).json({
-        success: false,
-        message: err.message || 'Erro interno do servidor',
-        timestamp: new Date().toISOString()
-    });
-});
-
-app.get('/api/v1/system/info', (req, res) => {
-    res.status(200).json({
-        version: '1.0.0',
-        environment: process.env.NODE_ENV,
-        database: 'PostgreSQL - Neon',
-        storage: 'Google Drive API v3',
-        auth: 'Google OAuth 2.0'
-    });
-});
-
-app.post('/api/posts/:postId/like', async (req, res) => {
-    try {
-        const { postId } = req.params;
-        const { userId } = req.body;
-
-        await pool.query('UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1', [postId]);
-        await VlogStudentsBackendService.awardPoints(userId, 1, 'LIKE_DADO');
-
-        res.status(200).json({ success: true, message: 'Like computado' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.delete('/api/posts/:postId', async (req, res) => {
-    try {
-        const { postId } = req.params;
-        const { userId } = req.body;
-
-        const postCheck = await pool.query('SELECT drive_key FROM posts WHERE id = $1 AND user_id = $2', [postId, userId]);
-
-        if (postCheck.rows.length === 0) {
-            return res.status(403).json({ success: false, message: 'Permissao negada ou post inexistente' });
-        }
-
-        const driveKey = postCheck.rows[0].drive_key;
-
-        await driveService.files.delete({ fileId: driveKey });
-        await pool.query('DELETE FROM posts WHERE id = $1', [postId]);
-
-        res.status(200).json({ success: true, message: 'Post removido com sucesso' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.patch('/api/users/profile', async (req, res) => {
-    try {
-        const { userId, university, bio } = req.body;
-        const query = `
-            UPDATE users
-            SET university = $2, bio = $3, updated_at = NOW()
-            WHERE id = $1
-            RETURNING *;
-        `;
-        const result = await pool.query(query, [userId, university, bio]);
-        res.status(200).json({ success: true, data: result.rows[0] });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.get('/api/stats', async (req, res) => {
-    try {
-        const usersCount = await pool.query('SELECT COUNT(*) FROM users');
-        const postsCount = await pool.query('SELECT COUNT(*) FROM posts');
-        res.status(200).json({
-            users: parseInt(usersCount.rows[0].count),
-            posts: parseInt(postsCount.rows[0].count)
+        v1.get('/auth/validate', this.vlogAuthGuard, async (req, res) => {
+            const result = await this.pool.query('SELECT * FROM users WHERE user_identification = $1', [req.user.id]);
+            if (result.rows.length > 0) res.json({ success: true, user: result.rows[0] });
+            else res.status(404).json({ success: false });
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
-app.get('/api/search/users', async (req, res) => {
-    try {
-        const { query } = req.query;
-        const result = await pool.query(
-            "SELECT id, name, profile_picture FROM users WHERE name ILIKE $1 LIMIT 10",
-            [`%${query}%`]
-        );
-        res.status(200).json({ success: true, data: result.rows });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
+        // --- MÓDULO: REELS & FEED (TIKTOK FLOW) ---
 
-function cleanupTempFiles() {
-    const tempDir = path.join(__dirname, 'uploads/tmp');
-    if (fs.existsSync(tempDir)) {
-        fs.readdir(tempDir, (err, files) => {
-            if (err) return;
-            files.forEach(file => {
-                const filePath = path.join(tempDir, file);
-                fs.stat(filePath, (err, stats) => {
-                    if (err) return;
-                    if (Date.now() - stats.mtimeMs > 3600000) {
-                        fs.unlink(filePath, () => {});
-                    }
+        v1.get('/reels/feed', async (req, res) => {
+            try {
+                // Rota pública para assistir sem login
+                const result = await this.pool.query('SELECT * FROM view_vlog_reels_feed LIMIT 50');
+                res.json({ success: true, data: result.rows });
+            } catch (err) {
+                res.status(500).json({ success: false, message: err.message });
+            }
+        });
+
+        v1.post('/reels/publish', this.vlogAuthGuard, this.upload.single('file'), async (req, res) => {
+            try {
+                const { title, description, duration } = req.body;
+                const file = req.file;
+
+                const bufferStream = new stream.PassThrough();
+                bufferStream.end(file.buffer);
+
+                const driveRes = await this.drive.files.create({
+                    requestBody: { name: `vlog_${Date.now()}`, parents: [GOOGLE_DRIVE_FOLDER_ID] },
+                    media: { mimeType: file.mimetype, body: bufferStream },
+                    fields: 'id'
                 });
-            });
+
+                const query = `
+                    INSERT INTO reels (reel_author_user_id, reel_google_drive_file_id, reel_title_text, reel_description_content, reel_duration_seconds)
+                    VALUES ($1, $2, $3, $4, $5) RETURNING *;
+                `;
+                const result = await this.pool.query(query, [req.user.id, driveRes.data.id, title, description, duration]);
+
+                // Trigger de Recompensa
+                await this.pool.query('INSERT INTO points (point_owner_user_id, point_amount_value, point_reason_description) VALUES ($1, 20, $2)', [req.user.id, 'REEL_UPLOAD']);
+
+                res.status(201).json({ success: true, data: result.rows[0] });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Falha no upload para nuvem.' });
+            }
+        });
+
+        // --- MÓDULO: MÍDIA E STREAMING ---
+
+        v1.get('/media/drive/:fileId', async (req, res) => {
+            try {
+                const response = await this.drive.files.get(
+                    { fileId: req.params.fileId, alt: 'media' },
+                    { responseType: 'stream' }
+                );
+                res.setHeader('Content-Type', response.headers['content-type']);
+                response.data.pipe(res);
+            } catch (err) {
+                res.status(404).send('Media not found.');
+            }
+        });
+
+        // --- MÓDULO: USUÁRIOS E SOCIAL ---
+
+        v1.get('/users/profile/:id', async (req, res) => {
+            const result = await this.pool.query('SELECT * FROM users WHERE user_identification = $1', [req.params.id]);
+            res.json({ success: true, data: result.rows[0] });
+        });
+
+        v1.patch('/users/profile/update', this.vlogAuthGuard, async (req, res) => {
+            const { user_full_name, user_university_name, user_biography_text, user_phone_number } = req.body;
+            const query = `
+                UPDATE users SET user_full_name = $1, user_university_name = $2, user_biography_text = $3, user_phone_number = $4
+                WHERE user_identification = $5 RETURNING *;
+            `;
+            const result = await this.pool.query(query, [user_full_name, user_university_name, user_biography_text, user_phone_number, req.user.id]);
+            res.json({ success: true, data: result.rows[0] });
+        });
+
+        v1.get('/users/points/balance', this.vlogAuthGuard, async (req, res) => {
+            const result = await this.pool.query('SELECT user_points_balance FROM users WHERE user_identification = $1', [req.user.id]);
+            res.json({ success: true, balance: result.rows[0].user_points_balance });
+        });
+
+        v1.get('/users/leaderboard/global', async (req, res) => {
+            const result = await this.pool.query('SELECT * FROM view_leaderboard_points');
+            res.json({ success: true, data: result.rows });
+        });
+
+        // --- MÓDULO: CHAT ---
+
+        v1.get('/chat/rooms/my-chats', this.vlogAuthGuard, async (req, res) => {
+            const result = await this.pool.query('SELECT * FROM view_user_chat_list WHERE member_user_id = $1', [req.user.id]);
+            res.json({ success: true, data: result.rows });
+        });
+
+        v1.post('/chat/rooms', this.vlogAuthGuard, async (req, res) => {
+            const { participants, isGroup, name } = req.body;
+            const room = await this.pool.query('INSERT INTO chat_rooms (chat_room_name_display, chat_room_is_group_chat) VALUES ($1, $2) RETURNING *', [name, isGroup]);
+            const roomId = room.rows[0].chat_room_identification;
+
+            for (let p of participants) {
+                await this.pool.query('INSERT INTO chat_room_members (member_chat_room_id, member_user_id) VALUES ($1, $2)', [roomId, p]);
+            }
+            await this.pool.query('INSERT INTO chat_room_members (member_chat_room_id, member_user_id) VALUES ($1, $2)', [roomId, req.user.id]);
+
+            res.json({ success: true, data: room.rows[0] });
+        });
+
+        this.app.use('/api/v1', v1);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 7. INFRAESTRUTURA DE ROTAS DE SUPORTE
+    // ----------------------------------------------------------------------------
+    configureInfrastructureRoutes() {
+        this.app.get('/health', (req, res) => {
+            res.json({ status: 'ok', uptime: process.uptime(), db: 'connected' });
+        });
+
+        this.app.get('/', (req, res) => {
+            res.send('<h1>VlogStudents Enterprise Master API</h1><p>Status: Operational</p>');
+        });
+
+        // Handler para rotas inexistentes
+        this.app.use('*', (req, res) => {
+            res.status(404).json({ success: false, message: `Rota ${req.originalUrl} não mapeada.` });
+        });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. AUDITORIA DE HARDWARE E GESTÃO DE ERROS
+    // ----------------------------------------------------------------------------
+    startHardwareAudit() {
+        setInterval(() => {
+            const mem = process.memoryUsage().rss / 1024 / 1024;
+            if (mem > 480) {
+                this.logger.warn(`MEMORY_ALERT: ${Math.round(mem)}MB used on Render Instance.`);
+            }
+        }, 300000);
+    }
+
+    setupErrorHandler() {
+        this.app.use((err, req, res, next) => {
+            this.logger.error(`UNHANDLED_EXCEPTION: ${err.message}`, { stack: err.stack });
+            res.status(500).json({ success: false, message: 'Erro crítico no motor do servidor.' });
+        });
+    }
+
+    start() {
+        this.server.listen(PORT, () => {
+            console.log(`
+            +-------------------------------------------------------------+
+            | VLOGSTUDENTS ENTERPRISE ECOSYSTEM v4.5.0                    |
+            +-------------------------------------------------------------+
+            | DATABASE: NEON POSTGRESQL (CONNECTED)                       |
+            | STORAGE: GOOGLE DRIVE V3 (OPERATIONAL)                      |
+            | REALTIME: SOCKET.IO HUB (ACTIVE)                            |
+            | PROTOCOL: HTTPS / JSON / WEBSOCKET                          |
+            | PORT: ${PORT}                                                  |
+            +-------------------------------------------------------------+
+            `);
         });
     }
 }
 
-setInterval(cleanupTempFiles, 3600000);
+// Inicialização e Ciclo de Vida
+const coreServer = new VlogStudentsEnterpriseMaster();
+coreServer.start();
 
-const rateLimiter = (req, res, next) => {
-    next();
-};
-
-app.use(rateLimiter);
-
-app.get('/api/media/download/:fileId', async (req, res) => {
-    try {
-        const { fileId } = req.params;
-        const fileMetadata = await driveService.files.get({ fileId: fileId, fields: 'name, mimeType' });
-
-        res.setHeader('Content-disposition', 'attachment; filename=' + fileMetadata.data.name);
-        res.setHeader('Content-type', fileMetadata.data.mimeType);
-
-        const response = await driveService.files.get(
-            { fileId: fileId, alt: 'media' },
-            { responseType: 'stream' }
-        );
-
-        response.data.pipe(res);
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Erro ao baixar arquivo' });
-    }
-});
-
-app.post('/api/comments', async (req, res) => {
-    try {
-        const { postId, userId, text, parentId } = req.body;
-        const query = `
-            INSERT INTO comments (post_id, user_id, text, parent_id, created_at)
-            VALUES ($1, $2, $3, $4, NOW())
-            RETURNING *;
-        `;
-        const result = await pool.query(query, [postId, userId, text, parentId]);
-        await VlogStudentsBackendService.awardPoints(userId, 2, 'COMENTARIO_FEITO');
-        res.status(201).json({ success: true, data: result.rows[0] });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.get('/api/posts/:postId/comments', async (req, res) => {
-    try {
-        const { postId } = req.params;
-        const query = `
-            SELECT c.*, u.name, u.profile_picture
-            FROM comments c
-            JOIN users u ON c.user_id = u.id
-            WHERE c.post_id = $1
-            ORDER BY c.created_at ASC;
-        `;
-        const result = await pool.query(query, [postId]);
-        res.status(200).json({ success: true, data: result.rows });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.get('/api/users/:userId/posts', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const query = "SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC";
-        const result = await pool.query(query, [userId]);
-        res.status(200).json({ success: true, data: result.rows });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.get('/api/trending/hashtags', async (req, res) => {
-    res.status(200).json({
-        success: true,
-        data: ['#vlogstudents', '#university', '#coding', '#studygram', '#arrendaapp']
-    });
-});
-
-app.get('/', (req, res) => {
-    res.send('VlogStudents API Running');
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+    coreServer.logger.info('SIGTERM: Drenando conexões do pool...');
+    coreServer.pool.end();
+    process.exit(0);
 });
