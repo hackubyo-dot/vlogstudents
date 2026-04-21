@@ -1,34 +1,41 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL)
- * SISTEMA DE PERSISTÊNCIA COM PROTOCOLO DE AUTO-HEALING
+ * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v2.0.6
+ * SISTEMA DE PERSISTÊNCIA COM PROTOCOLO DE RETRY E TIMEOUT ESTENDIDO
  * ============================================================================
  */
 
 const { Pool } = require('pg');
 
-const pool = new Pool({
+// Configuração de Conectividade Industrial
+const poolConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false // Necessário para conexões seguras com Neon/Render
+        rejectUnauthorized: false 
     },
-    max: 20, // Máximo de conexões simultâneas
+    max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-});
+    // Aumentado para 15s para suportar o Cold Start do Neon
+    connectionTimeoutMillis: 15000, 
+    statement_timeout: 15000,
+};
+
+const pool = new Pool(poolConfig);
 
 /**
- * Script de Inicialização e Reparo de Esquema (Auto-Healing)
- * Executado no boot do servidor para garantir integridade relacional.
+ * Script de Inicialização Master com Auto-Healing e Retries
  */
-const initializeDatabase = async () => {
-    const client = await pool.connect();
+const initializeDatabase = async (retryCount = 5) => {
+    let client;
     try {
-        console.log('[MASTER_DB] Iniciando auditoria de tabelas...');
+        console.log(`[MASTER_DB] Tentando conexão com o cluster (Tentativas restantes: ${retryCount})...`);
+        client = await pool.connect();
+        
+        console.log('[MASTER_DB] Auditoria de integridade de tabelas iniciada...');
 
         await client.query('BEGIN');
 
-        // 1. Tabela de Usuários
+        // 1. USUÁRIOS
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -52,7 +59,7 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 2. Tabela de Reels (Vídeos)
+        // 2. REELS
         await client.query(`
             CREATE TABLE IF NOT EXISTS reels (
                 id SERIAL PRIMARY KEY,
@@ -71,7 +78,19 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 3. Tabelas de Interação (Likes/Seguidores)
+        // 3. COMENTÁRIOS (Vital para evitar erro de UNDEFINED)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                reel_id INTEGER REFERENCES reels(id) ON DELETE CASCADE,
+                author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                parent_node_id INTEGER,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+
+        // 4. INTERAÇÕES
         await client.query(`
             CREATE TABLE IF NOT EXISTS likes (
                 id SERIAL PRIMARY KEY,
@@ -90,13 +109,12 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 4. Estrutura de Chat (Salas e Mensagens)
+        // 5. CHAT ENGINE
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(255), -- Nulo para DMs
+                name VARCHAR(255),
                 is_group BOOLEAN DEFAULT false,
-                admin_id INTEGER REFERENCES users(id),
                 last_message_preview TEXT,
                 last_activity TIMESTAMP DEFAULT NOW(),
                 created_at TIMESTAMP DEFAULT NOW()
@@ -114,14 +132,12 @@ const initializeDatabase = async () => {
                 room_id INTEGER REFERENCES chat_rooms(id) ON DELETE CASCADE,
                 sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                 content TEXT,
-                media_id TEXT, -- Para imagens/vídeos no chat
                 type VARCHAR(20) DEFAULT 'text',
-                is_read BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
 
-        // 5. Sistema de Voices (Points & Transactions)
+        // 6. ECONOMIA (VOICES)
         await client.query(`
             CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
@@ -134,21 +150,28 @@ const initializeDatabase = async () => {
         `);
 
         await client.query('COMMIT');
-        console.log('[MASTER_DB] Todas as tabelas verificadas e operacionais.');
+        console.log('[MASTER_DB] Protocolo de Auto-Healing concluído. Esquema sincronizado.');
 
     } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('[MASTER_DB_FATAL] Erro na inicialização do esquema:', error.stack);
-        process.exit(1);
+        if (client) await client.query('ROLLBACK');
+        console.error('[MASTER_DB_ERROR] Falha na conexão/inicialização:', error.message);
+        
+        if (retryCount > 0) {
+            console.log(`[MASTER_DB_RECOVERY] Tentando reconectar em 5 segundos...`);
+            setTimeout(() => initializeDatabase(retryCount - 1), 5000);
+        } else {
+            console.error('[MASTER_DB_CRITICAL] Limite de tentativas de conexão excedido.');
+        }
     } finally {
-        client.release();
+        if (client) client.release();
     }
 };
 
-// Auto-execução no boot
+// Disparo imediato da inicialização
 initializeDatabase();
 
 module.exports = {
     query: (text, params) => pool.query(text, params),
     connect: () => pool.connect(),
+    pool: pool
 };
