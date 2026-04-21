@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.2
- * GESTÃO BINÁRIA, PERMISSÕES GLOBAIS E RECOVERY PROTOCOL
+ * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.4
+ * GESTÃO BINÁRIA COM PROTOCOLO DE SEGURANÇA CONTRA VARIÁVEIS NULAS
  * ============================================================================
  */
 
@@ -20,10 +20,18 @@ class DriveService {
         try {
             console.log('[DRIVE_CORE] Sincronizando com cluster Google Cloud...');
             
+            // CORREÇÃO CRÍTICA: Validação de existência da chave antes do .replace()
+            const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+            
+            if (!privateKey) {
+                console.error('[DRIVE_CONFIG_ERROR] Variável GOOGLE_PRIVATE_KEY não encontrada no ambiente.');
+                return; // Impede o crash do servidor
+            }
+
             const auth = new google.auth.JWT(
                 process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
                 null,
-                process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                privateKey.replace(/\\n/g, '\n'),
                 this.scopes
             );
 
@@ -44,12 +52,10 @@ class DriveService {
         return stream;
     }
 
-    /**
-     * Upload de arquivos com protocolo de permissão automática
-     * Resolve o erro de "link broken" no Flutter
-     */
     async uploadFile(file, customName) {
-        if (!this.drive) await this._initialize();
+        if (!this.drive) {
+            throw new Error('Serviço de armazenamento indisponível (Auth Fail).');
+        }
 
         try {
             const fileName = `${customName}_${Date.now()}`;
@@ -69,8 +75,7 @@ class DriveService {
 
             const fileId = response.data.id;
 
-            // CRÍTICO: Aplicação de Permissão Pública Imediata
-            // Sem isso, o Flutter recebe 403 Forbidden ao tentar ler o vídeo
+            // Aplicação de Permissão Pública Imediata
             await this.drive.permissions.create({
                 fileId: fileId,
                 requestBody: {
@@ -79,7 +84,7 @@ class DriveService {
                 }
             });
 
-            console.log(`[DRIVE_SUCCESS] Arquivo persistido e público. UID: ${fileId}`);
+            console.log(`[DRIVE_SUCCESS] Arquivo persistido. UID: ${fileId}`);
             return fileId;
 
         } catch (error) {
@@ -90,6 +95,7 @@ class DriveService {
 
     async deleteFile(fileId) {
         try {
+            if (!this.drive) return false;
             await this.drive.files.delete({ fileId });
             return true;
         } catch (error) {
