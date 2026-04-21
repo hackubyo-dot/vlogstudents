@@ -6,30 +6,25 @@ const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
 /**
  * ============================================================================
- * ROTAS DE REELS - ENGINE DE CONTEÚDO TIKTOK-STYLE
- * PREFIXO: /api/v1/reels
+ * ROTAS DE REELS - CONFIGURAÇÃO SINCRONIZADA
  * ============================================================================
  */
 
-// Feed Principal (Infinite Scroll)
+// Feed e Upload
 router.get('/', authMiddleware, reelController.getFeed);
+router.post('/upload', authMiddleware, uploadMiddleware.single('file'), reelController.publishReel);
 
-// Upload de Novo Reel (Sincronizado com UploadReelScreen)
-router.post('/upload',
-    authMiddleware,
-    uploadMiddleware.single('file'), // O Flutter envia o vídeo no campo 'file'
-    reelController.publishReel
-);
-
-// Interações de Engajamento
+// Interações (Likes, Comentários, Views)
 router.post('/:id/like', authMiddleware, reelController.toggleLike);
 router.get('/:id/comments', authMiddleware, reelController.getComments);
 router.post('/:id/comments', authMiddleware, reelController.addComment);
+
+// Engajamento e Voices
 router.post('/:id/share', authMiddleware, reelController.registerShare);
 router.post('/:id/view', authMiddleware, reelController.trackView);
 router.post('/:id/repost', authMiddleware, reelController.repost);
 
-// Gestão de Conteúdo Próprio
+// Gestão de Conteúdo
 router.delete('/:id', authMiddleware, reelController.deleteReel);
 
 module.exports = router;
