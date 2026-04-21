@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.6
- * GESTÃO BINÁRIA COM NORMALIZAÇÃO DE CHAVE PRIVADA
+ * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.7
+ * GESTÃO BINÁRIA COM LIMPEZA DE ASSINATURA JWT (RSA FIX)
  * ============================================================================
  */
 
@@ -18,33 +18,39 @@ class DriveService {
 
     async _initialize() {
         try {
-            console.log('[DRIVE_CORE] Iniciando handshake com cluster Cloud...');
+            console.log('[DRIVE_CORE] Iniciando protocolo de handshake Google Cloud...');
             
-            let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+            let rawKey = process.env.GOOGLE_PRIVATE_KEY;
             
-            if (!privateKey) {
-                console.error('[DRIVE_FATAL] Variável GOOGLE_PRIVATE_KEY não definida no Render.');
+            if (!rawKey) {
+                console.error('[DRIVE_FATAL] GOOGLE_PRIVATE_KEY não detectada no ambiente.');
                 return;
             }
 
-            // NORMALIZAÇÃO DE CHAVE: Trata quebras de linha enviadas via String
-            const formattedKey = privateKey.replace(/\\n/g, '\n');
+            // LIMPEZA AGRESSIVA DE CHAVE PRIVADA (Resolve Invalid JWT Signature)
+            // 1. Remove aspas extras se o usuário colou com aspas no Render
+            // 2. Converte \n literais em caracteres de quebra de linha reais
+            const sanitizedKey = rawKey
+                .trim()
+                .replace(/^["']|["']$/g, '') 
+                .replace(/\\n/g, '\n');
 
             const auth = new google.auth.JWT(
                 process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
                 null,
-                formattedKey,
+                sanitizedKey,
                 this.scopes
             );
 
             this.drive = google.drive({ version: 'v3', auth });
             
-            // Teste de link real
+            // Validação de link ativa
             await this.drive.files.list({ pageSize: 1 });
-            console.log('[DRIVE_CORE] Cluster Google Drive conectado e operando permissões públicas.');
+            console.log('[DRIVE_CORE] Autenticação Cloud validada. Link operacional.');
         } catch (error) {
-            console.error('[DRIVE_FATAL] Erro de autenticação Google Cloud:', error.message);
-            setTimeout(() => this._initialize(), 30000);
+            console.error('[DRIVE_FATAL] Falha na validação JWT do Google:', error.message);
+            // Re-tentativa silenciosa em 1 minuto
+            setTimeout(() => this._initialize(), 60000);
         }
     }
 
@@ -56,7 +62,7 @@ class DriveService {
     }
 
     async uploadFile(file, customName) {
-        if (!this.drive) throw new Error('Driver de nuvem não inicializado.');
+        if (!this.drive) throw new Error('Serviço de Storage em modo de recuperação. Tente em breve.');
 
         try {
             const fileName = `${customName}_${Date.now()}`;
@@ -75,7 +81,7 @@ class DriveService {
 
             const fileId = response.data.id;
 
-            // RESOLUÇÃO "LINK BROKEN": Torna o arquivo público para o VideoPlayer
+            // Protocolo de Visibilidade (Vital para o VideoPlayer do Flutter)
             await this.drive.permissions.create({
                 fileId: fileId,
                 requestBody: {
@@ -86,9 +92,16 @@ class DriveService {
 
             return fileId;
         } catch (error) {
-            console.error('[DRIVE_UPLOAD_ERROR]', error.message);
+            console.error('[DRIVE_UPLOAD_FATAL]', error.message);
             throw error;
         }
+    }
+
+    async deleteFile(fileId) {
+        try {
+            if (this.drive) await this.drive.files.delete({ fileId });
+            return true;
+        } catch (e) { return false; }
     }
 }
 
