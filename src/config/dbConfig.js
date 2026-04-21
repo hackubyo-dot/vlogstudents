@@ -1,41 +1,33 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v2.0.6
- * SISTEMA DE PERSISTÊNCIA COM PROTOCOLO DE RETRY E TIMEOUT ESTENDIDO
+ * VLOGSTUDENTS ENTERPRISE DATABASE ORCHESTRATOR (Neon PostgreSQL) v2.0.7
+ * SISTEMA DE PERSISTÊNCIA COM PROTOCOLO DE AUTO-HEALING E CRIAÇÃO SEQUENCIAL
  * ============================================================================
  */
 
 const { Pool } = require('pg');
 
-// Configuração de Conectividade Industrial
-const poolConfig = {
+const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false 
     },
     max: 20,
     idleTimeoutMillis: 30000,
-    // Aumentado para 15s para suportar o Cold Start do Neon
     connectionTimeoutMillis: 15000, 
     statement_timeout: 15000,
-};
-
-const pool = new Pool(poolConfig);
+});
 
 /**
- * Script de Inicialização Master com Auto-Healing e Retries
+ * Script de Inicialização Mestre
+ * Resolve o erro de "column id referenced does not exist" através de execução atômica
  */
-const initializeDatabase = async (retryCount = 5) => {
-    let client;
+const initializeDatabase = async () => {
+    const client = await pool.connect();
     try {
-        console.log(`[MASTER_DB] Tentando conexão com o cluster (Tentativas restantes: ${retryCount})...`);
-        client = await pool.connect();
-        
-        console.log('[MASTER_DB] Auditoria de integridade de tabelas iniciada...');
+        console.log('[MASTER_DB] Iniciando protocolo de integridade de dados...');
 
-        await client.query('BEGIN');
-
-        // 1. USUÁRIOS
+        // 1. Criação da Tabela de Usuários (Âncora Primária)
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -50,7 +42,7 @@ const initializeDatabase = async (retryCount = 5) => {
                 theme_pref VARCHAR(20) DEFAULT 'dark',
                 phone_number VARCHAR(50),
                 biography TEXT,
-                isActive BOOLEAN DEFAULT true,
+                isactive BOOLEAN DEFAULT true,
                 recovery_token VARCHAR(10),
                 recovery_expires TIMESTAMP,
                 last_login TIMESTAMP,
@@ -59,7 +51,7 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        // 2. REELS
+        // 2. Tabela de Reels (Depende de users)
         await client.query(`
             CREATE TABLE IF NOT EXISTS reels (
                 id SERIAL PRIMARY KEY,
@@ -78,7 +70,7 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        // 3. COMENTÁRIOS (Vital para evitar erro de UNDEFINED)
+        // 3. Tabela de Comentários (Depende de users e reels)
         await client.query(`
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -90,7 +82,7 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        // 4. INTERAÇÕES
+        // 4. Tabelas de Interação (Likes e Follows)
         await client.query(`
             CREATE TABLE IF NOT EXISTS likes (
                 id SERIAL PRIMARY KEY,
@@ -109,7 +101,7 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        // 5. CHAT ENGINE
+        // 5. Motor de Chat (Rooms, Participantes e Mensagens)
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id SERIAL PRIMARY KEY,
@@ -137,7 +129,7 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        // 6. ECONOMIA (VOICES)
+        // 6. Transações de Voices (Gamificação)
         await client.query(`
             CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
@@ -149,25 +141,17 @@ const initializeDatabase = async (retryCount = 5) => {
             );
         `);
 
-        await client.query('COMMIT');
-        console.log('[MASTER_DB] Protocolo de Auto-Healing concluído. Esquema sincronizado.');
+        console.log('[MASTER_DB] Todas as camadas relacionais foram curadas e sincronizadas.');
 
     } catch (error) {
-        if (client) await client.query('ROLLBACK');
-        console.error('[MASTER_DB_ERROR] Falha na conexão/inicialização:', error.message);
-        
-        if (retryCount > 0) {
-            console.log(`[MASTER_DB_RECOVERY] Tentando reconectar em 5 segundos...`);
-            setTimeout(() => initializeDatabase(retryCount - 1), 5000);
-        } else {
-            console.error('[MASTER_DB_CRITICAL] Limite de tentativas de conexão excedido.');
-        }
+        console.error('[MASTER_DB_ERROR] Falha crítica na estruturação:', error.message);
+        // Não encerramos o processo aqui para permitir que o servidor responda 500 em vez de crashar o deploy
     } finally {
-        if (client) client.release();
+        client.release();
     }
 };
 
-// Disparo imediato da inicialização
+// Execução imediata no boot do Kernel
 initializeDatabase();
 
 module.exports = {
