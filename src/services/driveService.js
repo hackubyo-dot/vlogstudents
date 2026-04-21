@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.4
- * GESTÃO BINÁRIA COM PROTOCOLO DE SEGURANÇA CONTRA VARIÁVEIS NULAS
+ * VLOGSTUDENTS ENTERPRISE DRIVE CLUSTER SERVICE v2.0.6
+ * GESTÃO BINÁRIA COM NORMALIZAÇÃO DE CHAVE PRIVADA
  * ============================================================================
  */
 
@@ -18,29 +18,32 @@ class DriveService {
 
     async _initialize() {
         try {
-            console.log('[DRIVE_CORE] Sincronizando com cluster Google Cloud...');
+            console.log('[DRIVE_CORE] Iniciando handshake com cluster Cloud...');
             
-            // CORREÇÃO CRÍTICA: Validação de existência da chave antes do .replace()
-            const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+            let privateKey = process.env.GOOGLE_PRIVATE_KEY;
             
             if (!privateKey) {
-                console.error('[DRIVE_CONFIG_ERROR] Variável GOOGLE_PRIVATE_KEY não encontrada no ambiente.');
-                return; // Impede o crash do servidor
+                console.error('[DRIVE_FATAL] Variável GOOGLE_PRIVATE_KEY não definida no Render.');
+                return;
             }
+
+            // NORMALIZAÇÃO DE CHAVE: Trata quebras de linha enviadas via String
+            const formattedKey = privateKey.replace(/\\n/g, '\n');
 
             const auth = new google.auth.JWT(
                 process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
                 null,
-                privateKey.replace(/\\n/g, '\n'),
+                formattedKey,
                 this.scopes
             );
 
             this.drive = google.drive({ version: 'v3', auth });
+            
+            // Teste de link real
             await this.drive.files.list({ pageSize: 1 });
-            console.log('[DRIVE_CORE] Cluster operacional e autenticado.');
+            console.log('[DRIVE_CORE] Cluster Google Drive conectado e operando permissões públicas.');
         } catch (error) {
             console.error('[DRIVE_FATAL] Erro de autenticação Google Cloud:', error.message);
-            // Protocolo de auto-healing
             setTimeout(() => this._initialize(), 30000);
         }
     }
@@ -53,14 +56,11 @@ class DriveService {
     }
 
     async uploadFile(file, customName) {
-        if (!this.drive) {
-            throw new Error('Serviço de armazenamento indisponível (Auth Fail).');
-        }
+        if (!this.drive) throw new Error('Driver de nuvem não inicializado.');
 
         try {
             const fileName = `${customName}_${Date.now()}`;
-            console.log(`[DRIVE_STORAGE] Transmitindo: ${fileName}`);
-
+            
             const response = await this.drive.files.create({
                 resource: {
                     name: fileName,
@@ -75,7 +75,7 @@ class DriveService {
 
             const fileId = response.data.id;
 
-            // Aplicação de Permissão Pública Imediata
+            // RESOLUÇÃO "LINK BROKEN": Torna o arquivo público para o VideoPlayer
             await this.drive.permissions.create({
                 fileId: fileId,
                 requestBody: {
@@ -84,22 +84,10 @@ class DriveService {
                 }
             });
 
-            console.log(`[DRIVE_SUCCESS] Arquivo persistido. UID: ${fileId}`);
             return fileId;
-
         } catch (error) {
-            console.error('[DRIVE_UPLOAD_FATAL]', error.stack);
-            throw new Error('Falha na persistência em nuvem.');
-        }
-    }
-
-    async deleteFile(fileId) {
-        try {
-            if (!this.drive) return false;
-            await this.drive.files.delete({ fileId });
-            return true;
-        } catch (error) {
-            return false;
+            console.error('[DRIVE_UPLOAD_ERROR]', error.message);
+            throw error;
         }
     }
 }
