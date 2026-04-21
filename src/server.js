@@ -6,12 +6,13 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-// Importação das Rotas Master
-const authRoutes = require('./src/routes/authRoutes');
-const userRoutes = require('./src/routes/userRoutes');
-const reelRoutes = require('./src/routes/reelRoutes');
-const chatRoutes = require('./src/routes/chatRoutes');
-const pointRoutes = require('./src/routes/pointRoutes');
+// IMPORTAÇÃO DAS ROTAS (Caminhos ajustados para a nova raiz)
+// Removemos o "./src/" pois o arquivo server.js já está dentro da src
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const reelRoutes = require('./routes/reelRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const pointRoutes = require('./routes/pointRoutes');
 
 /**
  * ============================================================================
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Endpoint de Health Check (Usado pelo NetworkProvider do Flutter)
+// Endpoint de Health Check
 app.get('/api/v1/health', (req, res) => {
     res.status(200).json({ 
         status: 'operational', 
@@ -52,14 +53,14 @@ app.get('/api/v1/health', (req, res) => {
     });
 });
 
-// MONTAGEM DO BARRAMENTO DE API (Sincronizado com Flutter)
+// MONTAGEM DO BARRAMENTO DE API
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/reels', reelRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/points', pointRoutes);
 
-// Tratamento de Erro 404 (Rota não encontrada no Barramento)
+// Tratamento de Erro 404
 app.use((req, res) => {
     console.error(`[404_ERROR] Rota inexistente: ${req.method} ${req.url}`);
     res.status(404).json({ 
@@ -88,5 +89,4 @@ server.listen(PORT, () => {
     console.log('+-----------------------------------------------------------+');
 });
 
-// Exportação para uso no SocketManager
 module.exports = { io };
