@@ -1,3 +1,10 @@
+/**
+ * ============================================================================
+ * VLOGSTUDENTS REEL PIPELINE ROUTES v4.0.0
+ * MAPEAMENTO DE ENDPOINTS DE VÍDEO E ENGAJAMENTO
+ * ============================================================================
+ */
+
 const express = require('express');
 const router = express.Router();
 const reelController = require('../controllers/reelController');
@@ -5,26 +12,33 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
 /**
- * ============================================================================
- * ROTAS DE REELS - CONFIGURAÇÃO SINCRONIZADA
- * ============================================================================
+ * PREFIXO: /api/v1/reels
  */
 
-// Feed e Upload
+// --- GERENCIAMENTO DE FEED E CONTEÚDO ---
+
+// Recuperar Feed Principal
 router.get('/', authMiddleware, reelController.getFeed);
+
+// Publicar Novo Reel (Multipart Form Data)
 router.post('/upload', authMiddleware, uploadMiddleware.single('file'), reelController.publishReel);
 
-// Interações (Likes, Comentários, Views)
+// --- INTERAÇÕES SOCIAIS ---
+
+// Curtir/Descurtir
 router.post('/:id/like', authMiddleware, reelController.toggleLike);
+
+// Comentários (Busca e Inserção)
 router.get('/:id/comments', authMiddleware, reelController.getComments);
 router.post('/:id/comments', authMiddleware, reelController.addComment);
 
-// Engajamento e Voices
-router.post('/:id/share', authMiddleware, reelController.registerShare);
+// Engajamento (Views, Shares, Reposts)
 router.post('/:id/view', authMiddleware, reelController.trackView);
-router.post('/:id/repost', authMiddleware, reelController.repost);
+router.post('/:id/share', authMiddleware, reelController.repost); // Sincronizado com o Controller
 
-// Gestão de Conteúdo
+// --- GESTÃO DE CONTEÚDO ---
+
+// Deletar Reel
 router.delete('/:id', authMiddleware, reelController.deleteReel);
 
 module.exports = router;
