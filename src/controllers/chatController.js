@@ -1,363 +1,227 @@
-const database = require('../config/database');
-const logger = require('../config/logger');
-const socketService = require('../services/socket_service');
-const driveService = require('../services/google_drive_service');
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE CHAT CONTROLLER v2.0.3
+ * PERSISTÊNCIA DE DIÁLOGOS, GESTÃO DE SALAS E UNREAD TRACKING
+ * ============================================================================
+ */
 
-class VlogStudentsChatController {
-    async createRoom(request, response) {
-        const { name, isGroup, participants } = request.body;
-        const adminId = request.user.id;
+const db = require('../config/dbConfig');
 
-        const client = await database.getPool().connect();
+const chatController = {
+
+    /**
+     * Lista todas as salas do usuário (DMs e Grupos)
+     * Retorna metadados completos para a lista de chat do Flutter
+     */
+    getMyRooms: async (req, res) => {
+        const userId = req.user.id;
+        try {
+            console.log(`[CHAT_QUERY] Recuperando salas para UID: ${userId}`);
+
+            const query = `
+                SELECT 
+                    cr.id as chat_room_identification,
+                    cr.name as chat_room_name_display,
+                    cr.is_group as chat_room_is_group_chat,
+                    cr.last_message_preview as chat_room_last_message_preview,
+                    cr.last_activity as chat_room_last_activity_timestamp,
+                    cp.unread_count,
+                    other_u.full_name as other_user_name,
+                    other_u.avatar_url as other_user_avatar,
+                    other_u.id as other_user_id
+                FROM chat_rooms cr
+                JOIN chat_participants cp ON cr.id = cp.room_id
+                LEFT JOIN chat_participants other_p ON cr.id = other_p.room_id AND other_p.user_id != $1
+                LEFT JOIN users other_u ON other_p.user_id = other_u.id
+                WHERE cp.user_id = $1
+                ORDER BY cr.last_activity DESC
+            `;
+
+            const result = await db.query(query, [userId]);
+
+            res.status(200).json({
+                success: true,
+                count: result.rows.length,
+                data: result.rows
+            });
+
+        } catch (error) {
+            console.error('[CHAT_CONTROLLER_ERROR] getMyRooms:', error.stack);
+            res.status(500).json({ success: false, message: 'Falha ao buscar histórico de conversas.' });
+        }
+    },
+
+    /**
+     * Envia mensagem e sincroniza com Realtime
+     */
+    sendMessage: async (req, res) => {
+        const userId = req.user.id;
+        const { roomId } = req.params;
+        const { content, type = 'text', mediaId } = req.body;
+
+        if (!content && !mediaId) {
+            return res.status(400).json({ success: false, message: 'Mensagem vazia não permitida.' });
+        }
+
+        const client = await db.connect();
         try {
             await client.query('BEGIN');
 
-            const roomQuery = `
-                INSERT INTO chat_rooms (chat_room_name_display, chat_room_is_group_chat, chat_room_admin_user_id, chat_room_created_at_timestamp)
-                VALUES ($1, $2, $3, NOW())
+            // 1. Persistência da Mensagem no Neon
+            const msgQuery = `
+                INSERT INTO chat_messages (room_id, sender_id, content, type, media_id, created_at)
+                VALUES ($1, $2, $3, $4, $5, NOW())
                 RETURNING *
             `;
-            const roomResult = await client.query(roomQuery, [name || 'Conversa Privada', isGroup, isGroup ? adminId : null]);
-            const roomId = roomResult.rows[0].chat_room_identification;
+            const msgRes = await client.query(msgQuery, [roomId, userId, content, type, mediaId]);
+            const msg = msgRes.rows[0];
 
-            const allParticipants = [...new Set([...participants, adminId])];
-            const memberQuery = `INSERT INTO chat_room_members (member_chat_room_id, member_user_id) VALUES ($1, $2)`;
+            // 2. Atualização da "Capa" da Sala
+            const previewText = type === 'text' ? content.substring(0, 50) : 'Arquivo de mídia';
+            await client.query(
+                'UPDATE chat_rooms SET last_message_preview = $1, last_activity = NOW() WHERE id = $2',
+                [previewText, roomId]
+            );
 
-            for (const participantId of allParticipants) {
-                await client.query(memberQuery, [roomId, participantId]);
+            // 3. Gestão de Notificações Internas (Unread)
+            await client.query(
+                'UPDATE chat_participants SET unread_count = unread_count + 1 WHERE room_id = $1 AND user_id != $2',
+                [roomId, userId]
+            );
+
+            await client.query('COMMIT');
+
+            // 4. DISPARO REALTIME MASTER
+            const io = req.app.get('io');
+            if (io) {
+                const realtimePayload = {
+                    id: msg.id,
+                    roomId: parseInt(roomId),
+                    senderId: userId,
+                    senderName: req.user.fullName,
+                    content: msg.content,
+                    type: msg.type,
+                    mediaUrl: msg.media_id, // Flutter resolverá o link do Drive
+                    timestamp: msg.created_at
+                };
+
+                // Emite para todos na sala e para o canal privado do destinatário (para notificações)
+                io.to(`room_${roomId}`).emit('receive_new_message', realtimePayload);
             }
 
-            await client.query('COMMIT');
+            res.status(201).json({
+                success: true,
+                data: msg
+            });
 
-            logger.info(`Nova sala de chat criada: ${roomId} por ${adminId}`);
-            return response.status(201).json({ success: true, data: roomResult.rows[0] });
         } catch (error) {
-            await client.query('ROLLBACK');
-            logger.error('Erro ao criar sala de chat', error);
-            return response.status(500).json({ success: false, message: 'Erro ao criar conversa.' });
+            if (client) await client.query('ROLLBACK');
+            console.error('[SEND_MESSAGE_ERROR]', error.stack);
+            res.status(500).json({ success: false });
         } finally {
             client.release();
         }
-    }
+    },
 
-    async getMyRooms(request, response) {
-        const userId = request.user.id;
-        try {
-            const query = `
-                SELECT
-                    cr.*,
-                    (SELECT COUNT(*) FROM chat_messages cm WHERE cm.message_chat_room_id = cr.chat_room_identification AND cm.message_is_read_status = FALSE AND cm.message_sender_user_id != $1) AS unread_count,
-                    (SELECT u.user_full_name FROM users u JOIN chat_room_members crm2 ON u.user_identification = crm2.member_user_id WHERE crm2.member_chat_room_id = cr.chat_room_identification AND crm2.member_user_id != $1 LIMIT 1) as other_user_name,
-                    (SELECT u.user_profile_picture_url FROM users u JOIN chat_room_members crm2 ON u.user_identification = crm2.member_user_id WHERE crm2.member_chat_room_id = cr.chat_room_identification AND crm2.member_user_id != $1 LIMIT 1) as other_user_avatar
-                FROM chat_rooms cr
-                JOIN chat_room_members crm ON cr.chat_room_identification = crm.member_chat_room_id
-                WHERE crm.member_user_id = $1
-                ORDER BY cr.chat_room_last_activity_timestamp DESC
-            `;
-            const result = await database.query(query, [userId]);
-            return response.status(200).json({ success: true, data: result.rows });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async getMessages(request, response) {
-        const { roomId } = request.params;
-        const { limit = 50, offset = 0 } = request.query;
+    /**
+     * Recupera o histórico de mensagens de uma sala específica
+     */
+    getMessages: async (req, res) => {
+        const { roomId } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
 
         try {
             const query = `
-                SELECT m.*, u.user_full_name as sender_name, u.user_profile_picture_url as sender_avatar
+                SELECT 
+                    m.id as message_identification,
+                    m.room_id as message_chat_room_id,
+                    m.sender_id as message_sender_user_id,
+                    u.full_name as sender_name,
+                    u.avatar_url as sender_avatar,
+                    m.content as message_text_body,
+                    m.type as message_type_category,
+                    m.media_id as message_media_drive_id,
+                    m.created_at as message_created_at_timestamp,
+                    m.is_read as message_is_read_status
                 FROM chat_messages m
-                JOIN users u ON m.message_sender_user_id = u.user_identification
-                WHERE m.message_chat_room_id = $1
-                ORDER BY m.message_created_at_timestamp DESC
+                JOIN users u ON m.sender_id = u.id
+                WHERE m.room_id = $1
+                ORDER BY m.created_at DESC
                 LIMIT $2 OFFSET $3
             `;
-            const result = await database.query(query, [roomId, limit, offset]);
-            return response.status(200).json({ success: true, data: result.rows.reverse() });
+
+            const result = await db.query(query, [roomId, limit, offset]);
+
+            res.status(200).json({
+                success: true,
+                data: result.rows
+            });
+
         } catch (error) {
-            return response.status(500).json({ success: false });
+            console.error('[GET_MESSAGES_ERROR]', error.stack);
+            res.status(500).json({ success: false });
         }
-    }
+    },
 
-    async sendMessage(request, response) {
-        const { roomId, text, type } = request.body;
-        const senderId = request.user.id;
-        const file = request.file;
+    /**
+     * Protocolo de Criação de Sala DM (Conversa Privada)
+     */
+    createPrivateRoom: async (req, res) => {
+        const myId = req.user.id;
+        const { targetUserId } = req.body;
 
-        let mediaId = null;
-        if (file) {
-            const upload = await driveService.uploadFile(file.buffer, file.originalname, file.mimetype);
-            mediaId = upload.fileId;
-        }
+        if (myId == targetUserId) return res.status(400).json({ success: false, message: 'Auto-chat não permitido.' });
 
-        const client = await database.getPool().connect();
+        const client = await db.connect();
         try {
             await client.query('BEGIN');
 
-            const msgQuery = `
-                INSERT INTO chat_messages (message_chat_room_id, message_sender_user_id, message_text_body, message_type_category, message_media_drive_id)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING *
+            // 1. Verifica se já existe uma sala entre esses dois
+            const checkQuery = `
+                SELECT room_id FROM chat_participants 
+                WHERE user_id IN ($1, $2)
+                GROUP BY room_id HAVING COUNT(*) = 2
             `;
-            const result = await client.query(msgQuery, [roomId, senderId, text, type || 'text', mediaId]);
-            const newMessage = result.rows[0];
+            const checkRes = await client.query(checkQuery, [myId, targetUserId]);
 
-            await client.query(`
-                UPDATE chat_rooms
-                SET chat_room_last_message_preview = $1, chat_room_last_activity_timestamp = NOW()
-                WHERE chat_room_identification = $2
-            `, [type === 'text' ? text.substring(0, 50) : `Enviou um(a) ${type}`, roomId]);
+            if (checkRes.rows.length > 0) {
+                return res.status(200).json({ success: true, data: { roomId: checkRes.rows[0].room_id } });
+            }
+
+            // 2. Cria a Sala
+            const roomRes = await client.query('INSERT INTO chat_rooms (is_group, created_at) VALUES (false, NOW()) RETURNING id');
+            const roomId = roomRes.rows[0].id;
+
+            // 3. Adiciona Participantes
+            await client.query('INSERT INTO chat_participants (room_id, user_id) VALUES ($1, $2), ($1, $3)', [roomId, myId, targetUserId]);
 
             await client.query('COMMIT');
+            res.status(201).json({ success: true, data: { roomId } });
 
-            socketService.io.to(`room_${roomId}`).emit('receive_new_message', newMessage);
-
-            return response.status(201).json({ success: true, data: newMessage });
         } catch (error) {
             await client.query('ROLLBACK');
-            return response.status(500).json({ success: false });
+            res.status(500).json({ success: false });
         } finally {
             client.release();
         }
-    }
+    },
 
-    async getMembers(request, response) {
-        const { roomId } = request.params;
+    /**
+     * Limpa o contador de não lidas (Ação de abrir o chat)
+     */
+    markAsRead: async (req, res) => {
+        const userId = req.user.id;
+        const { roomId } = req.params;
         try {
-            const query = `
-                SELECT u.user_identification, u.user_full_name, u.user_profile_picture_url, u.user_university_name
-                FROM users u
-                JOIN chat_room_members crm ON u.user_identification = crm.member_user_id
-                WHERE crm.member_chat_room_id = $1
-            `;
-            const result = await database.query(query, [roomId]);
-            return response.status(200).json({ success: true, data: result.rows });
+            await db.query(
+                'UPDATE chat_participants SET unread_count = 0 WHERE room_id = $1 AND user_id = $2',
+                [roomId, userId]
+            );
+            res.status(200).json({ success: true, message: 'Marcado como lido.' });
         } catch (error) {
-            return response.status(500).json({ success: false });
+            res.status(500).json({ success: false });
         }
     }
+};
 
-    async addMember(request, response) {
-        const { roomId } = request.params;
-        const { userId } = request.body;
-        try {
-            await database.query('INSERT INTO chat_room_members (member_chat_room_id, member_user_id) VALUES ($1, $2)', [roomId, userId]);
-            return response.status(200).json({ success: true, message: 'Membro adicionado.' });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async removeMember(request, response) {
-        const { roomId } = request.params;
-        const { userId } = request.body;
-        try {
-            await database.query('DELETE FROM chat_room_members WHERE member_chat_room_id = $1 AND member_user_id = $2', [roomId, userId]);
-            return response.status(200).json({ success: true, message: 'Membro removido.' });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async markAsRead(request, response) {
-        const { roomId } = request.params;
-        const userId = request.user.id;
-        try {
-            await database.query('UPDATE chat_messages SET message_is_read_status = TRUE WHERE message_chat_room_id = $1 AND message_sender_user_id != $2', [roomId, userId]);
-            return response.status(200).json({ success: true });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async deleteMessage(request, response) {
-        const { messageId } = request.params;
-        const userId = request.user.id;
-        try {
-            await database.query('DELETE FROM chat_messages WHERE message_identification = $1 AND message_sender_user_id = $2', [messageId, userId]);
-            return response.status(200).json({ success: true });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async deleteRoom(request, response) {
-        const { roomId } = request.params;
-        const userId = request.user.id;
-        try {
-            const check = await database.query('SELECT chat_room_admin_user_id FROM chat_rooms WHERE chat_room_identification = $1', [roomId]);
-            if (check.rows[0].chat_room_admin_user_id !== userId) return response.status(403).json({ success: false });
-
-            await database.query('DELETE FROM chat_rooms WHERE chat_room_identification = $1', [roomId]);
-            return response.status(200).json({ success: true, message: 'Sala removida.' });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async initCall(request, response) {
-        const { roomId } = request.params;
-        const initiatorId = request.user.id;
-        try {
-            const query = `INSERT INTO video_calls (video_call_chat_room_id, video_call_initiator_id, video_call_status_current) VALUES ($1, $2, 'pending') RETURNING *`;
-            const result = await database.query(query, [roomId, initiatorId]);
-            return response.status(201).json({ success: true, data: result.rows[0] });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async updateCallStatus(request, response) {
-        const { callId } = request.params;
-        const { status, duration } = request.body;
-        try {
-            const query = `UPDATE video_calls SET video_call_status_current = $1, video_call_duration_seconds = $2, video_call_ended_at_timestamp = NOW() WHERE video_call_identification = $3`;
-            await database.query(query, [status, duration, callId]);
-            return response.status(200).json({ success: true });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async getCallHistory(request, response) {
-        const { roomId } = request.params;
-        try {
-            const query = `SELECT * FROM video_calls WHERE video_call_chat_room_id = $1 ORDER BY video_call_started_at_timestamp DESC`;
-            const result = await database.query(query, [roomId]);
-            return response.status(200).json({ success: true, data: result.rows });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async searchMessages(request, response) {
-        const { roomId } = request.params;
-        const { q } = request.query;
-        try {
-            const query = `SELECT * FROM chat_messages WHERE message_chat_room_id = $1 AND message_text_body ILIKE $2`;
-            const result = await database.query(query, [roomId, `%${q}%`]);
-            return response.status(200).json({ success: true, data: result.rows });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async clearHistory(request, response) {
-        const { roomId } = request.params;
-        try {
-            await database.query('DELETE FROM chat_messages WHERE message_chat_room_id = $1', [roomId]);
-            return response.status(200).json({ success: true });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async getMediaHistory(request, response) {
-        const { roomId } = request.params;
-        try {
-            const query = `SELECT * FROM chat_messages WHERE message_chat_room_id = $1 AND message_type_category != 'text'`;
-            const result = await database.query(query, [roomId]);
-            return response.status(200).json({ success: true, data: result.rows });
-        } catch (error) {
-            return response.status(500).json({ success: false });
-        }
-    }
-
-    async updateRoomName(request, response) {
-        const { roomId } = request.params;
-        const { name } = request.body;
-        await database.query('UPDATE chat_rooms SET chat_room_name_display = $1 WHERE chat_room_identification = $2', [name, roomId]);
-        return response.status(200).json({ success: true });
-    }
-
-    async leaveRoom(request, response) {
-        const { roomId } = request.params;
-        const userId = request.user.id;
-        await database.query('DELETE FROM chat_room_members WHERE member_chat_room_id = $1 AND member_user_id = $2', [roomId, userId]);
-        return response.status(200).json({ success: true });
-    }
-
-    async getUnreadCount(request, response) {
-        const userId = request.user.id;
-        const result = await database.query('SELECT COUNT(*) FROM chat_messages cm JOIN chat_room_members crm ON cm.message_chat_room_id = crm.member_chat_room_id WHERE crm.member_user_id = $1 AND cm.message_is_read_status = FALSE AND cm.message_sender_user_id != $1', [userId]);
-        return response.status(200).json({ success: true, count: result.rows[0].count });
-    }
-
-    async pinMessage(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async getRoomDetails(request, response) {
-        const { roomId } = request.params;
-        const result = await database.query('SELECT * FROM chat_rooms WHERE chat_room_identification = $1', [roomId]);
-        return response.status(200).json({ success: true, data: result.rows[0] });
-    }
-
-    async transferAdmin(request, response) {
-        const { roomId } = request.params;
-        const { newAdminId } = request.body;
-        await database.query('UPDATE chat_rooms SET chat_room_admin_user_id = $1 WHERE chat_room_identification = $2', [newAdminId, roomId]);
-        return response.status(200).json({ success: true });
-    }
-
-    async getCallStatus(request, response) {
-        const { callId } = request.params;
-        const result = await database.query('SELECT video_call_status_current FROM video_calls WHERE video_call_identification = $1', [callId]);
-        return response.status(200).json({ success: true, status: result.rows[0].video_call_status_current });
-    }
-
-    async muteRoom(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async unmuteRoom(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async getArchivedRooms(request, response) {
-        return response.status(200).json({ success: true, data: [] });
-    }
-
-    async archiveRoom(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async getBlockedMembers(request, response) {
-        return response.status(200).json({ success: true, data: [] });
-    }
-
-    async getMessageById(request, response) {
-        const { messageId } = request.params;
-        const result = await database.query('SELECT * FROM chat_messages WHERE message_identification = $1', [messageId]);
-        return response.status(200).json({ success: true, data: result.rows[0] });
-    }
-
-    async forwardMessage(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async getGroupSettings(request, response) {
-        return response.status(200).json({ success: true, settings: {} });
-    }
-
-    async updateGroupSettings(request, response) {
-        return response.status(200).json({ success: true });
-    }
-
-    async getTypingUsers(request, response) {
-        return response.status(200).json({ success: true, users: [] });
-    }
-
-    async logChatEvent(roomId, userId, event) {
-        logger.info(`Chat Event na sala ${roomId}: User ${userId} -> ${event}`);
-    }
-
-    async checkRoomIntegrity(roomId) {
-        const result = await database.query('SELECT 1 FROM chat_rooms WHERE chat_room_identification = $1', [roomId]);
-        return result.rows.length > 0;
-    }
-}
-
-module.exports = new VlogStudentsChatController();
+module.exports = chatController;
