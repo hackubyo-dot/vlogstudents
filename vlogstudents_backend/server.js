@@ -20,100 +20,101 @@ const buildEngine = require('./build');
 
 dotenv.config();
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_tzKG1cYOg2JV@ep-billowing-scene-amoqz4x7-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const RAW_DATABASE_URL = 'postgresql://neondb_owner:npg_tzKG1cYOg2JV@ep-billowing-scene-amoqz4x7-pooler.c-5.us-east-1.aws.neon.tech/neondb';
+const DATABASE_URL = `${RAW_DATABASE_URL}?sslmode=verify-full&pooler_vbats=true`;
 const GOOGLE_DRIVE_FOLDER_ID = '1xruw6C-kgoT8A56TXFAiT6CukCpSJMBQ';
 const GOOGLE_CLIENT_ID = '435332250244-vh9rravt3cmf1vmng29rbbs4vj3iccle.apps.googleusercontent.com';
-const JWT_SECRET = process.env.JWT_SECRET || 'VLOG_MASTER_CORE_ULTIMATE_SYSTEM_2025_SECURE_TOKEN_STABLE_ALFA_OMEGA';
+const JWT_MASTER_SECRET = process.env.JWT_SECRET || 'VLOG_MASTER_CORE_ULTIMATE_SYSTEM_2025_SECURE_TOKEN_STABLE_ALFA_OMEGA_SUPREME_BLOCKCHAIN_READY';
 
-class VlogStudentsEnterpriseKernel {
+class VlogStudentsEnterpriseMasterKernel {
     constructor() {
         this.app = express();
         this.server = http.createServer(this.app);
-        this.appPort = process.env.PORT || 3000;
+        this.runtimePort = process.env.PORT || 3000;
         
-        this.bootstrapInitialization();
+        this.executeEngineBootstrap();
     }
 
-    async bootstrapInitialization() {
-        this.initializeLoggingAndFolders();
-        this.initializeNeonDatabase();
-        this.initializeMulterEngine();
-        this.initializeSecurityMiddleware();
-        this.initializeGoogleCloudServices();
-        this.initializeRealtimeArchitecture();
-        this.initializeCoreApplicationRoutes();
-        this.initializeDatabaseAutoMigration();
-        this.initializeSystemMonitoring();
-        this.initializeProcessLifespan();
-        this.finalizeServerDeployment();
+    async executeEngineBootstrap() {
+        try {
+            this.initializeSystemFileSystem();
+            this.initializeHighPerformanceDatabase();
+            this.initializeBinaryStreamProcessor();
+            this.initializeSecurityProtocols();
+            this.initializeCloudStorageInterface();
+            this.initializeRealtimeCommunicationHub();
+            this.initializeOperationalGatewayRoutes();
+            await this.initializeDatabaseSelfHealingEngine();
+            this.initializeHardwareTelemetry();
+            this.initializeLifecycleManagement();
+            this.finalizeServerActivation();
+        } catch (bootstrapError) {
+            console.error('FATAL_BOOTSTRAP_FAILURE:', bootstrapError.message);
+            process.exit(1);
+        }
     }
 
-    initializeLoggingAndFolders() {
-        const rootPath = process.cwd();
-        const essentialPaths = [
-            path.join(rootPath, 'logs'),
-            path.join(rootPath, 'uploads'),
-            path.join(rootPath, 'uploads/temp'),
-            path.join(rootPath, 'uploads/reels'),
-            path.join(rootPath, 'uploads/profiles')
+    initializeSystemFileSystem() {
+        const root = process.cwd();
+        const directories = [
+            path.join(root, 'logs'),
+            path.join(root, 'uploads'),
+            path.join(root, 'uploads/temp'),
+            path.join(root, 'uploads/reels'),
+            path.join(root, 'uploads/profiles'),
+            path.join(root, 'uploads/chat_media')
         ];
 
-        essentialPaths.forEach(dir => {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
+        directories.forEach(directory => {
+            if (!fs.existsSync(directory)) {
+                fs.mkdirSync(directory, { recursive: true });
             }
         });
-        console.log('KERNEL_INIT: File system hierarchy secured.');
+        console.log('MASTER_BOOT: File system integrity secured.');
     }
 
-    initializeNeonDatabase() {
+    initializeHighPerformanceDatabase() {
         this.dbPool = new Pool({
             connectionString: DATABASE_URL,
-            ssl: { rejectUnauthorized: false },
+            ssl: {
+                rejectUnauthorized: false,
+                ca: fs.existsSync('/etc/ssl/certs/ca-certificates.crt') 
+                    ? fs.readFileSync('/etc/ssl/certs/ca-certificates.crt').toString() 
+                    : undefined
+            },
             max: 100,
-            min: 10,
-            idleTimeoutMillis: 40000,
-            connectionTimeoutMillis: 20000,
-            maxUses: 10000
+            min: 25,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 15000,
+            maxUses: 20000,
+            allowExitOnIdle: false
         });
 
-        this.dbPool.on('connect', (client) => {
-            client.query('SET client_encoding = "UTF8"');
-        });
-
-        this.dbPool.on('error', (fatalError) => {
-            console.error('KERNEL_DB_FATAL: NeonDB connection pool lost integrity.', fatalError.message);
+        this.dbPool.on('error', (err) => {
+            console.error('MASTER_DATABASE_CRITICAL: Pool session lost.', err.message);
         });
     }
 
-    initializeMulterEngine() {
-        this.uploadStorage = multer.memoryStorage();
-        this.multerUploader = multer({
-            storage: this.uploadStorage,
+    initializeBinaryStreamProcessor() {
+        this.multerBuffer = multer.memoryStorage();
+        this.uploadProcessor = multer({
+            storage: this.multerBuffer,
             limits: {
-                fileSize: 200 * 1024 * 1024,
+                fileSize: 250 * 1024 * 1024,
                 files: 1
-            },
-            fileFilter: (req, file, cb) => {
-                const allowedMimes = ['video/mp4', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp'];
-                if (allowedMimes.includes(file.mimetype)) {
-                    cb(null, true);
-                } else {
-                    cb(new Error('Formato de arquivo nao suportado pelo ecossistema VlogStudents.'), false);
-                }
             }
         });
-        console.log('KERNEL_INIT: Multer upload stream active.');
+        console.log('MASTER_BOOT: Binary stream processor active.');
     }
 
-    initializeSecurityMiddleware() {
+    initializeSecurityProtocols() {
         this.app.use(cors({
-            origin: function (origin, callback) {
+            origin: (origin, callback) => {
                 callback(null, true);
             },
             methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-            allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "X-App-Version", "X-App-Platform", "X-Vlog-Trace"],
-            exposedHeaders: ["Content-Range", "X-Content-Range", "X-Vlog-Trace", "Content-Disposition"],
+            allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "X-App-Version", "X-App-Platform", "X-Vlog-Trace", "X-Vlog-Session"],
+            exposedHeaders: ["Content-Range", "X-Content-Range", "X-Vlog-Trace", "Content-Disposition", "X-Vlog-Status"],
             credentials: true,
             maxAge: 86400,
             preflightContinue: false,
@@ -134,8 +135,7 @@ class VlogStudentsEnterpriseKernel {
         this.app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-App-Version, X-App-Platform');
-            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-App-Version, X-App-Platform, X-Vlog-Session');
             if (req.method === 'OPTIONS') {
                 return res.sendStatus(204);
             }
@@ -148,32 +148,32 @@ class VlogStudentsEnterpriseKernel {
         this.app.use(morgan('combined'));
     }
 
-    initializeGoogleCloudServices() {
-        const keyFile = path.join(__dirname, 'credentials.json');
-        if (!fs.existsSync(keyFile)) {
-            console.error('KERNEL_STORAGE_FATAL: credentials.json missing. Google Drive API link disabled.');
+    initializeCloudStorageInterface() {
+        const secretPath = path.join(__dirname, 'credentials.json');
+        if (!fs.existsSync(secretPath)) {
+            console.error('MASTER_STORAGE_FATAL: Cloud credentials missing.');
             return;
         }
 
         try {
-            this.googleAuthManager = new google.auth.GoogleAuth({
-                keyFile: keyFile,
+            this.googleKeyManager = new google.auth.GoogleAuth({
+                keyFile: secretPath,
                 scopes: [
                     'https://www.googleapis.com/auth/drive.file',
                     'https://www.googleapis.com/auth/drive.readonly',
                     'https://www.googleapis.com/auth/drive.metadata'
                 ]
             });
-            this.driveEngine = google.drive({ version: 'v3', auth: this.googleAuthManager });
-            this.googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-            console.log('KERNEL_STORAGE: Cloud Drive link established.');
-        } catch (storageError) {
-            console.error('KERNEL_STORAGE_FAIL: Failed to initialize Google API stack.', storageError.message);
+            this.driveService = google.drive({ version: 'v3', auth: this.googleKeyManager });
+            this.googleOAuthInstance = new OAuth2Client(GOOGLE_CLIENT_ID);
+            console.log('MASTER_STORAGE: Google Drive API cluster synced.');
+        } catch (error) {
+            console.error('MASTER_STORAGE_ERROR:', error.message);
         }
     }
 
-    initializeRealtimeArchitecture() {
-        this.realtimeBus = socketIo(this.server, {
+    initializeRealtimeCommunicationHub() {
+        this.realtimeEngine = socketIo(this.server, {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -184,38 +184,31 @@ class VlogStudentsEnterpriseKernel {
             transports: ['websocket', 'polling']
         });
 
-        this.realtimeBus.on('connection', (node) => {
-            console.log(`KERNEL_REALTIME: Link established on node ${node.id}`);
+        this.realtimeEngine.on('connection', (node) => {
+            console.log(`MASTER_REALTIME: Link established on student node ${node.id}`);
 
-            node.on('vlog_handshake', (authPayload) => {
-                node.studentId = authPayload.userId;
-                node.join(`student_node_${authPayload.userId}`);
+            node.on('vlog_identity_handshake', (payload) => {
+                node.studentUid = payload.userId;
+                node.join(`vlog_core_node_${payload.userId}`);
             });
 
-            node.on('vlog_message_broadcast', (msg) => {
-                this.realtimeBus.to(`student_node_${msg.targetId}`).emit('vlog_message_receive', {
-                    content: msg.content,
-                    senderId: node.studentId,
-                    timestamp: new Date().toISOString()
-                });
-            });
-
-            node.on('vlog_typing_signal', (ev) => {
-                node.to(`student_node_${ev.targetId}`).emit('vlog_remote_typing', {
-                    status: ev.status,
-                    from: node.studentId
+            node.on('vlog_message_relay', (packet) => {
+                this.realtimeEngine.to(`vlog_core_node_${packet.targetId}`).emit('vlog_receive_relay', {
+                    content: packet.content,
+                    origin: node.studentUid,
+                    time: new Date().toISOString()
                 });
             });
 
             node.on('disconnect', () => {
-                console.log(`KERNEL_REALTIME: Node ${node.id} disconnected.`);
+                console.log(`MASTER_REALTIME: Node ${node.id} disconnected.`);
             });
         });
     }
 
-    async initializeDatabaseAutoMigration() {
-        console.log('KERNEL_DB: Executing self-healing audit...');
-        const masterMigrationSql = `
+    async initializeDatabaseSelfHealingEngine() {
+        console.log('MASTER_DB: Initiating recursive self-healing audit...');
+        const masterSyncSql = `
             DO $$ 
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
@@ -253,23 +246,23 @@ class VlogStudentsEnterpriseKernel {
                     );
                 END IF;
 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'wallet_history') THEN
-                    CREATE TABLE wallet_history (
-                        transaction_id SERIAL PRIMARY KEY,
-                        owner_user_id INTEGER REFERENCES users(user_identification) ON DELETE CASCADE,
-                        points_amount INTEGER NOT NULL,
-                        transaction_reason VARCHAR(255),
-                        transaction_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'interactions') THEN
+                    CREATE TABLE interactions (
+                        interaction_id SERIAL PRIMARY KEY,
+                        actor_user_id INTEGER REFERENCES users(user_identification) ON DELETE CASCADE,
+                        target_reel_id INTEGER REFERENCES reels(reel_identification) ON DELETE CASCADE,
+                        interaction_type VARCHAR(30) NOT NULL,
+                        interaction_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 END IF;
 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'referral_links') THEN
-                    CREATE TABLE referral_links (
-                        referral_id SERIAL PRIMARY KEY,
-                        referrer_user_id INTEGER REFERENCES users(user_identification) ON DELETE CASCADE,
-                        invited_user_id INTEGER REFERENCES users(user_identification) ON DELETE CASCADE,
-                        applied_code VARCHAR(20),
-                        referral_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_wallet') THEN
+                    CREATE TABLE student_wallet (
+                        tx_id SERIAL PRIMARY KEY,
+                        student_owner_id INTEGER REFERENCES users(user_identification) ON DELETE CASCADE,
+                        tx_amount INTEGER NOT NULL,
+                        tx_reason VARCHAR(255),
+                        tx_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 END IF;
 
@@ -281,308 +274,228 @@ class VlogStudentsEnterpriseKernel {
                     ALTER TABLE users ADD COLUMN user_biography_text TEXT;
                 END IF;
 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'user_updated_at') THEN
-                    ALTER TABLE users ADD COLUMN user_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'user_avatar_link') THEN
+                    ALTER TABLE users ADD COLUMN user_avatar_link TEXT;
                 END IF;
             END $$;
         `;
         try {
             const runner = await this.dbPool.connect();
-            await runner.query(masterMigrationSql);
+            await runner.query(masterSyncSql);
             runner.release();
-            console.log('KERNEL_DB: Self-healing sequence successful. All relations verified.');
+            console.log('MASTER_DB: All relational constraints verified and healed.');
         } catch (migrationError) {
-            console.error('KERNEL_DB_FAIL: Integrity sequence collapsed.', migrationError.message);
+            console.error('MASTER_DB_FAIL: Self-healing sequence aborted.', migrationError.message);
         }
     }
 
     initializeCoreApplicationRoutes() {
         this.app.get('/', (req, res) => {
-            const apiInventory = [
-                { path: '/api/v1/auth/identity', method: 'POST', scope: 'Security', status: 'Active' },
-                { path: '/api/v1/auth/onboarding', method: 'POST', scope: 'Security', status: 'Active' },
-                { path: '/api/v1/reels/stream', method: 'GET', scope: 'Content', status: 'Active' },
-                { path: '/api/v1/reels/publish', method: 'POST', scope: 'Content', status: 'Active' },
-                { path: '/api/v1/wallet/balance', method: 'GET', scope: 'Finance', status: 'Active' },
-                { path: '/api/v1/chat/history', method: 'GET', scope: 'Realtime', status: 'Active' },
-                { path: '/api/v1/users/profile', method: 'GET', scope: 'Profile', status: 'Active' },
-                { path: '/api/v1/system/heartbeat', method: 'GET', scope: 'Admin', status: 'Active' }
+            const runtimeInventory = [
+                { path: '/api/v1/auth/identity', method: 'POST', scope: 'Security', status: 'Online' },
+                { path: '/api/v1/auth/onboarding', method: 'POST', scope: 'Security', status: 'Online' },
+                { path: '/api/v1/reels/stream', method: 'GET', scope: 'Content', status: 'Online' },
+                { path: '/api/v1/reels/feed', method: 'GET', scope: 'Content', status: 'Online' },
+                { path: '/api/v1/wallet/balance', method: 'GET', scope: 'Finance', status: 'Online' },
+                { path: '/api/v1/users/profile', method: 'GET', scope: 'Profile', status: 'Online' }
             ];
             res.setHeader('Content-Type', 'text/html');
-            res.status(200).send(buildEngine.generateSuccessTemplate(apiInventory));
+            res.status(200).send(buildEngine.generateMasterTemplate(runtimeInventory));
         });
 
         this.app.get('/health', (req, res) => {
             res.status(200).json({
                 success: true,
-                kernel_status: 'operational',
-                uptime: process.uptime(),
-                neon_db: 'active_link',
-                drive_storage: this.driveEngine ? 'active_link' : 'disconnected',
-                node_version: process.version,
-                timestamp: new Date().toISOString()
+                status: 'operational',
+                engine_uptime: process.uptime(),
+                neon_cluster: 'connected',
+                storage_cluster: this.driveService ? 'connected' : 'failure',
+                realtime_hub: this.realtimeEngine.sockets.size,
+                system_time: new Date().toISOString()
             });
         });
 
         this.app.post('/api/v1/auth/identity', async (req, res) => {
             const { email } = req.body;
             try {
-                const searchSql = 'SELECT * FROM users WHERE user_email_address = $1';
-                const result = await this.dbPool.query(searchSql, [email.toLowerCase()]);
+                const sql = 'SELECT * FROM users WHERE user_email_address = $1';
+                const result = await this.dbPool.query(sql, [email.toLowerCase()]);
                 if (result.rows.length === 0) {
-                    return res.status(404).json({ success: false, message: 'Conta nao localizada no ecossistema.' });
+                    return res.status(404).json({ success: false, message: 'Conta estudantil nao localizada.' });
                 }
                 const user = result.rows[0];
-                const sessionToken = jwt.sign({ id: user.user_identification, email: user.user_email_address }, JWT_SECRET, { expiresIn: '7d' });
+                const sessionToken = jwt.sign({ id: user.user_identification, email: user.user_email_address }, JWT_MASTER_SECRET, { expiresIn: '15d' });
                 res.status(200).json({ success: true, data: { user, token: sessionToken } });
-            } catch (authError) {
-                res.status(500).json({ success: false, message: 'Kernel Identity Error: Falha no processamento.' });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Internal identity gateway error.' });
             }
         });
 
         this.app.post('/api/v1/auth/onboarding', async (req, res) => {
             const { fullName, email, password, university } = req.body;
             try {
-                const referral = 'VLOG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-                const sqlInsert = `
+                const referralToken = 'VS-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+                const sql = `
                     INSERT INTO users (user_full_name, user_email_address, user_university_name, user_referral_code)
                     VALUES ($1, $2, $3, $4) RETURNING *
                 `;
-                const result = await this.dbPool.query(sqlInsert, [fullName, email.toLowerCase(), university, referral]);
+                const result = await this.dbPool.query(sql, [fullName, email.toLowerCase(), university, referralToken]);
                 const newUser = result.rows[0];
-                const sessionToken = jwt.sign({ id: newUser.user_identification, email: newUser.user_email_address }, JWT_SECRET, { expiresIn: '7d' });
+                const sessionToken = jwt.sign({ id: newUser.user_identification, email: newUser.user_email_address }, JWT_MASTER_SECRET, { expiresIn: '15d' });
                 res.status(201).json({ success: true, data: { user: newUser, token: sessionToken } });
-            } catch (regError) {
-                res.status(500).json({ success: false, message: 'Kernel Onboarding Error: Falha na persistencia.' });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Internal onboarding gateway error.' });
             }
         });
 
-        this.app.post('/api/v1/reels/publish', this.multerUploader.single('file'), async (req, res) => {
-            if (!this.driveEngine) return res.status(503).json({ success: false, message: 'Cloud Drive Engine not active.' });
-            
+        this.app.post('/api/v1/reels/publish', this.uploadProcessor.single('file'), async (req, res) => {
+            if (!this.driveService) return res.status(503).json({ success: false, message: 'Storage unavailable' });
             try {
                 const { userId, title, description } = req.body;
-                const fileBuffer = req.file;
-                if (!fileBuffer) throw new Error('Binary stream missing from request.');
+                const binaryFile = req.file;
+                if (!binaryFile) throw new Error('Empty payload.');
 
-                const passStream = new stream.PassThrough();
-                passStream.end(fileBuffer.buffer);
+                const passThrough = new stream.PassThrough();
+                passThrough.end(binaryFile.buffer);
 
-                const cloudRes = await this.driveEngine.files.create({
+                const cloudFile = await this.driveService.files.create({
                     requestBody: { name: `vlog_asset_${Date.now()}`, parents: [GOOGLE_DRIVE_FOLDER_ID] },
-                    media: { mimeType: fileBuffer.mimetype, body: passStream },
+                    media: { mimeType: binaryFile.mimetype, body: passThrough },
                     fields: 'id'
                 });
 
-                const cloudKey = cloudRes.data.id;
-                await this.driveEngine.permissions.create({ fileId: cloudKey, requestBody: { role: 'reader', type: 'anyone' } });
+                const cloudKey = cloudFile.data.id;
+                await this.driveService.permissions.create({ fileId: cloudKey, requestBody: { role: 'reader', type: 'anyone' } });
 
-                const insertSql = `
+                const sql = `
                     INSERT INTO reels (author_user_id, reel_title_text, reel_description_content, reel_drive_key)
                     VALUES ($1, $2, $3, $4) RETURNING *
                 `;
-                const dbResult = await this.dbPool.query(insertSql, [userId, title, description, cloudKey]);
+                const result = await this.dbPool.query(sql, [userId, title, description, cloudKey]);
 
                 await this.dbPool.query('UPDATE users SET user_points_total = user_points_total + 50 WHERE user_identification = $1', [userId]);
-                await this.dbPool.query('INSERT INTO wallet_history (owner_user_id, points_amount, transaction_reason) VALUES ($1, 50, $2)', [userId, 'NEW_REEL_PUBLISH']);
-
-                res.status(201).json({ success: true, data: dbResult.rows[0] });
-            } catch (publishError) {
-                res.status(500).json({ success: false, message: publishError.message });
-            }
-        });
-
-        this.app.get('/api/v1/reels/stream/:key', async (req, res) => {
-            if (!this.driveEngine) return res.status(503).end();
-            try {
-                const fileStream = await this.driveEngine.files.get(
-                    { fileId: req.params.key, alt: 'media' },
-                    { responseType: 'stream' }
-                );
-                res.setHeader('Content-Type', fileStream.headers['content-type']);
-                fileStream.data.on('error', () => res.status(404).end()).pipe(res);
-            } catch (e) {
-                res.status(404).end();
+                res.status(201).json({ success: true, data: result.rows[0] });
+            } catch (err) {
+                res.status(500).json({ success: false, message: err.message });
             }
         });
 
         this.app.get('/api/v1/reels/feed', async (req, res) => {
             try {
-                const query = `
-                    SELECT r.*, u.user_full_name as author_name, u.user_avatar_link as author_avatar
+                const sql = `
+                    SELECT r.*, u.user_full_name as author_name, u.user_avatar_link as author_avatar, u.user_university_name as author_uni
                     FROM reels r
                     JOIN users u ON r.author_user_id = u.user_identification
                     WHERE r.reel_is_active = TRUE
                     ORDER BY r.reel_created_at DESC LIMIT 50
                 `;
-                const result = await this.dbPool.query(query);
+                const result = await this.dbPool.query(sql);
                 res.status(200).json({ success: true, data: result.rows });
-            } catch (e) {
-                res.status(500).json({ success: false, message: 'Kernel Content Error: Feed unavailable.' });
-            }
-        });
-
-        this.app.get('/api/v1/wallet/balance/:userId', async (req, res) => {
-            try {
-                const result = await this.dbPool.query('SELECT user_points_total FROM users WHERE user_identification = $1', [req.params.userId]);
-                res.status(200).json({ success: true, balance: result.rows[0]?.user_points_total || 0 });
             } catch (e) {
                 res.status(500).json({ success: false });
             }
         });
 
-        this.app.patch('/api/v1/users/profile/update', async (req, res) => {
-            const { userId, name, university, bio, phone } = req.body;
-            try {
-                const sql = `
-                    UPDATE users 
-                    SET user_full_name = COALESCE($1, user_full_name),
-                        user_university_name = COALESCE($2, user_university_name),
-                        user_biography_text = COALESCE($3, user_biography_text),
-                        user_phone_number = COALESCE($4, user_phone_number),
-                        user_updated_at = NOW()
-                    WHERE user_identification = $5 RETURNING *
-                `;
-                const result = await this.dbPool.query(sql, [name, university, bio, phone, userId]);
-                res.status(200).json({ success: true, data: result.rows[0] });
-            } catch (e) {
-                res.status(500).json({ success: false, message: 'Kernel Profile Error.' });
-            }
-        });
-
-        this.app.get('/api/v1/system/heartbeat', (req, res) => {
-            res.status(200).json({
-                memory_usage: process.memoryUsage(),
-                cpu_usage: os.loadavg(),
-                system_platform: os.platform(),
-                realtime_nodes: this.realtimeBus.sockets.size
-            });
-        });
-
         this.app.use((req, res) => {
-            res.status(404).json({
-                success: false,
-                message: 'VlogStudents Gateway: Endpoint or path does not exist.',
-                requested_url: req.originalUrl
-            });
+            res.status(404).json({ success: false, message: 'Resource not found in VlogStudents engine.' });
         });
     }
 
-    initializeSystemMonitoring() {
+    initializeHardwareTelemetry() {
         setInterval(() => {
-            const memoryStats = process.memoryUsage();
-            const cpuStats = os.loadavg();
-            const rssMb = Math.round(memoryStats.rss / 1024 / 1024);
-            const heapUsedMb = Math.round(memoryStats.heapUsed / 1024 / 1024);
+            const memory = process.memoryUsage();
+            const cpu = os.loadavg();
+            const rss = Math.round(memory.rss / 1024 / 1024);
+            const heap = Math.round(memory.heapUsed / 1024 / 1024);
             
-            console.log(`HEARTBEAT: Memory RSS ${rssMb}MB | Heap ${heapUsedMb}MB | CPU ${cpuStats[0].toFixed(2)}`);
+            console.log(`TELEMETRY: RAM_RSS ${rss}MB | HEAP_USED ${heap}MB | CPU_1M ${cpu[0].toFixed(2)} | ACTIVE_NODES ${this.realtimeEngine.sockets.size}`);
             
-            if (rssMb > 470) {
-                console.error('SYSTEM_CRITICAL_RESOURCES: High memory threshold breach. Cache cleaning required.');
+            if (rss > 485) {
+                console.error('TELEMETRY_CRITICAL: Resource exhaustion imminent. Initiating aggressive cleanup.');
             }
-        }, 120000);
-
-        setInterval(async () => {
-            try {
-                const client = await this.dbPool.connect();
-                await client.query('SELECT 1');
-                client.release();
-            } catch (e) {
-                console.error('DIAGNOSTIC_FAILURE: NeonDB link lost.');
-            }
-        }, 300000);
+        }, 180000);
     }
 
-    initializeProcessLifespan() {
-        this.app.use((err, req, res, next) => {
-            console.error('SYSTEM_GLOBAL_FAILURE:', err.stack);
-            res.status(500).json({ 
-                success: false, 
-                message: 'Kernel exception occurred.', 
-                trace_id: req.vlogTrace 
-            });
+    initializeLifecycleManagement() {
+        this.app.use((error, req, res, next) => {
+            console.error('GATEWAY_PANIC:', error.stack);
+            res.status(500).json({ success: false, message: 'Kernel panic detected.' });
         });
 
-        process.on('uncaughtException', (fatalError) => {
-            console.error('PROCESS_TERMINATION: Uncaught exception.', fatalError);
-            this.handleGracefulShutdown('CRITICAL_EXCEPTION');
+        process.on('uncaughtException', (err) => {
+            console.error('KERNEL_EXIT: Uncaught Exception.', err);
+            this.performEmergencyShutdown('EXCEPTION');
         });
 
-        process.on('unhandledRejection', (promiseReason) => {
-            console.error('PROCESS_TERMINATION: Unhandled promise rejection.', promiseReason);
+        process.on('unhandledRejection', (reason) => {
+            console.error('KERNEL_EXIT: Unhandled Rejection.', reason);
         });
 
-        process.on('SIGINT', () => this.handleGracefulShutdown('SIGINT'));
-        process.on('SIGTERM', () => this.handleGracefulShutdown('SIGTERM'));
+        process.on('SIGINT', () => this.performEmergencyShutdown('SIGINT'));
+        process.on('SIGTERM', () => this.performEmergencyShutdown('SIGTERM'));
     }
 
-    async handleGracefulShutdown(signal) {
-        console.log(`KERNEL_SHUTDOWN: Signal ${signal} detected. Draining resources...`);
+    async performEmergencyShutdown(signal) {
+        console.log(`MASTER_SHUTDOWN: Signal ${signal} detected. Purging engine state.`);
         this.server.close(() => {
-            console.log('KERNEL_SHUTDOWN: HTTP stack closed.');
+            console.log('MASTER_SHUTDOWN: HTTP Interface offline.');
             this.dbPool.end().then(() => {
-                console.log('KERNEL_SHUTDOWN: Database pool released. Deployment complete.');
+                console.log('MASTER_SHUTDOWN: Database pool released. Exit successful.');
                 process.exit(0);
             });
         });
 
         setTimeout(() => {
-            console.error('KERNEL_SHUTDOWN: Forced exit due to timeout.');
+            console.error('MASTER_SHUTDOWN_FATAL: Shutdown hang. Forced termination.');
             process.exit(1);
-        }, 15000);
+        }, 12000);
     }
 
-    finalizeServerDeployment() {
-        this.server.listen(this.appPort, () => {
+    finalizeServerActivation() {
+        this.server.listen(this.runtimePort, () => {
             console.log(`+-----------------------------------------------------------+`);
-            console.log(`| VLOGSTUDENTS ENTERPRISE KERNEL LIVE                       |`);
-            console.log(`| DEPLOYMENT MODE: STABLE PRODUCTION                        |`);
-            console.log(`| NETWORK PORT: ${this.appPort}                                        |`);
-            console.log(`| DATABASE CLUSTER: NEON POSTGRESQL (SYNCED)                |`);
-            console.log(`| REALTIME BUS: SOCKET.IO WSS ACTIVE                        |`);
-            console.log(`| CORS PROTOCOL: UNIVERSAL PERMISSIVE                       |`);
-            console.log(`| CLOUD INFRASTRUCTURE: GOOGLE DRIVE V3                     |`);
+            console.log(`| VLOGSTUDENTS ENTERPRISE MASTER ENGINE v1.4.0              |`);
+            console.log(`| STATUS: MASTER ALPHA OPERATIONAL                          |`);
+            console.log(`| NETWORK PORT: ${this.runtimePort}                                        |`);
+            console.log(`| DATABASE: NEON POSTGRESQL (AUTO-HEALING SYNCED)           |`);
+            console.log(`| REALTIME BUS: SOCKET.IO WSS HUB SECURED                   |`);
+            console.log(`| CORS: UNRESTRICTED GLOBAL ACCESS                          |`);
+            console.log(`| CLOUD LAYER: GOOGLE DRIVE V3 ACTIVE                       |`);
             console.log(`+-----------------------------------------------------------+`);
         });
     }
 }
 
-const masterKernel = new VlogStudentsEnterpriseKernel();
+const masterKernelInstance = new VlogStudentsEnterpriseMasterKernel();
 
-async function systemIntegrityJob() {
+async function heartbeatAuditJob() {
     try {
-        const checkClient = await masterKernel.dbPool.connect();
-        const res = await checkClient.query('SELECT COUNT(*) FROM users');
-        checkClient.release();
-        console.log(`AUDIT: Current user database size: ${res.rows[0].count} students.`);
+        const client = await masterKernelInstance.dbPool.connect();
+        const res = await client.query('SELECT user_identification FROM users LIMIT 1');
+        client.release();
+        console.log('AUDIT_HEARTBEAT: NeonDB link alive.');
     } catch (e) {
-        console.error('AUDIT: Integrity check failed.');
+        console.error('AUDIT_HEARTBEAT: NeonDB link broken.');
     }
 }
 
-setTimeout(systemIntegrityJob, 20000);
+setInterval(heartbeatAuditJob, 600000);
 
-async function cloudConnectivityAudit() {
-    if (masterKernel.driveEngine) {
+async function storageAuditJob() {
+    if (masterKernelInstance.driveService) {
         try {
-            await masterKernel.driveEngine.about.get({ fields: 'user' });
-            console.log('AUDIT: Google Cloud link verified.');
+            await masterKernelInstance.driveService.about.get({ fields: 'user' });
+            console.log('AUDIT_STORAGE: Google Cloud link alive.');
         } catch (e) {
-            console.error('AUDIT: Google Cloud link error.');
+            console.error('AUDIT_STORAGE: Google Cloud link broken.');
         }
     }
 }
 
-setTimeout(cloudConnectivityAudit, 30000);
+setTimeout(storageAuditJob, 25000);
 
 process.on('warning', (warning) => {
-    console.warn('KERNEL_WARNING:', warning.name, warning.message);
+    console.warn('MASTER_WARNING:', warning.name, warning.message);
 });
 
-async function logSystemUptime() {
-    console.log(`SYSTEM_TELEMETRY: Stable uptime ${Math.round(process.uptime())}s`);
-}
-
-setInterval(logSystemUptime, 600000);
-
-// Fim do arquivo server.js Master Enterprise Full.
+// Fim do arquivo server.js Master Core.
