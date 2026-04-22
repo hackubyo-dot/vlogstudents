@@ -1,5 +1,5 @@
 // FILE: server.js
-const app = require('./src/app');
+const app = require('./app'); 
 const env = require('./src/config/env');
 const initializeDatabase = require('./src/database/init');
 const dns = require('dns');
