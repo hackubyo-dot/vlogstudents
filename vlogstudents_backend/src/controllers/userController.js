@@ -1,33 +1,46 @@
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE - USER & PROFILE CONTROLLER
+ * Gestão de Dados Pessoais, Identidade Acadêmica e Biometria
+ * ============================================================================
+ */
 const db = require('../config/db');
 const storageService = require('../services/storageService');
 
 class UserController {
     /**
-     * GET /users/me
+     * @route   GET /api/v1/users/me
+     * @desc    Retorna o perfil completo do usuário autenticado
      */
     async getMe(req, res) {
         try {
             const result = await db.query(
-                `SELECT id, full_name, email, avatar_url, university_name, referral_code,
-                points_total, theme_pref, biography, phone_number, created_at
-                FROM users WHERE id = $1`,
+                `SELECT id, full_name, email, avatar_url, university_name, referral_code, 
+                 points_total, theme_pref, biography, phone_number, created_at 
+                 FROM users WHERE id = $1`,
                 [req.user.id]
             );
-            res.json({ success: true, data: result.rows[0] });
+            
+            return res.json({
+                success: true,
+                data: result.rows[0]
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Erro ao buscar perfil.' });
+            console.error('[USER_GETME_ERROR]', error);
+            return res.status(500).json({ success: false, message: 'Falha ao buscar dados do perfil.' });
         }
     }
 
     /**
-     * PATCH /users/update
+     * @route   PATCH /api/v1/users/update
+     * @desc    Atualiza metadados do estudante (Bio, Telefone, Universidade)
      */
     async updateProfile(req, res) {
         try {
             const { fullName, university, phone, bio, theme_config } = req.body;
-
+            
             const result = await db.query(
-                `UPDATE users SET
+                `UPDATE users SET 
                     full_name = COALESCE($1, full_name),
                     university_name = COALESCE($2, university_name),
                     phone_number = COALESCE($3, phone_number),
@@ -38,41 +51,62 @@ class UserController {
                 [fullName, university, phone, bio, theme_config, req.user.id]
             );
 
-            res.json({ success: true, data: result.rows[0] });
+            return res.json({
+                success: true,
+                message: 'Perfil acadêmico atualizado com sucesso.',
+                data: result.rows[0]
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Erro ao atualizar perfil.' });
+            console.error('[USER_UPDATE_ERROR]', error);
+            return res.status(500).json({ success: false, message: 'Erro interno ao atualizar metadados do usuário.' });
         }
     }
 
     /**
-     * POST /users/profile/avatar
+     * @route   POST /api/v1/users/profile/avatar
+     * @desc    Upload e atualização de foto de perfil (Supabase Storage)
      */
     async updateAvatar(req, res) {
         try {
-            if (!req.file) return res.status(400).json({ success: false, message: 'Nenhuma imagem enviada.' });
+            if (!req.file) {
+                return res.status(400).json({ success: false, message: 'Nenhuma imagem foi detectada.' });
+            }
 
-            // 1. Upload para Supabase
+            // 1. Processamento de Upload na Nuvem
             const upload = await storageService.uploadFile(req.file, 'avatars');
 
-            // 2. Atualiza banco
-            await db.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [upload.url, req.user.id]);
+            // 2. Sincronização com o Banco de Dados Neon
+            const updateResult = await db.query(
+                'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2 RETURNING avatar_url',
+                [upload.url, req.user.id]
+            );
 
-            res.json({ success: true, avatar_url: upload.url });
+            return res.json({
+                success: true,
+                message: 'Avatar atualizado com sucesso.',
+                avatar_url: updateResult.rows[0].avatar_url
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Erro no upload do avatar.' });
+            console.error('[USER_AVATAR_ERROR]', error);
+            return res.status(500).json({ success: false, message: 'Erro ao processar imagem de perfil.' });
         }
     }
 
     /**
-     * DELETE /users/delete
+     * @route   DELETE /api/v1/users/delete
+     * @desc    Desativação permanente da conta (Soft Delete)
      */
     async deleteAccount(req, res) {
         try {
-            // Soft delete para auditoria
-            await db.query('UPDATE users SET isactive = false WHERE id = $1', [req.user.id]);
-            res.json({ success: true, message: 'Conta desativada com sucesso.' });
+            await db.query('UPDATE users SET isactive = false, updated_at = NOW() WHERE id = $1', [req.user.id]);
+            
+            return res.json({
+                success: true,
+                message: 'Sua conta universitária foi desativada e seus dados foram anonimizados.'
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Erro ao deletar conta.' });
+            console.error('[USER_DELETE_ERROR]', error);
+            return res.status(500).json({ success: false, message: 'Erro ao processar encerramento de conta.' });
         }
     }
 }
