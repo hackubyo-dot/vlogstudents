@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const app = require('./src/app');
+const app = require('./app'); // ✅ corrigido
 const env = require('./src/config/env');
 const initializeDatabase = require('./src/database/init');
 
