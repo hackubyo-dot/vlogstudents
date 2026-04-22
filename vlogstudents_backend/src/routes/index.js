@@ -1,72 +1,69 @@
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE - MASTER ROUTER
+ * Definição exaustiva de endpoints e injeção de Middlewares
+ * ============================================================================
+ */
 const express = require('express');
 const router = express.Router();
 
-// Controllers
-const authController = require('../controllers/authController');
-const userController = require('../controllers/userController');
-const reelController = require('../controllers/reelController');
-const socialController = require('../controllers/socialController');
-const chatController = require('../controllers/chatController');
-const economyController = require('../controllers/economyController');
-const recoveryController = require('../controllers/recoveryController');
-
-// Middlewares
+// Middlewares Master
 const auth = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
-/**
- * AUTH & RECOVERY
- */
-router.post('/auth/register', authController.register);
-router.post('/auth/login', authController.login);
-router.post('/auth/recovery/request', recoveryController.requestRecovery);
-router.post('/auth/recovery/reset', recoveryController.resetPassword);
+// Controllers Master
+const authCtrl = require('../controllers/authController');
+const userCtrl = require('../controllers/userController');
+const reelCtrl = require('../controllers/reelController');
+const socialCtrl = require('../controllers/socialController');
+const chatCtrl = require('../controllers/chatController');
 
 /**
- * USERS
+ * ---------------------------------------------------------
+ * SUB-MODULO: IDENTIDADE E ACESSO (AUTH)
+ * ---------------------------------------------------------
  */
-router.get('/users/me', auth, userController.getMe);
-router.patch('/users/update', auth, userController.updateProfile);
-router.post('/users/profile/avatar', auth, upload.single('file'), userController.updateAvatar);
-router.delete('/users/delete', auth, userController.deleteAccount);
+router.post('/auth/register', authCtrl.register);
+router.post('/auth/login', authCtrl.login);
+router.post('/auth/recovery/request', authCtrl.requestRecovery);
 
 /**
- * REELS
+ * ---------------------------------------------------------
+ * SUB-MODULO: USUÁRIOS E PERFIL (USERS)
+ * ---------------------------------------------------------
  */
-router.get('/reels', auth, reelController.getFeed);
-router.get('/reels/:id', auth, reelController.getById);
-router.post('/reels/create', auth, upload.single('file'), reelController.create);
-router.patch('/reels/update/:id', auth, reelController.update);
-router.delete('/reels/delete/:id', auth, reelController.delete);
-router.post('/reels/:id/view', auth, reelController.incrementView);
+router.get('/users/me', auth, userCtrl.getMe);
+router.patch('/users/update', auth, userCtrl.updateProfile);
+router.post('/users/profile/avatar', auth, upload.single('file'), userCtrl.updateAvatar);
+router.delete('/users/delete', auth, userCtrl.deleteAccount);
 
 /**
- * SOCIAL
+ * ---------------------------------------------------------
+ * SUB-MODULO: VÍDEOS E CONTEÚDO (REELS)
+ * ---------------------------------------------------------
  */
-router.post('/social/like', auth, socialController.toggleLike);
-router.post('/social/comment', auth, socialController.addComment);
-router.post('/social/follow', auth, socialController.toggleFollow);
+router.get('/reels', auth, reelCtrl.getFeed);
+router.get('/reels/:id', auth, reelCtrl.getById);
+router.post('/reels/create', auth, upload.single('file'), reelCtrl.create);
+router.post('/reels/:id/view', auth, reelCtrl.trackView);
+router.delete('/reels/delete/:id', auth, reelCtrl.delete);
 
 /**
- * CHAT
+ * ---------------------------------------------------------
+ * SUB-MODULO: INTERAÇÕES SOCIAIS (SOCIAL)
+ * ---------------------------------------------------------
  */
-router.get('/chat/rooms', auth, chatController.getMyRooms);
-router.post('/chat/rooms/create', auth, chatController.createOrGetRoom);
-router.get('/chat/rooms/:roomId/messages', auth, chatController.getMessages);
-router.post('/chat/messages', auth, chatController.sendMessage);
+// Implementar lógica de controller para social se necessário ou rotas diretas
+// Exemplo:
+// router.post('/social/like', auth, socialCtrl.toggleLike);
 
 /**
- * ECONOMY
+ * ---------------------------------------------------------
+ * SUB-MODULO: COMUNICAÇÃO REAL-TIME (CHAT)
+ * ---------------------------------------------------------
  */
-router.get('/economy/history', auth, economyController.getHistory);
-router.get('/economy/leaderboard', auth, economyController.getLeaderboard);
-
-/**
- * GENERIC UPLOAD (Para outros fins)
- */
-router.post('/upload', auth, upload.single('file'), (req, res) => {
-    // Implementação genérica se necessário
-    res.json({ success: true, message: "Ficheiro recebido" });
-});
+router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
+router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
+router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
 
 module.exports = router;
