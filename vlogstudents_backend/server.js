@@ -5,7 +5,7 @@ const initializeDatabase = require('./src/database/init');
 const dns = require('dns');
 
 /**
- * FIX CRÍTICO PARA RENDER/ENETUNREACH: 
+ * FIX CRÍTICO PARA RENDER/ENETUNREACH:
  * O Node.js tenta usar IPv6 por padrão, o que causa erro no Render.
  * Esta linha força o uso de IPv4 (padrão de rede estável).
  */
@@ -16,11 +16,11 @@ const startServer = async () => {
         console.log('----------------------------------------------------');
         console.log('--- VLOGSTUDENTS ENTERPRISE BOOTING ---');
         console.log('----------------------------------------------------');
-        
+
         // 1. Sincroniza tabelas no banco de dados Neon
         console.log('[SYSTEM] Verificando integridade das tabelas (Neon)...');
         await initializeDatabase();
-        
+
         // 2. Levanta o servidor Express
         const PORT = env.PORT || 3000;
         app.listen(PORT, () => {
@@ -30,7 +30,7 @@ const startServer = async () => {
             console.log(`[SERVER] ENDPOINT: http://localhost:${PORT}/api/v1`);
             console.log('----------------------------------------------------');
         });
-        
+
     } catch (error) {
         console.error('[FATAL ERROR] Falha catastrófica ao iniciar servidor:');
         console.error(error.message);
