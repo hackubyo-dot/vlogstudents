@@ -10,7 +10,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
-const routes = require('./src/routes/index'); ✅
+const routes = require('./src/routes/index');
 
 const app = express();
 
