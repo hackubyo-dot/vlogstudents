@@ -1,7 +1,8 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - MASTER ROUTER v3.0.0 (FULL ALIGNMENT)
- * Compatível com Flutter + API + Realtime + Economy + Social
+ * VLOGSTUDENTS ENTERPRISE - MASTER ROUTER v3.0.0 (FULL ALIGNMENT FINAL)
+ * 100% COMPATÍVEL COM FLUTTER + API + SOCIAL + ECONOMY + REALTIME
+ * ZERO 404 | ZERO MISMATCH | PADRÃO ENTERPRISE
  * ============================================================================
  */
 
@@ -25,18 +26,19 @@ const economyCtrl = require('../controllers/economyController');
 const chatCtrl = require('../controllers/chatController');
 
 // ============================================================================
-// 🔓 AUTH (PUBLIC)
+// 🔓 AUTH MODULE (PUBLIC)
 // ============================================================================
 router.post('/auth/register', authCtrl.register);
 router.post('/auth/login', authCtrl.login);
 router.post('/auth/recovery/request', authCtrl.requestRecovery);
+router.post('/auth/recovery/reset', authCtrl.resetPassword);
 
 // ============================================================================
-// 👤 USERS (PROTECTED)
+// 👤 USERS MODULE (PROTECTED)
 // ============================================================================
 router.get('/users/me', auth, userCtrl.getMe);
 
-// 🔥 FIX: aceita "me" ou ID real
+// 🔥 ACEITA "me" OU ID REAL
 router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
 
 // 🔍 SEARCH USERS
@@ -53,21 +55,24 @@ router.post(
     userCtrl.updateAvatar
 );
 
-// ❌ DELETE ACCOUNT
+// ❌ DELETE ACCOUNT (SOFT DELETE)
 router.delete('/users/delete', auth, userCtrl.deleteAccount);
 
+// 📊 REFERRAL STATS (ECONOMY LINK)
+router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
+
 // ============================================================================
-// 🎬 REELS (PROTECTED)
+// 🎬 REELS MODULE (PROTECTED)
 // ============================================================================
 router.get('/reels', auth, reelCtrl.getFeed);
 
-// 🔥 FIX: reels por usuário (me ou id)
+// 🔥 REELS POR USUÁRIO ("me" ou ID)
 router.get('/reels/user/:userId', auth, reelCtrl.getUserReels);
 
 // 📄 DETALHE
 router.get('/reels/:id', auth, reelCtrl.getById);
 
-// 🚀 CREATE
+// 🚀 CREATE (UPLOAD VIDEO)
 router.post(
     '/reels/create',
     auth,
@@ -81,11 +86,11 @@ router.patch('/reels/update/:id', auth, reelCtrl.update);
 // ❌ DELETE
 router.delete('/reels/delete/:id', auth, reelCtrl.delete);
 
-// 👁 VIEW TRACK
-router.post('/reels/:id/view', auth, reelCtrl.trackView);
+// 👁 TRACK VIEW
+router.post('/reels/:id/view', auth, reelCtrl.incrementView);
 
 // ============================================================================
-// ❤️ SOCIAL
+// ❤️ SOCIAL MODULE
 // ============================================================================
 router.post('/social/like', auth, socialCtrl.toggleLike);
 
@@ -96,14 +101,7 @@ router.get('/social/comments/:reelId', auth, socialCtrl.getComments);
 router.post('/social/follow', auth, socialCtrl.toggleFollow);
 
 // ============================================================================
-// 💰 ECONOMY (FIX 404)
-// ============================================================================
-router.get('/economy/history', auth, economyCtrl.getHistory);
-
-router.get('/economy/leaderboard', auth, economyCtrl.getLeaderboard);
-
-// ============================================================================
-// 💬 CHAT / REALTIME
+// 💬 CHAT MODULE (REALTIME READY)
 // ============================================================================
 router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
 
@@ -111,8 +109,18 @@ router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
 
 router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
 
+// 🔥 NOVO: ENVIAR MENSAGEM
+router.post('/chat/messages', auth, chatCtrl.sendMessage);
+
 // ============================================================================
-// 🧪 TEST / HEALTH INTERNAL
+// 💰 ECONOMY MODULE
+// ============================================================================
+router.get('/economy/history', auth, economyCtrl.getHistory);
+
+router.get('/economy/leaderboard', auth, economyCtrl.getLeaderboard);
+
+// ============================================================================
+// 🧪 HEALTH CHECK / DEBUG
 // ============================================================================
 router.get('/test', (req, res) => {
     res.json({
@@ -124,10 +132,11 @@ router.get('/test', (req, res) => {
 });
 
 // ============================================================================
-// ⚠️ 404 HANDLER LOCAL
+// ⚠️ GLOBAL 404 HANDLER
 // ============================================================================
 router.use((req, res) => {
-    console.warn(`[ROUTE_404] ${req.method} ${req.originalUrl}`);
+    console.warn(`[404] ${req.method} ${req.originalUrl}`);
+
     res.status(404).json({
         success: false,
         message: `Endpoint não encontrado: ${req.method} ${req.originalUrl}`
