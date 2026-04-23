@@ -1,53 +1,65 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - CLOUD STORAGE SERVICE
- * Integração Master com Supabase Storage (Imagens e Vídeos)
+ * VLOGSTUDENTS ENTERPRISE - STORAGE SERVICE v3.0.0 (FINAL)
+ * Upload + Delete + URL Handling (Supabase)
  * ============================================================================
  */
-const { createClient } = require('@supabase/supabase-js');
-const env = require('../config/env');
+
+const { supabase, BUCKET_NAME } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-const BUCKET_NAME = 'vlogstudents_media';
-
 class StorageService {
-    /**
-     * Faz upload de buffers do Multer diretamente para a nuvem
-     * @param {Object} file - Objeto de arquivo vindo do middleware upload
-     * @param {String} folder - Diretório alvo ('reels' | 'avatars')
-     */
-    async uploadFile(file, folder) {
-        try {
-            if (!file) throw new Error('Buffer de arquivo ausente para upload.');
 
-            const fileExt = file.originalname.split('.').pop();
+    /**
+     * =========================================================================
+     * 📤 UPLOAD DE ARQUIVO (MULTER BUFFER → SUPABASE)
+     * =========================================================================
+     * @param {Object} file  -> req.file (multer)
+     * @param {String} folder -> 'reels' | 'avatars' | 'chat'
+     */
+    async uploadFile(file, folder = 'misc') {
+        try {
+            // ===============================
+            // 🔍 VALIDAÇÃO
+            // ===============================
+            if (!file || !file.buffer) {
+                throw new Error('Ficheiro inválido ou buffer vazio.');
+            }
+
+            const fileExt = file.originalname?.split('.').pop() || 'bin';
+
             const fileName = `${folder}/${uuidv4()}_${Date.now()}.${fileExt}`;
 
-            console.log(`[STORAGE] Transmitindo arquivo para ${BUCKET_NAME}/${fileName}...`);
+            console.log(`[STORAGE] Upload iniciado → ${BUCKET_NAME}/${fileName}`);
 
-            // 1. Upload do Binário
+            // ===============================
+            // 🚀 UPLOAD
+            // ===============================
             const { data, error } = await supabase.storage
                 .from(BUCKET_NAME)
                 .upload(fileName, file.buffer, {
-                    contentType: file.mimetype,
+                    contentType: file.mimetype || 'application/octet-stream',
                     cacheControl: '3600',
                     upsert: false
                 });
 
             if (error) {
-                console.error('[SUPABASE_STORAGE_ERROR]', error);
-                throw new Error(`Falha no upload Supabase: ${error.message}`);
+                console.error('[SUPABASE UPLOAD ERROR]', error);
+                throw new Error(error.message);
             }
 
-            // 2. Geração da URL Pública Permanente
+            // ===============================
+            // 🔗 PUBLIC URL
+            // ===============================
             const { data: publicUrlData } = supabase.storage
                 .from(BUCKET_NAME)
                 .getPublicUrl(fileName);
 
             if (!publicUrlData || !publicUrlData.publicUrl) {
-                throw new Error('Falha ao gerar URL pública para o arquivo.');
+                throw new Error('Falha ao gerar URL pública.');
             }
+
+            console.log('[STORAGE] Upload concluído com sucesso');
 
             return {
                 url: publicUrlData.publicUrl,
@@ -55,26 +67,59 @@ class StorageService {
                 size: file.size,
                 mimetype: file.mimetype
             };
+
         } catch (error) {
-            console.error('[STORAGE_SERVICE_FATAL]', error);
+            console.error('[STORAGE SERVICE ERROR]', error.message);
             throw error;
         }
     }
 
     /**
-     * Remove arquivos órfãos do storage
+     * =========================================================================
+     * 🗑 DELETE FILE
+     * =========================================================================
      */
     async deleteFile(filePath) {
         try {
+            if (!filePath) {
+                throw new Error('Caminho do arquivo não fornecido.');
+            }
+
             const { error } = await supabase.storage
                 .from(BUCKET_NAME)
                 .remove([filePath]);
-            
-            if (error) throw error;
+
+            if (error) {
+                console.error('[SUPABASE DELETE ERROR]', error);
+                throw error;
+            }
+
+            console.log(`[STORAGE] Arquivo removido → ${filePath}`);
+
             return true;
+
         } catch (error) {
-            console.error('[STORAGE_DELETE_ERROR]', error);
+            console.error('[STORAGE DELETE ERROR]', error.message);
             return false;
+        }
+    }
+
+    /**
+     * =========================================================================
+     * 🔁 GET PUBLIC URL (ÚTIL PARA REUSO)
+     * =========================================================================
+     */
+    getPublicUrl(filePath) {
+        try {
+            const { data } = supabase.storage
+                .from(BUCKET_NAME)
+                .getPublicUrl(filePath);
+
+            return data.publicUrl;
+
+        } catch (error) {
+            console.error('[STORAGE URL ERROR]', error.message);
+            return null;
         }
     }
 }
