@@ -52,7 +52,57 @@ class UserController {
 
     /**
      * =========================================================================
+     * 👤 GET /api/v1/users/:userId
+     * (ADICIONADO - getProfile)
+     * =========================================================================
+     */
+    async getProfile(req, res) {
+        try {
+            let userId = req.params.userId;
+            if (userId === 'me') userId = req.user.id;
+
+            const result = await db.query(
+                `SELECT 
+                    id,
+                    full_name,
+                    email,
+                    avatar_url,
+                    university_name,
+                    points_total,
+                    biography,
+                    phone_number,
+                    created_at
+                 FROM users 
+                 WHERE id = $1`,
+                [userId]
+            );
+
+            if (result.rowCount === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Usuário não encontrado."
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error('[USER_GET_PROFILE_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
      * 📊 GET /api/v1/users/social/metrics/:userId
+     * (ATUALIZADO com is_followed_by_me + is_active)
      * =========================================================================
      */
     async getSocialMetrics(req, res) {
@@ -65,16 +115,23 @@ class UserController {
                 SELECT 
                     (SELECT COUNT(*) FROM follows WHERE following_id = $1) AS followers_count,
                     (SELECT COUNT(*) FROM follows WHERE follower_id = $1) AS following_count,
-                    (SELECT COUNT(*) FROM reels WHERE author_id = $1) AS posts_count
+                    (SELECT COUNT(*) FROM reels WHERE author_id = $1 AND is_active = true) AS posts_count,
+                    EXISTS(
+                        SELECT 1 
+                        FROM follows 
+                        WHERE follower_id = $2 
+                        AND following_id = $1
+                    ) AS is_followed_by_me
                 FROM users WHERE id = $1
-            `, [userId]);
+            `, [userId, req.user.id]);
 
             return res.json({
                 success: true,
                 data: result.rows[0] || {
                     followers_count: 0,
                     following_count: 0,
-                    posts_count: 0
+                    posts_count: 0,
+                    is_followed_by_me: false
                 }
             });
 
@@ -97,7 +154,6 @@ class UserController {
         try {
             const q = req.query.q || '';
 
-            // evita query pesada
             if (!q.trim()) {
                 return res.json({
                     success: true,
