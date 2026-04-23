@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - IDENTITY & AUTH CONTROLLER
- * Registro, Login, Recuperação e Validação de Sessão
+ * VLOGSTUDENTS ENTERPRISE - AUTH CONTROLLER v30.0.0 (FINAL ABSOLUTO)
+ * Identity | Security | JWT | Referral | Recovery | Zero Error Policy
  * ============================================================================
  */
 
@@ -9,21 +9,22 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
+
 const { registerSchema, loginSchema } = require('../utils/validators');
 const pointsService = require('../services/pointsService');
 
 class AuthController {
 
     /**
-     * ============================================================================
-     * REGISTER
-     * ============================================================================
+     * =========================================================================
+     * 🚀 REGISTER
+     * =========================================================================
      */
     async register(req, res) {
         const client = await db.getClient();
 
         try {
-            // 1. VALIDATION (ZOD)
+            // ✅ VALIDATION
             const validation = registerSchema.safeParse(req.body);
             if (!validation.success) {
                 return res.status(400).json({
@@ -35,7 +36,7 @@ class AuthController {
 
             const { fullName, email, password, university, referralCode } = validation.data;
 
-            // 2. CHECK IF USER EXISTS
+            // 🔍 CHECK USER
             const userCheck = await client.query(
                 'SELECT id FROM users WHERE email = $1',
                 [email]
@@ -50,17 +51,14 @@ class AuthController {
 
             await client.query('BEGIN');
 
-            // 3. HASH PASSWORD
+            // 🔐 HASH PASSWORD
             const salt = await bcrypt.genSalt(env.BCRYPT_SALT);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // 4. GENERATE REFERRAL CODE
-            const myReferralCode = `VS_${Math.random()
-                .toString(36)
-                .substring(2, 8)
-                .toUpperCase()}_${Date.now().toString().slice(-3)}`;
+            // 🎟 REFERRAL CODE
+            const myReferralCode = `VS_${Math.random().toString(36).substring(2, 8).toUpperCase()}_${Date.now().toString().slice(-3)}`;
 
-            // 5. INSERT USER
+            // 👤 CREATE USER
             const result = await client.query(
                 `INSERT INTO users 
                 (full_name, email, password_hash, university_name, referral_code)
@@ -71,15 +69,15 @@ class AuthController {
 
             const newUser = result.rows[0];
 
-            // 6. WELCOME BONUS
+            // 🎁 BONUS BOAS-VINDAS
             await pointsService.addPointsTransactional(
                 client,
                 newUser.id,
                 100,
-                'Bônus de Boas-vindas'
+                'Bônus de boas-vindas'
             );
 
-            // 7. REFERRAL SYSTEM
+            // 🤝 REFERRAL SYSTEM
             if (referralCode) {
                 const inviter = await client.query(
                     'SELECT id FROM users WHERE referral_code = $1',
@@ -89,7 +87,7 @@ class AuthController {
                 if (inviter.rowCount > 0) {
                     const inviterId = inviter.rows[0].id;
 
-                    // Quem convidou
+                    // quem convidou
                     await pointsService.addPointsTransactional(
                         client,
                         inviterId,
@@ -98,7 +96,7 @@ class AuthController {
                         newUser.id
                     );
 
-                    // Novo usuário
+                    // novo usuário
                     await pointsService.addPointsTransactional(
                         client,
                         newUser.id,
@@ -111,7 +109,7 @@ class AuthController {
 
             await client.query('COMMIT');
 
-            // 8. JWT TOKEN
+            // 🔑 TOKEN
             const token = jwt.sign(
                 { id: newUser.id },
                 env.JWT_SECRET,
@@ -122,15 +120,12 @@ class AuthController {
                 success: true,
                 message: 'Conta criada com sucesso.',
                 token,
-                user: {
-                    ...newUser,
-                    points: newUser.points_total + 125
-                }
+                user: newUser
             });
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('[REGISTER ERROR]', error);
+            console.error('[REGISTER_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
@@ -143,15 +138,14 @@ class AuthController {
     }
 
     /**
-     * ============================================================================
-     * LOGIN
-     * ============================================================================
+     * =========================================================================
+     * 🔐 LOGIN
+     * =========================================================================
      */
     async login(req, res) {
         try {
             const { email, password } = loginSchema.parse(req.body);
 
-            // 1. FIND USER
             const result = await db.query(
                 'SELECT * FROM users WHERE email = $1 AND isactive = true',
                 [email]
@@ -166,7 +160,6 @@ class AuthController {
 
             const user = result.rows[0];
 
-            // 2. PASSWORD CHECK
             const isMatch = await bcrypt.compare(password, user.password_hash);
 
             if (!isMatch) {
@@ -176,20 +169,19 @@ class AuthController {
                 });
             }
 
-            // 3. UPDATE LAST LOGIN
+            // 🧠 UPDATE LAST LOGIN
             await db.query(
                 'UPDATE users SET last_login = NOW() WHERE id = $1',
                 [user.id]
             );
 
-            // 4. GENERATE TOKEN
             const token = jwt.sign(
                 { id: user.id },
                 env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
-            // 5. REMOVE SENSITIVE DATA
+            // 🔒 CLEAN DATA
             delete user.password_hash;
             delete user.recovery_token;
             delete user.recovery_expires;
@@ -209,7 +201,7 @@ class AuthController {
                 });
             }
 
-            console.error('[LOGIN ERROR]', error);
+            console.error('[LOGIN_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
@@ -219,9 +211,9 @@ class AuthController {
     }
 
     /**
-     * ============================================================================
-     * PASSWORD RECOVERY
-     * ============================================================================
+     * =========================================================================
+     * 📩 REQUEST RECOVERY
+     * =========================================================================
      */
     async requestRecovery(req, res) {
         try {
@@ -232,8 +224,8 @@ class AuthController {
 
             const result = await db.query(
                 `UPDATE users 
-                 SET recovery_token = $1, recovery_expires = $2 
-                 WHERE email = $3 
+                 SET recovery_token = $1, recovery_expires = $2
+                 WHERE email = $3
                  RETURNING id`,
                 [token, expires, email]
             );
@@ -245,20 +237,80 @@ class AuthController {
                 });
             }
 
-            // Simulação envio email
             console.log(`[RECOVERY TOKEN] ${email} -> ${token}`);
 
             return res.json({
                 success: true,
-                message: 'Código de recuperação enviado.'
+                message: 'Código enviado.'
             });
 
         } catch (error) {
-            console.error('[RECOVERY ERROR]', error);
+            console.error('[RECOVERY_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
                 message: 'Erro na recuperação.'
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
+     * 🔁 RESET PASSWORD (FINAL FIX)
+     * =========================================================================
+     */
+    async resetPassword(req, res) {
+        try {
+            const { email, token, newPassword } = req.body;
+
+            if (!email || !token || !newPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Dados incompletos.'
+                });
+            }
+
+            // 🔍 VALIDAR TOKEN
+            const check = await db.query(
+                `SELECT id FROM users 
+                 WHERE email = $1 
+                 AND recovery_token = $2 
+                 AND recovery_expires > NOW()`,
+                [email, token]
+            );
+
+            if (check.rowCount === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Código inválido ou expirado.'
+                });
+            }
+
+            // 🔐 HASH NOVA SENHA
+            const salt = await bcrypt.genSalt(env.BCRYPT_SALT);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            // 💾 UPDATE PASSWORD
+            await db.query(
+                `UPDATE users 
+                 SET password_hash = $1,
+                     recovery_token = NULL,
+                     recovery_expires = NULL
+                 WHERE email = $2`,
+                [hashedPassword, email]
+            );
+
+            return res.json({
+                success: true,
+                message: 'Senha redefinida com sucesso.'
+            });
+
+        } catch (error) {
+            console.error('[RESET_PASSWORD_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao redefinir senha.'
             });
         }
     }
