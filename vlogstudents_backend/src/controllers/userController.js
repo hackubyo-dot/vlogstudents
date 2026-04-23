@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - USER CONTROLLER v5.0.0 (FULL FINAL)
+ * VLOGSTUDENTS ENTERPRISE - USER CONTROLLER v5.0.0 (FINAL STABLE)
  * PROFILE | AVATAR | METRICS | SEARCH | ACCOUNT MANAGEMENT
  * ============================================================================
  */
@@ -53,14 +53,13 @@ class UserController {
     /**
      * =========================================================================
      * 📊 GET /api/v1/users/social/metrics/:userId
-     * 🔥 FIX: aceita "me" ou ID
+     * 🔥 SUPORTE: "me" ou ID real
      * =========================================================================
      */
     async getSocialMetrics(req, res) {
         try {
             let userId = req.params.userId;
 
-            // 🔥 FIX CRÍTICO
             if (userId === 'me') userId = req.user.id;
 
             const result = await db.query(`
@@ -73,7 +72,11 @@ class UserController {
 
             return res.json({
                 success: true,
-                data: result.rows[0]
+                data: result.rows[0] || {
+                    followers_count: 0,
+                    following_count: 0,
+                    posts_count: 0
+                }
             });
 
         } catch (error) {
@@ -93,9 +96,10 @@ class UserController {
      */
     async searchUsers(req, res) {
         try {
-            const query = req.query.q;
+            const query = req.query.q || '';
 
-            if (!query) {
+            // 🔥 evita query pesada desnecessária
+            if (!query.trim()) {
                 return res.json({ success: true, data: [] });
             }
 
@@ -110,6 +114,7 @@ class UserController {
                  WHERE 
                     (full_name ILIKE $1 OR email ILIKE $1)
                     AND isactive = true
+                 ORDER BY full_name ASC
                  LIMIT 20`,
                 [`%${query}%`]
             );
