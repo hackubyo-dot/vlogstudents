@@ -1,23 +1,31 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - DATABASE ORCHESTRATOR (AUTO-HEALING)
- * Sincronização de Esquemas, Índices e Integridade Referencial
+ * VLOGSTUDENTS ENTERPRISE - DATABASE ORCHESTRATOR v10.0.0 (AUTO-HEALING FULL)
+ * SCHEMA SYNC | MIGRATIONS | INDEXES | PERFORMANCE | ZERO BUG INIT
  * ============================================================================
  */
+
 const db = require('../config/db');
 
 const initializeDatabase = async () => {
     const client = await db.getClient();
-    console.log('[DB_INIT] Iniciando Auditoria Estrutural no Neon...');
+    console.log('[DB_INIT] 🔍 Iniciando auditoria completa do banco...');
 
     try {
         await client.query('BEGIN');
 
-        // 1. EXTENSÕES DE SEGURANÇA
-        await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+        /**
+         * =========================================================================
+         * 🔐 EXTENSIONS
+         * =========================================================================
+         */
+        await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
-        // 2. TABELA DE USUÁRIOS (MASTER IDENTITY)
-        console.log('[DB_INIT] Sincronizando: Tabela [users]');
+        /**
+         * =========================================================================
+         * 👤 USERS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -40,15 +48,18 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 3. TABELA DE REELS (VIDEO CONTENT)
-        console.log('[DB_INIT] Sincronizando: Tabela [reels]');
+        /**
+         * =========================================================================
+         * 🎥 REELS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS reels (
                 id SERIAL PRIMARY KEY,
                 author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                drive_file_id TEXT NOT NULL, -- URL DO SUPABASE STORAGE
+                drive_file_id TEXT NOT NULL,
                 thumbnail_id TEXT,
-                title VARCHAR(255) NOT NULL,
+                title VARCHAR(255),
                 description TEXT,
                 duration INTEGER DEFAULT 0,
                 views_count INTEGER DEFAULT 0,
@@ -61,8 +72,18 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 4. TABELA DE LIKES (SOCIAL INTERACTION)
-        console.log('[DB_INIT] Sincronizando: Tabela [likes]');
+        // 🔥 AUTO HEAL (CASO JÁ TENHA TABELA ANTIGA)
+        await client.query(`ALTER TABLE reels ADD COLUMN IF NOT EXISTS likes_count INT DEFAULT 0;`);
+        await client.query(`ALTER TABLE reels ADD COLUMN IF NOT EXISTS comments_count INT DEFAULT 0;`);
+        await client.query(`ALTER TABLE reels ADD COLUMN IF NOT EXISTS duration INT DEFAULT 0;`);
+        await client.query(`ALTER TABLE reels ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;`);
+        await client.query(`ALTER TABLE reels ADD COLUMN IF NOT EXISTS views_count INT DEFAULT 0;`);
+
+        /**
+         * =========================================================================
+         * ❤️ LIKES
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS likes (
                 id SERIAL PRIMARY KEY,
@@ -73,8 +94,11 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 5. TABELA DE FOLLOWS (NETWORK)
-        console.log('[DB_INIT] Sincronizando: Tabela [follows]');
+        /**
+         * =========================================================================
+         * 🤝 FOLLOWS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS follows (
                 id SERIAL PRIMARY KEY,
@@ -85,8 +109,11 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 6. TABELA DE CHAT ROOMS (CONVERSATIONS)
-        console.log('[DB_INIT] Sincronizando: Tabela [chat_rooms]');
+        /**
+         * =========================================================================
+         * 💬 CHAT ROOMS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id SERIAL PRIMARY KEY,
@@ -98,8 +125,15 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 7. TABELA DE CHAT PARTICIPANTS
-        console.log('[DB_INIT] Sincronizando: Tabela [chat_participants]');
+        // 🔥 AUTO HEAL CHAT
+        await client.query(`ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP;`);
+        await client.query(`ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_message_preview TEXT;`);
+
+        /**
+         * =========================================================================
+         * 👥 CHAT PARTICIPANTS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_participants (
                 room_id INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
@@ -109,8 +143,11 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 8. TABELA DE MENSAGENS (REALTIME DATA)
-        console.log('[DB_INIT] Sincronizando: Tabela [chat_messages]');
+        /**
+         * =========================================================================
+         * ✉️ CHAT MESSAGES
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS chat_messages (
                 id SERIAL PRIMARY KEY,
@@ -124,8 +161,11 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 9. TABELA DE TRANSAÇÕES FINANCEIRAS (ECONOMY)
-        console.log('[DB_INIT] Sincronizando: Tabela [point_transactions]');
+        /**
+         * =========================================================================
+         * 💰 POINT TRANSACTIONS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
@@ -137,8 +177,11 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 10. TABELA DE COMENTÁRIOS
-        console.log('[DB_INIT] Sincronizando: Tabela [comments]');
+        /**
+         * =========================================================================
+         * 💬 COMMENTS
+         * =========================================================================
+         */
         await client.query(`
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -150,19 +193,39 @@ const initializeDatabase = async () => {
             );
         `);
 
-        // 11. ÍNDICES DE PERFORMANCE (OTIMIZAÇÃO)
-        console.log('[DB_INIT] Gerando índices de busca rápida...');
-        await client.query('CREATE INDEX IF NOT EXISTS idx_reels_author ON reels(author_id);');
-        await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);');
-        await client.query('CREATE INDEX IF NOT EXISTS idx_messages_room ON chat_messages(room_id);');
-        await client.query('CREATE INDEX IF NOT EXISTS idx_comments_reel ON comments(reel_id);');
+        /**
+         * =========================================================================
+         * ⚡ INDEXES (PERFORMANCE CRÍTICA)
+         * =========================================================================
+         */
+
+        console.log('[DB_INIT] ⚡ Criando índices...');
+
+        // USERS
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_users_points ON users(points_total DESC);`);
+
+        // REELS
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_reels_author ON reels(author_id);`);
+
+        // CHAT
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_chat_messages_room_id ON chat_messages(room_id);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(user_id);`);
+
+        // COMMENTS
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_comments_reel ON comments(reel_id);`);
+
+        // ECONOMY
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_points_user_id ON point_transactions(user_id);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_points_created ON point_transactions(created_at);`);
 
         await client.query('COMMIT');
-        console.log('[DB_INIT] Auditoria concluída. Banco de dados em estado operacional estável.');
+
+        console.log('✅ [DB_INIT] Banco pronto para produção (ZERO BUG MODE)');
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('[DB_INIT FATAL ERROR] Falha na orquestração de banco:', error);
+        console.error('❌ [DB_INIT_FATAL]', error);
         throw error;
     } finally {
         client.release();
