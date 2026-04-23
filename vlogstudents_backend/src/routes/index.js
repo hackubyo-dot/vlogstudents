@@ -99,6 +99,10 @@ router.get('/social/comments/:reelId', auth, socialCtrl.getComments);
 
 router.post('/social/follow', auth, socialCtrl.toggleFollow);
 
+router.get('/users/profile/:userId', auth, userCtrl.getProfile);
+
+router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
+
 // ============================================================================
 // 💬 CHAT MODULE (REALTIME READY)
 // ============================================================================
