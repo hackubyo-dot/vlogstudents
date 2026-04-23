@@ -56,7 +56,10 @@ class AuthController {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             // 🎟 REFERRAL CODE
-            const myReferralCode = `VS_${Math.random().toString(36).substring(2, 8).toUpperCase()}_${Date.now().toString().slice(-3)}`;
+            const myReferralCode = `VS_${Math.random()
+                .toString(36)
+                .substring(2, 8)
+                .toUpperCase()}_${Date.now().toString().slice(-3)}`;
 
             // 👤 CREATE USER
             const result = await client.query(
@@ -87,7 +90,7 @@ class AuthController {
                 if (inviter.rowCount > 0) {
                     const inviterId = inviter.rows[0].id;
 
-                    // quem convidou
+                    // quem convidou ganha
                     await pointsService.addPointsTransactional(
                         client,
                         inviterId,
@@ -96,7 +99,7 @@ class AuthController {
                         newUser.id
                     );
 
-                    // novo usuário
+                    // novo usuário ganha
                     await pointsService.addPointsTransactional(
                         client,
                         newUser.id,
@@ -175,13 +178,14 @@ class AuthController {
                 [user.id]
             );
 
+            // 🔑 TOKEN
             const token = jwt.sign(
                 { id: user.id },
                 env.JWT_SECRET,
                 { expiresIn: '7d' }
             );
 
-            // 🔒 CLEAN DATA
+            // 🔒 CLEAN SENSITIVE DATA
             delete user.password_hash;
             delete user.recovery_token;
             delete user.recovery_expires;
@@ -237,6 +241,7 @@ class AuthController {
                 });
             }
 
+            // 🔔 aqui depois ligas serviço real de email/SMS
             console.log(`[RECOVERY TOKEN] ${email} -> ${token}`);
 
             return res.json({
