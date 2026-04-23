@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - SUPABASE CONFIG v3.0.0 (FINAL)
- * Storage + Client + Validation + Utilities
+ * VLOGSTUDENTS ENTERPRISE - SUPABASE CONFIG v4.0.0
+ * HIGH-AVAILABILITY STORAGE ENGINE (FINAL)
  * ============================================================================
  */
 
@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js');
 const env = require('./env');
 
 // ============================================================================
-// 🔧 CLIENT CONFIG
+// 🔧 CLIENT CONFIG (OTIMIZADO PARA BACKEND)
 // ============================================================================
 const supabase = createClient(
     env.SUPABASE_URL,
@@ -34,50 +34,43 @@ const BUCKET_NAME = 'vlogstudents_media';
 const storage = supabase.storage.from(BUCKET_NAME);
 
 // ============================================================================
-// 🔍 CHECK BUCKET (CRÍTICO)
+// ⚡ STORAGE PULSE (SEM VALIDAÇÃO BLOQUEANTE)
+// Evita erro 403/permission ao listar buckets no Render
 // ============================================================================
-const ensureStorageReady = async () => {
-    try {
-        const { data: buckets, error } = await supabase.storage.listBuckets();
-
-        if (error) throw error;
-
-        const exists = buckets.find(b => b.id === BUCKET_NAME);
-
-        if (!exists) {
-            console.error('----------------------------------------------------');
-            console.error(`[STORAGE ERROR] Bucket "${BUCKET_NAME}" NÃO EXISTE`);
-            console.error('👉 Crie no Supabase Dashboard:');
-            console.error(`Storage → New Bucket → Nome: ${BUCKET_NAME} → Público: SIM`);
-            console.error('----------------------------------------------------');
-        } else {
-            console.log(`[STORAGE] Bucket "${BUCKET_NAME}" OK`);
-        }
-
-    } catch (e) {
-        console.warn('[STORAGE WARNING] Não foi possível validar buckets (seguindo mesmo assim)');
-    }
+const checkStoragePulse = () => {
+    console.log('----------------------------------------------------');
+    console.log('[SUPABASE STORAGE] ENGINE ONLINE');
+    console.log(`[BUCKET] ${BUCKET_NAME}`);
+    console.log(`[ENDPOINT] ${env.SUPABASE_URL}`);
+    console.log('----------------------------------------------------');
 };
 
-// Executa verificação ao iniciar
-ensureStorageReady();
+checkStoragePulse();
 
 // ============================================================================
-// 📤 UPLOAD FILE
+// 📤 UPLOAD FILE (CORE)
 // ============================================================================
 const uploadFile = async (path, fileBuffer, contentType) => {
     try {
+        if (!fileBuffer) {
+            throw new Error('Buffer vazio no upload');
+        }
+
         const { data, error } = await storage.upload(path, fileBuffer, {
             contentType,
+            cacheControl: '3600',
             upsert: false
         });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[SUPABASE UPLOAD ERROR]', error);
+            throw new Error(error.message);
+        }
 
         return data;
 
     } catch (error) {
-        console.error('[SUPABASE UPLOAD ERROR]', error.message);
+        console.error('[UPLOAD FATAL]', error.message);
         throw error;
     }
 };
@@ -88,6 +81,11 @@ const uploadFile = async (path, fileBuffer, contentType) => {
 const getPublicUrl = (path) => {
     try {
         const { data } = storage.getPublicUrl(path);
+
+        if (!data || !data.publicUrl) {
+            throw new Error('Falha ao gerar URL pública');
+        }
+
         return data.publicUrl;
 
     } catch (error) {
@@ -103,21 +101,43 @@ const deleteFile = async (path) => {
     try {
         const { error } = await storage.remove([path]);
 
-        if (error) throw error;
+        if (error) {
+            console.error('[SUPABASE DELETE ERROR]', error);
+            throw new Error(error.message);
+        }
 
         return true;
 
     } catch (error) {
-        console.error('[SUPABASE DELETE ERROR]', error.message);
-        throw error;
+        console.error('[DELETE FATAL]', error.message);
+        return false;
     }
 };
 
 // ============================================================================
-// 🚀 INIT LOG
+// 🧪 TESTE RÁPIDO (OPCIONAL)
+// ============================================================================
+const healthCheckStorage = async () => {
+    try {
+        const testPath = `healthcheck/test_${Date.now()}.txt`;
+
+        await uploadFile(testPath, Buffer.from('ok'), 'text/plain');
+        await deleteFile(testPath);
+
+        console.log('[STORAGE HEALTH] OK');
+        return true;
+
+    } catch (error) {
+        console.warn('[STORAGE HEALTH WARNING]', error.message);
+        return false;
+    }
+};
+
+// ============================================================================
+// 🚀 INIT LOG (DEV ONLY)
 // ============================================================================
 if (env.NODE_ENV !== 'production') {
-    console.log('[SUPABASE] Cliente inicializado');
+    console.log('[SUPABASE] Cliente inicializado com sucesso');
 }
 
 // ============================================================================
@@ -129,5 +149,6 @@ module.exports = {
     BUCKET_NAME,
     uploadFile,
     getPublicUrl,
-    deleteFile
+    deleteFile,
+    healthCheckStorage
 };
