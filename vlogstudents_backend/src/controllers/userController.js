@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - USER CONTROLLER v4.0.0 (FINAL)
- * PROFILE | AVATAR | METADATA | ACCOUNT LIFECYCLE
+ * VLOGSTUDENTS ENTERPRISE - USER CONTROLLER v5.0.0 (FULL FINAL)
+ * PROFILE | AVATAR | METRICS | SEARCH | ACCOUNT MANAGEMENT
  * ============================================================================
  */
 
@@ -13,7 +13,6 @@ class UserController {
     /**
      * =========================================================================
      * 👤 GET /api/v1/users/me
-     * Perfil completo do usuário autenticado
      * =========================================================================
      */
     async getMe(req, res) {
@@ -53,8 +52,86 @@ class UserController {
 
     /**
      * =========================================================================
+     * 📊 GET /api/v1/users/social/metrics/:userId
+     * 🔥 FIX: aceita "me" ou ID
+     * =========================================================================
+     */
+    async getSocialMetrics(req, res) {
+        try {
+            let userId = req.params.userId;
+
+            // 🔥 FIX CRÍTICO
+            if (userId === 'me') userId = req.user.id;
+
+            const result = await db.query(`
+                SELECT 
+                    (SELECT COUNT(*) FROM follows WHERE following_id = $1) AS followers_count,
+                    (SELECT COUNT(*) FROM follows WHERE follower_id = $1) AS following_count,
+                    (SELECT COUNT(*) FROM reels WHERE author_id = $1) AS posts_count
+                FROM users WHERE id = $1
+            `, [userId]);
+
+            return res.json({
+                success: true,
+                data: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error('[USER_METRICS_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao carregar métricas.'
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
+     * 🔍 GET /api/v1/users/search?q=
+     * =========================================================================
+     */
+    async searchUsers(req, res) {
+        try {
+            const query = req.query.q;
+
+            if (!query) {
+                return res.json({ success: true, data: [] });
+            }
+
+            const result = await db.query(
+                `SELECT 
+                    id, 
+                    full_name, 
+                    email, 
+                    avatar_url, 
+                    university_name 
+                 FROM users 
+                 WHERE 
+                    (full_name ILIKE $1 OR email ILIKE $1)
+                    AND isactive = true
+                 LIMIT 20`,
+                [`%${query}%`]
+            );
+
+            return res.json({
+                success: true,
+                data: result.rows
+            });
+
+        } catch (error) {
+            console.error('[USER_SEARCH_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao buscar usuários.'
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
      * ✏️ PATCH /api/v1/users/update
-     * Atualização parcial de dados
      * =========================================================================
      */
     async updateProfile(req, res) {
@@ -97,7 +174,6 @@ class UserController {
     /**
      * =========================================================================
      * 🖼 POST /api/v1/users/profile/avatar
-     * Upload de avatar (Supabase)
      * =========================================================================
      */
     async updateAvatar(req, res) {
@@ -111,14 +187,12 @@ class UserController {
 
             console.log(`[USER_AVATAR] Upload iniciado → User ${req.user.id}`);
 
-            // Upload para Supabase
             const upload = await storageService.uploadFile(req.file, 'avatars');
 
             if (!upload || !upload.url) {
                 throw new Error('Falha ao obter URL do avatar.');
             }
 
-            // Atualiza banco
             const result = await db.query(
                 `UPDATE users 
                  SET avatar_url = $1, updated_at = NOW() 
@@ -146,7 +220,6 @@ class UserController {
     /**
      * =========================================================================
      * 🗑 DELETE /api/v1/users/delete
-     * Soft delete (desativação de conta)
      * =========================================================================
      */
     async deleteAccount(req, res) {
