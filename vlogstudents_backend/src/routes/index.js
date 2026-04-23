@@ -1,8 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - MASTER ROUTER v3.0.0 (FULL ALIGNMENT FINAL)
- * 100% COMPATÍVEL COM FLUTTER + API + SOCIAL + ECONOMY + REALTIME
- * ZERO 404 | ZERO MISMATCH | PADRÃO ENTERPRISE
+ * VLOGSTUDENTS MASTER ROUTER ORCHESTRATOR v26.0.0 (FINAL ENTERPRISE)
+ * ZERO 404 | ZERO MISMATCH | FULL BACKEND INTEGRATION
  * ============================================================================
  */
 
@@ -22,8 +21,8 @@ const authCtrl = require('../controllers/authController');
 const userCtrl = require('../controllers/userController');
 const reelCtrl = require('../controllers/reelController');
 const socialCtrl = require('../controllers/socialController');
-const economyCtrl = require('../controllers/economyController');
 const chatCtrl = require('../controllers/chatController');
+const economyCtrl = require('../controllers/economyController');
 
 // ============================================================================
 // 🔓 AUTH MODULE (PUBLIC)
@@ -31,23 +30,23 @@ const chatCtrl = require('../controllers/chatController');
 router.post('/auth/register', authCtrl.register);
 router.post('/auth/login', authCtrl.login);
 router.post('/auth/recovery/request', authCtrl.requestRecovery);
-router.post('/auth/recovery/reset', authCtrl.resetPassword);
+router.post('/auth/recovery/reset', authCtrl.resetPassword); // ✅ corrigido
 
 // ============================================================================
 // 👤 USERS MODULE (PROTECTED)
 // ============================================================================
 router.get('/users/me', auth, userCtrl.getMe);
 
-// 🔥 ACEITA "me" OU ID REAL
+// 🔥 suporta "me" ou ID real
 router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
 
-// 🔍 SEARCH USERS
+// 🔍 SEARCH
 router.get('/users/search', auth, userCtrl.searchUsers);
 
 // ✏️ UPDATE PROFILE
 router.patch('/users/update', auth, userCtrl.updateProfile);
 
-// 📸 AVATAR UPLOAD
+// 📸 AVATAR
 router.post(
     '/users/profile/avatar',
     auth,
@@ -55,10 +54,10 @@ router.post(
     userCtrl.updateAvatar
 );
 
-// ❌ DELETE ACCOUNT (SOFT DELETE)
+// ❌ SOFT DELETE
 router.delete('/users/delete', auth, userCtrl.deleteAccount);
 
-// 📊 REFERRAL STATS (ECONOMY LINK)
+// 🎯 REFERRAL STATS
 router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
 
 // ============================================================================
@@ -66,13 +65,13 @@ router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
 // ============================================================================
 router.get('/reels', auth, reelCtrl.getFeed);
 
-// 🔥 REELS POR USUÁRIO ("me" ou ID)
+// 🔥 PERFIL → REELS DO USUÁRIO
 router.get('/reels/user/:userId', auth, reelCtrl.getUserReels);
 
 // 📄 DETALHE
 router.get('/reels/:id', auth, reelCtrl.getById);
 
-// 🚀 CREATE (UPLOAD VIDEO)
+// 🚀 CREATE
 router.post(
     '/reels/create',
     auth,
@@ -86,8 +85,8 @@ router.patch('/reels/update/:id', auth, reelCtrl.update);
 // ❌ DELETE
 router.delete('/reels/delete/:id', auth, reelCtrl.delete);
 
-// 👁 TRACK VIEW
-router.post('/reels/:id/view', auth, reelCtrl.incrementView);
+// 👁 VIEW TRACK
+router.post('/reels/:id/view', auth, reelCtrl.trackView);
 
 // ============================================================================
 // ❤️ SOCIAL MODULE
@@ -101,7 +100,7 @@ router.get('/social/comments/:reelId', auth, socialCtrl.getComments);
 router.post('/social/follow', auth, socialCtrl.toggleFollow);
 
 // ============================================================================
-// 💬 CHAT MODULE (REALTIME READY)
+// 💬 CHAT MODULE
 // ============================================================================
 router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
 
@@ -109,7 +108,7 @@ router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
 
 router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
 
-// 🔥 NOVO: ENVIAR MENSAGEM
+// 🔥 ENVIO DE MENSAGEM (ESSENCIAL PARA FLUTTER)
 router.post('/chat/messages', auth, chatCtrl.sendMessage);
 
 // ============================================================================
@@ -120,13 +119,13 @@ router.get('/economy/history', auth, economyCtrl.getHistory);
 router.get('/economy/leaderboard', auth, economyCtrl.getLeaderboard);
 
 // ============================================================================
-// 🧪 HEALTH CHECK / DEBUG
+// 🧪 HEALTH CHECK
 // ============================================================================
 router.get('/test', (req, res) => {
     res.json({
         success: true,
         message: 'VLOGSTUDENTS API ONLINE 🚀',
-        version: '3.0.0',
+        version: '26.0.0',
         timestamp: new Date()
     });
 });
@@ -135,7 +134,7 @@ router.get('/test', (req, res) => {
 // ⚠️ GLOBAL 404 HANDLER
 // ============================================================================
 router.use((req, res) => {
-    console.warn(`[404] ${req.method} ${req.originalUrl}`);
+    console.warn(`[ROUTE_404] ${req.method} ${req.originalUrl}`);
 
     res.status(404).json({
         success: false,
