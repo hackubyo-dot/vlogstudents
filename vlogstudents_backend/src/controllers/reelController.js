@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - REEL CONTROLLER v4.0.0 (FINAL)
- * VIDEO PIPELINE + SUPABASE + NEON + ECONOMY SYSTEM
- * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE - REEL CONTROLLER v5.0.0
+ * VIDEO PIPELINE + USER FEED + PROFILE REELS + ECONOMY SYSTEM
+ * ============================================================================ 
  */
 
 const db = require('../config/db');
@@ -22,9 +22,6 @@ class ReelController {
         const client = await db.getClient();
 
         try {
-            // ===============================
-            // 🔍 VALIDAÇÃO INICIAL
-            // ===============================
             if (!req.file) {
                 return res.status(400).json({
                     success: false,
@@ -32,24 +29,19 @@ class ReelController {
                 });
             }
 
-            // Validação com Zod
             const validated = reelSchema.parse(req.body);
             const { title, description, duration } = validated;
 
             console.log(`[REEL] Upload iniciado por user ${req.user.id}`);
 
-            // ===============================
-            // 📤 UPLOAD PARA SUPABASE
-            // ===============================
+            // Upload Supabase
             const upload = await storageService.uploadFile(req.file, 'reels');
 
-            if (!upload || !upload.url) {
+            if (!upload?.url) {
                 throw new Error('Falha ao obter URL pública do vídeo.');
             }
 
-            // ===============================
-            // 🔐 TRANSAÇÃO BANCO (NEON)
-            // ===============================
+            // TRANSAÇÃO
             await client.query('BEGIN');
 
             const insertResult = await client.query(
@@ -68,9 +60,7 @@ class ReelController {
 
             const newReel = insertResult.rows[0];
 
-            // ===============================
-            // 💰 SISTEMA DE RECOMPENSA
-            // ===============================
+            // Sistema de pontos
             await pointsService.addPointsTransactional(
                 client,
                 req.user.id,
@@ -81,8 +71,6 @@ class ReelController {
 
             await client.query('COMMIT');
 
-            console.log(`[REEL SUCCESS] Reel ${newReel.id} criado`);
-
             return res.status(201).json({
                 success: true,
                 message: 'Reel publicado com sucesso.',
@@ -92,7 +80,7 @@ class ReelController {
         } catch (error) {
             await client.query('ROLLBACK');
 
-            console.error('[REEL CREATE ERROR]', error);
+            console.error('[REEL_CREATE_ERROR]', error);
 
             if (error.name === 'ZodError') {
                 return res.status(400).json({
@@ -115,7 +103,7 @@ class ReelController {
     /**
      * =========================================================================
      * 📥 GET /api/v1/reels
-     * Feed paginado com métricas e estado do usuário
+     * Feed global paginado
      * =========================================================================
      */
     async getFeed(req, res) {
@@ -155,11 +143,53 @@ class ReelController {
             });
 
         } catch (error) {
-            console.error('[REEL FEED ERROR]', error);
+            console.error('[REEL_FEED_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
                 message: 'Erro ao carregar feed.'
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
+     * 👤 GET /api/v1/reels/user/:userId
+     * Reels do perfil (FIX: aceita "me")
+     * =========================================================================
+     */
+    async getUserReels(req, res) {
+        try {
+            let userId = req.params.userId;
+
+            if (userId === 'me') {
+                userId = req.user.id;
+            }
+
+            const result = await db.query(
+                `SELECT 
+                    r.*,
+                    u.full_name AS author_name,
+                    u.avatar_url AS author_picture
+                FROM reels r
+                JOIN users u ON r.author_id = u.id
+                WHERE r.author_id = $1 AND r.is_active = true
+                ORDER BY r.created_at DESC`,
+                [userId]
+            );
+
+            return res.json({
+                success: true,
+                count: result.rowCount,
+                data: result.rows
+            });
+
+        } catch (error) {
+            console.error('[REEL_USER_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao carregar reels do usuário.'
             });
         }
     }
@@ -197,7 +227,7 @@ class ReelController {
             });
 
         } catch (error) {
-            console.error('[REEL GET ERROR]', error);
+            console.error('[REEL_GET_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
@@ -208,10 +238,53 @@ class ReelController {
 
     /**
      * =========================================================================
+     * ✏️ PATCH /api/v1/reels/update/:id
+     * =========================================================================
+     */
+    async update(req, res) {
+        try {
+            const { id } = req.params;
+            const { title, description } = req.body;
+
+            const result = await db.query(
+                `UPDATE reels 
+                 SET 
+                    title = COALESCE($1, title),
+                    description = COALESCE($2, description),
+                    updated_at = NOW()
+                 WHERE id = $3 AND author_id = $4
+                 RETURNING *`,
+                [title, description, id, req.user.id]
+            );
+
+            if (result.rowCount === 0) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Não autorizado ou reel inexistente.'
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error('[REEL_UPDATE_ERROR]', error);
+
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao atualizar reel.'
+            });
+        }
+    }
+
+    /**
+     * =========================================================================
      * 👁 POST /api/v1/reels/:id/view
      * =========================================================================
      */
-    async trackView(req, res) {
+    async incrementView(req, res) {
         try {
             const { id } = req.params;
 
@@ -223,7 +296,7 @@ class ReelController {
             return res.json({ success: true });
 
         } catch (error) {
-            console.error('[REEL VIEW ERROR]', error);
+            console.error('[REEL_VIEW_ERROR]', error);
 
             return res.status(500).json({
                 success: false
@@ -260,7 +333,7 @@ class ReelController {
             });
 
         } catch (error) {
-            console.error('[REEL DELETE ERROR]', error);
+            console.error('[REEL_DELETE_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
