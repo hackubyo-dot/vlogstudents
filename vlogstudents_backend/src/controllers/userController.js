@@ -53,14 +53,13 @@ class UserController {
     /**
      * =========================================================================
      * 📊 GET /api/v1/users/social/metrics/:userId
-     * 🔥 SUPORTE: "me" ou ID real
      * =========================================================================
      */
     async getSocialMetrics(req, res) {
         try {
-            let userId = req.params.userId;
-
-            if (userId === 'me') userId = req.user.id;
+            let userId = req.params.userId === 'me'
+                ? req.user.id
+                : req.params.userId;
 
             const result = await db.query(`
                 SELECT 
@@ -96,27 +95,30 @@ class UserController {
      */
     async searchUsers(req, res) {
         try {
-            const query = req.query.q || '';
+            const q = req.query.q || '';
 
-            // 🔥 evita query pesada desnecessária
-            if (!query.trim()) {
-                return res.json({ success: true, data: [] });
+            // evita query pesada
+            if (!q.trim()) {
+                return res.json({
+                    success: true,
+                    data: []
+                });
             }
 
             const result = await db.query(
                 `SELECT 
-                    id, 
-                    full_name, 
-                    email, 
-                    avatar_url, 
-                    university_name 
+                    id,
+                    full_name,
+                    email,
+                    avatar_url,
+                    university_name
                  FROM users 
                  WHERE 
                     (full_name ILIKE $1 OR email ILIKE $1)
                     AND isactive = true
                  ORDER BY full_name ASC
                  LIMIT 20`,
-                [`%${query}%`]
+                [`%${q}%`]
             );
 
             return res.json({
@@ -153,10 +155,16 @@ class UserController {
                     updated_at = NOW()
                 WHERE id = $6
                 RETURNING 
-                    id, full_name, email, avatar_url,
-                    university_name, referral_code,
-                    points_total, theme_pref,
-                    biography, phone_number`,
+                    id,
+                    full_name,
+                    email,
+                    avatar_url,
+                    university_name,
+                    referral_code,
+                    points_total,
+                    theme_pref,
+                    biography,
+                    phone_number`,
                 [fullName, university, phone, bio, theme_config, req.user.id]
             );
 
