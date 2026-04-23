@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - ECONOMY CONTROLLER v3.0.0 (FULL)
- * POINT SYSTEM | LEADERBOARD | REFERRALS | GAMIFICATION CORE
+ * VLOGSTUDENTS ENTERPRISE - ECONOMY CONTROLLER v3.2.0
+ * POINT SYSTEM | LEADERBOARD | REFERRALS | PAGINATION | SCALABLE
  * ============================================================================
  */
 
@@ -11,22 +11,35 @@ class EconomyController {
 
     /**
      * =========================================================================
-     * 📊 GET /api/v1/economy/history
-     * Histórico de transações do usuário
+     * 📊 GET HISTORY (PAGINADO)
      * =========================================================================
      */
     async getHistory(req, res) {
         try {
+            const userId = req.user.id;
+
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 20;
+            const offset = (page - 1) * limit;
+
             const result = await db.query(
-                `SELECT *
+                `SELECT 
+                    id,
+                    amount,
+                    reason,
+                    reference_id,
+                    created_at
                  FROM point_transactions
                  WHERE user_id = $1
-                 ORDER BY created_at DESC`,
-                [req.user.id]
+                 ORDER BY created_at DESC
+                 LIMIT $2 OFFSET $3`,
+                [userId, limit, offset]
             );
 
             return res.json({
                 success: true,
+                page,
+                count: result.rowCount,
                 data: result.rows
             });
 
@@ -35,21 +48,26 @@ class EconomyController {
 
             return res.status(500).json({
                 success: false,
-                message: 'Erro ao buscar histórico financeiro.',
-                details: error.message
+                message: 'Erro ao carregar histórico.'
             });
         }
     }
 
     /**
      * =========================================================================
-     * 🏆 GET /api/v1/economy/leaderboard
-     * Ranking global de usuários
+     * 🏆 LEADERBOARD (COM POSIÇÃO DO USER)
      * =========================================================================
      */
     async getLeaderboard(req, res) {
         try {
-            const result = await db.query(
+            const userId = req.user.id;
+
+            const page = parseInt(req.query.page) || 1;
+            const limit = 50;
+            const offset = (page - 1) * limit;
+
+            // ranking global
+            const leaderboard = await db.query(
                 `SELECT 
                     id,
                     full_name,
@@ -59,13 +77,29 @@ class EconomyController {
                  FROM users
                  WHERE isactive = true
                  ORDER BY points_total DESC
-                 LIMIT 50`
+                 LIMIT $1 OFFSET $2`,
+                [limit, offset]
+            );
+
+            // 🔥 posição do utilizador (IMPORTANTE)
+            const myRank = await db.query(
+                `SELECT rank FROM (
+                    SELECT 
+                        id,
+                        RANK() OVER (ORDER BY points_total DESC) as rank
+                    FROM users
+                    WHERE isactive = true
+                ) ranked
+                WHERE id = $1`,
+                [userId]
             );
 
             return res.json({
                 success: true,
-                count: result.rowCount,
-                data: result.rows
+                page,
+                count: leaderboard.rowCount,
+                my_rank: myRank.rows[0]?.rank || null,
+                data: leaderboard.rows
             });
 
         } catch (error) {
@@ -73,28 +107,29 @@ class EconomyController {
 
             return res.status(500).json({
                 success: false,
-                message: 'Erro ao carregar ranking.',
-                details: error.message
+                message: 'Erro ao carregar ranking.'
             });
         }
     }
 
     /**
      * =========================================================================
-     * 🎯 GET /api/v1/users/referrals/stats
-     * Estatísticas de convites (indicações)
+     * 🎯 REFERRAL STATS (MELHORADO)
      * =========================================================================
      */
     async getReferralStats(req, res) {
         try {
+            const userId = req.user.id;
+
             const result = await db.query(
                 `SELECT 
-                    COUNT(*) AS total_invites,
-                    COALESCE(SUM(amount), 0) AS total_earned
+                    COUNT(*) FILTER (WHERE amount > 0) AS total_invites,
+                    COALESCE(SUM(amount), 0) AS total_earned,
+                    MAX(created_at) AS last_invite
                  FROM point_transactions
                  WHERE user_id = $1
                  AND reason ILIKE '%indicação%'`,
-                [req.user.id]
+                [userId]
             );
 
             return res.json({
@@ -107,8 +142,7 @@ class EconomyController {
 
             return res.status(500).json({
                 success: false,
-                message: 'Erro ao buscar estatísticas de indicação.',
-                details: error.message
+                message: 'Erro ao carregar dados de indicação.'
             });
         }
     }
