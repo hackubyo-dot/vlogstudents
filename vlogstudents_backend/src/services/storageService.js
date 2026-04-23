@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - STORAGE SERVICE v3.0.0 (FINAL)
- * Upload + Delete + URL Handling (Supabase)
+ * VLOGSTUDENTS ENTERPRISE - STORAGE SERVICE v4.0.0
+ * MULTI-FORMAT MEDIA TRANSMISSION KERNEL (FINAL)
  * ============================================================================
  */
 
@@ -12,28 +12,38 @@ class StorageService {
 
     /**
      * =========================================================================
-     * 📤 UPLOAD DE ARQUIVO (MULTER BUFFER → SUPABASE)
+     * 📤 UPLOAD INDUSTRIAL (BUFFER → SUPABASE)
      * =========================================================================
-     * @param {Object} file  -> req.file (multer)
+     * Suporta:
+     * - Vídeos HD / Reels
+     * - Imagens de alta resolução
+     * - Upload seguro e rastreável
+     *
+     * @param {Object} file   -> req.file (multer)
      * @param {String} folder -> 'reels' | 'avatars' | 'chat'
      */
     async uploadFile(file, folder = 'misc') {
         try {
             // ===============================
-            // 🔍 VALIDAÇÃO
+            // 🔍 VALIDAÇÃO FORTE
             // ===============================
             if (!file || !file.buffer) {
-                throw new Error('Ficheiro inválido ou buffer vazio.');
+                throw new Error('Falha na integridade do arquivo: buffer vazio.');
             }
 
             const fileExt = file.originalname?.split('.').pop() || 'bin';
 
             const fileName = `${folder}/${uuidv4()}_${Date.now()}.${fileExt}`;
 
-            console.log(`[STORAGE] Upload iniciado → ${BUCKET_NAME}/${fileName}`);
+            console.log('----------------------------------------------------');
+            console.log(`[STORAGE] Upload iniciado`);
+            console.log(`[FILE] ${fileName}`);
+            console.log(`[SIZE] ${file.size} bytes`);
+            console.log(`[TYPE] ${file.mimetype}`);
+            console.log('----------------------------------------------------');
 
             // ===============================
-            // 🚀 UPLOAD
+            // 🚀 UPLOAD SUPABASE
             // ===============================
             const { data, error } = await supabase.storage
                 .from(BUCKET_NAME)
@@ -44,12 +54,12 @@ class StorageService {
                 });
 
             if (error) {
-                console.error('[SUPABASE UPLOAD ERROR]', error);
-                throw new Error(error.message);
+                console.error('[SUPABASE_UPLOAD_FAILED]', error);
+                throw new Error(`Erro Supabase: ${error.message}`);
             }
 
             // ===============================
-            // 🔗 PUBLIC URL
+            // 🔗 URL PÚBLICA
             // ===============================
             const { data: publicUrlData } = supabase.storage
                 .from(BUCKET_NAME)
@@ -59,18 +69,19 @@ class StorageService {
                 throw new Error('Falha ao gerar URL pública.');
             }
 
-            console.log('[STORAGE] Upload concluído com sucesso');
+            console.log(`[STORAGE_SUCCESS] URL: ${publicUrlData.publicUrl}`);
 
             return {
                 url: publicUrlData.publicUrl,
                 path: data.path,
+                fileName: fileName,
                 size: file.size,
                 mimetype: file.mimetype
             };
 
-        } catch (error) {
-            console.error('[STORAGE SERVICE ERROR]', error.message);
-            throw error;
+        } catch (err) {
+            console.error('[STORAGE_SERVICE_CRITICAL]', err.message);
+            throw err;
         }
     }
 
@@ -90,7 +101,7 @@ class StorageService {
                 .remove([filePath]);
 
             if (error) {
-                console.error('[SUPABASE DELETE ERROR]', error);
+                console.error('[SUPABASE_DELETE_ERROR]', error);
                 throw error;
             }
 
@@ -99,27 +110,57 @@ class StorageService {
             return true;
 
         } catch (error) {
-            console.error('[STORAGE DELETE ERROR]', error.message);
+            console.error('[STORAGE_DELETE_ERROR]', error.message);
             return false;
         }
     }
 
     /**
      * =========================================================================
-     * 🔁 GET PUBLIC URL (ÚTIL PARA REUSO)
+     * 🔗 GET PUBLIC URL
      * =========================================================================
      */
     getPublicUrl(filePath) {
         try {
+            if (!filePath) return null;
+
             const { data } = supabase.storage
                 .from(BUCKET_NAME)
                 .getPublicUrl(filePath);
 
-            return data.publicUrl;
+            return data?.publicUrl || null;
 
         } catch (error) {
-            console.error('[STORAGE URL ERROR]', error.message);
+            console.error('[STORAGE_URL_ERROR]', error.message);
             return null;
+        }
+    }
+
+    /**
+     * =========================================================================
+     * 🧪 HEALTH CHECK (DEBUG AVANÇADO)
+     * =========================================================================
+     */
+    async healthCheck() {
+        try {
+            const testPath = `health/test_${Date.now()}.txt`;
+
+            await supabase.storage
+                .from(BUCKET_NAME)
+                .upload(testPath, Buffer.from('ok'), {
+                    contentType: 'text/plain'
+                });
+
+            await supabase.storage
+                .from(BUCKET_NAME)
+                .remove([testPath]);
+
+            console.log('[STORAGE_HEALTH] OK');
+            return true;
+
+        } catch (error) {
+            console.warn('[STORAGE_HEALTH_WARNING]', error.message);
+            return false;
         }
     }
 }
