@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - SOCIAL INTERACTIONS CONTROLLER v5.0.0 (FINAL)
- * Likes | Comentários | Follows | Gamificação | Consistência Transacional
+ * VLOGSTUDENTS ENTERPRISE - SOCIAL CONTROLLER v6.0.0 (FULL FINAL)
+ * Likes | Comments | Follows | Transactions | Gamification | Performance
  * ============================================================================
  */
 
@@ -13,8 +13,7 @@ class SocialController {
 
     /**
      * =========================================================================
-     * ❤️ POST /api/v1/social/like
-     * Toggle Like com consistência + recompensa
+     * ❤️ TOGGLE LIKE (TRANSACTION + CONSISTÊNCIA)
      * =========================================================================
      */
     async toggleLike(req, res) {
@@ -27,13 +26,12 @@ class SocialController {
             if (!reelId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'ID do Reel é obrigatório.'
+                    message: 'reelId é obrigatório.'
                 });
             }
 
             await client.query('BEGIN');
 
-            // Verifica se já curtiu
             const check = await client.query(
                 'SELECT id FROM likes WHERE user_id = $1 AND reel_id = $2',
                 [userId, reelId]
@@ -42,28 +40,32 @@ class SocialController {
             let isLiked = false;
 
             if (check.rowCount > 0) {
-                // UNLIKE
+                // ❌ UNLIKE
                 await client.query(
                     'DELETE FROM likes WHERE id = $1',
                     [check.rows[0].id]
                 );
 
                 await client.query(
-                    'UPDATE reels SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1',
+                    `UPDATE reels 
+                     SET likes_count = GREATEST(0, likes_count - 1) 
+                     WHERE id = $1`,
                     [reelId]
                 );
 
                 isLiked = false;
 
             } else {
-                // LIKE
+                // ❤️ LIKE
                 await client.query(
                     'INSERT INTO likes (user_id, reel_id) VALUES ($1, $2)',
                     [userId, reelId]
                 );
 
                 await client.query(
-                    'UPDATE reels SET likes_count = likes_count + 1 WHERE id = $1',
+                    `UPDATE reels 
+                     SET likes_count = likes_count + 1 
+                     WHERE id = $1`,
                     [reelId]
                 );
 
@@ -72,7 +74,7 @@ class SocialController {
                     client,
                     userId,
                     5,
-                    'Interação: Like',
+                    'Like em conteúdo',
                     reelId
                 );
 
@@ -84,13 +86,13 @@ class SocialController {
             return res.json({
                 success: true,
                 isLiked,
-                message: isLiked ? 'Curtido com sucesso.' : 'Curtida removida.'
+                message: isLiked ? 'Curtido.' : 'Curtida removida.'
             });
 
         } catch (error) {
             await client.query('ROLLBACK');
 
-            console.error('[SOCIAL_LIKE_ERROR]', error);
+            console.error('[LIKE_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
@@ -104,21 +106,26 @@ class SocialController {
 
     /**
      * =========================================================================
-     * 💬 POST /api/v1/social/comment
-     * Criação de comentário com validação + recompensa
+     * 💬 ADD COMMENT (TRANSACTION + VALIDAÇÃO + REWARD)
      * =========================================================================
      */
     async addComment(req, res) {
         const client = await db.getClient();
 
         try {
-            // 🔒 validação com schema
-            const validated = commentSchema.parse(req.body);
-            const { reelId, content } = validated;
+            const validated = commentSchema.safeParse(req.body);
+
+            if (!validated.success) {
+                return res.status(400).json({
+                    success: false,
+                    message: validated.error.errors[0].message
+                });
+            }
+
+            const { reelId, content } = validated.data;
 
             await client.query('BEGIN');
 
-            // Inserir comentário
             const result = await client.query(
                 `INSERT INTO comments (reel_id, user_id, content)
                  VALUES ($1, $2, $3)
@@ -128,9 +135,10 @@ class SocialController {
 
             const comment = result.rows[0];
 
-            // Atualizar contador
             await client.query(
-                'UPDATE reels SET comments_count = comments_count + 1 WHERE id = $1',
+                `UPDATE reels 
+                 SET comments_count = comments_count + 1 
+                 WHERE id = $1`,
                 [reelId]
             );
 
@@ -158,18 +166,11 @@ class SocialController {
         } catch (error) {
             await client.query('ROLLBACK');
 
-            console.error('[SOCIAL_COMMENT_ERROR]', error);
-
-            if (error.name === 'ZodError') {
-                return res.status(400).json({
-                    success: false,
-                    message: error.errors[0].message
-                });
-            }
+            console.error('[COMMENT_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
-                message: 'Erro ao adicionar comentário.'
+                message: 'Erro ao comentar.'
             });
 
         } finally {
@@ -179,8 +180,7 @@ class SocialController {
 
     /**
      * =========================================================================
-     * 📥 GET /api/v1/social/comments/:reelId
-     * Lista comentários (paginado)
+     * 📥 GET COMMENTS (PAGINAÇÃO + PERFORMANCE)
      * =========================================================================
      */
     async getComments(req, res) {
@@ -192,9 +192,12 @@ class SocialController {
 
             const result = await db.query(
                 `SELECT 
-                    c.*,
-                    u.full_name AS user_name,
-                    u.avatar_url AS user_avatar
+                    c.id,
+                    c.content,
+                    c.created_at,
+                    u.id as user_id,
+                    u.full_name as user_name,
+                    u.avatar_url as user_avatar
                  FROM comments c
                  JOIN users u ON c.user_id = u.id
                  WHERE c.reel_id = $1
@@ -211,19 +214,18 @@ class SocialController {
             });
 
         } catch (error) {
-            console.error('[SOCIAL_GET_COMMENTS_ERROR]', error);
+            console.error('[GET_COMMENTS_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
-                message: 'Erro ao carregar comentários.'
+                message: 'Erro ao buscar comentários.'
             });
         }
     }
 
     /**
      * =========================================================================
-     * 🤝 POST /api/v1/social/follow
-     * Follow / Unfollow com recompensa
+     * 🤝 TOGGLE FOLLOW (TRANSACTION + ANTI-SELF + REWARD)
      * =========================================================================
      */
     async toggleFollow(req, res) {
@@ -236,14 +238,14 @@ class SocialController {
             if (!targetUserId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'ID do usuário alvo é obrigatório.'
+                    message: 'targetUserId é obrigatório.'
                 });
             }
 
             if (myId == targetUserId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Não pode seguir a si mesmo.'
+                    message: 'Não podes seguir a ti mesmo.'
                 });
             }
 
@@ -257,7 +259,7 @@ class SocialController {
             let following = false;
 
             if (check.rowCount > 0) {
-                // UNFOLLOW
+                // ❌ UNFOLLOW
                 await client.query(
                     'DELETE FROM follows WHERE id = $1',
                     [check.rows[0].id]
@@ -266,13 +268,13 @@ class SocialController {
                 following = false;
 
             } else {
-                // FOLLOW
+                // ✅ FOLLOW
                 await client.query(
                     'INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)',
                     [myId, targetUserId]
                 );
 
-                // 🎁 recompensa networking
+                // 🎁 recompensa
                 await pointsService.addPointsTransactional(
                     client,
                     myId,
@@ -289,13 +291,13 @@ class SocialController {
             return res.json({
                 success: true,
                 following,
-                message: following ? 'Agora estás a seguir.' : 'Deixaste de seguir.'
+                message: following ? 'Seguindo usuário.' : 'Deixou de seguir.'
             });
 
         } catch (error) {
             await client.query('ROLLBACK');
 
-            console.error('[SOCIAL_FOLLOW_ERROR]', error);
+            console.error('[FOLLOW_ERROR]', error);
 
             return res.status(500).json({
                 success: false,
