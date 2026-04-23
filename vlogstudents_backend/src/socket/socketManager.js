@@ -6,7 +6,7 @@
  */
 
 const jwt = require('jsonwebtoken');
-const db = require('../config/dbConfig');
+const db = require('../config/db');
 
 const initializeSocket = (io) => {
 
