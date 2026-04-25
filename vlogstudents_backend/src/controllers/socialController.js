@@ -1,15 +1,15 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - SOCIAL CONTROLLER v9.0.0
- * FULL STABLE: LIKES | HYBRID COMMENTS | REACTIONS | FOLLOWS | SYNC
+ * VLOGSTUDENTS ENTERPRISE - SOCIAL CONTROLLER v10.0.0 (ULTIMATE STABLE)
+ * LIKES | HYBRID COMMENTS | REACTIONS | FOLLOWS | POINT SYNC
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Engenharia de Fluxo:
- * - Hybrid Identity Engine: Suporte a Comentários de Texto e Áudio (Voices).
- * - Zod Validation Kernel: Coerção automática de tipos para evitar falhas de ID.
- * - Reaction System: Controle atômico de reações em discussões acadêmicas.
- * - Transactional Point Engine: Recompensas automáticas sincronizadas via Neon DB.
+ * Engenharia de Fluxo e Resiliência:
+ * - Atomic Comments: Inserção explícita de [user_id] e metadados de mídia.
+ * - Zod Kernel: Coerção automática de tipos para IDs e validação de esquema.
+ * - Transactional Points: Sincronização garantida entre interação e economia.
+ * - Reaction Engine: Gestão de feedback social (🔥, 👏, 🧠) em discussões.
  * ============================================================================
  */
 
@@ -22,7 +22,7 @@ class SocialController {
 
     /**
      * =========================================================================
-     * ❤️ TOGGLE LIKE (TRANSACTION + CONSISTÊNCIA)
+     * ❤️ TOGGLE LIKE (TRANSACTION + ECONOMY SYNC)
      * =========================================================================
      */
     async toggleLike(req, res) {
@@ -32,7 +32,7 @@ class SocialController {
             const userId = req.user.id;
 
             if (!reelId) {
-                return res.status(400).json({ success: false, message: 'reelId é obrigatório.' });
+                return res.status(400).json({ success: false, message: 'ID do Reel é obrigatório.' });
             }
 
             await client.query('BEGIN');
@@ -45,14 +45,14 @@ class SocialController {
             let liked = false;
 
             if (check.rowCount > 0) {
-                // ❌ UNLIKE
+                // ❌ REMOVER CURTIDA
                 await client.query('DELETE FROM likes WHERE id = $1', [check.rows[0].id]);
                 await client.query(
                     `UPDATE reels SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1`,
                     [reelId]
                 );
             } else {
-                // ❤️ LIKE
+                // ❤️ ADICIONAR CURTIDA
                 await client.query('INSERT INTO likes (user_id, reel_id) VALUES ($1, $2)', [userId, reelId]);
                 await client.query(`UPDATE reels SET likes_count = likes_count + 1 WHERE id = $1`, [reelId]);
 
@@ -66,8 +66,8 @@ class SocialController {
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('[SOCIAL_LIKE_ERROR]', error);
-            return res.status(500).json({ success: false, message: 'Erro ao processar like.' });
+            console.error('[SOCIAL_LIKE_ERROR]', error.message);
+            return res.status(500).json({ success: false, message: 'Erro ao processar interação social.' });
         } finally {
             client.release();
         }
@@ -76,13 +76,13 @@ class SocialController {
     /**
      * =========================================================================
      * 💬 ADD COMMENT (TEXT & AUDIO VOICES)
-     * FIX: Validação Zod + Upload Binário + Persistência
+     * FIX: Integridade de User_ID e Sincronização de Pontos
      * =========================================================================
      */
     async addComment(req, res) {
         const client = await db.getClient();
         try {
-            // Validação com coerção automática (ID de string para number)
+            // Validação via Zod com coerção de tipos
             const validated = commentSchema.parse(req.body);
             const { reelId, content, type } = validated;
             const userId = req.user.id;
@@ -91,12 +91,13 @@ class SocialController {
             
             let mediaUrl = null;
 
-            // Engine de Upload para Comentários de Áudio
+            // Engine de Upload para Vozes de Áudio
             if (req.file && type === 'audio') {
                 const upload = await storageService.uploadFile(req.file, 'comments_audio');
                 mediaUrl = upload.url;
             }
 
+            // Inserção atômica garantindo a relação com o usuário
             const result = await client.query(
                 `INSERT INTO comments (reel_id, user_id, content, type, media_url)
                  VALUES ($1, $2, $3, $4, $5)
@@ -106,11 +107,14 @@ class SocialController {
 
             const comment = result.rows[0];
 
-            // Atualiza métricas do Reel
-            await client.query('UPDATE reels SET comments_count = comments_count + 1 WHERE id = $1', [reelId]);
+            // Sincronização de métricas no Reel
+            await client.query(
+                'UPDATE reels SET comments_count = comments_count + 1 WHERE id = $1', 
+                [reelId]
+            );
             
-            // 🎁 Recompensa Acadêmica: 10 Pontos
-            await pointsService.addPointsTransactional(client, userId, 10, 'Engajamento: Voice', comment.id);
+            // 🎁 Recompensa Acadêmica: 10 Pontos por Voice
+            await pointsService.addPointsTransactional(client, userId, 10, 'Voice de Engajamento', comment.id);
 
             await client.query('COMMIT');
             
@@ -126,10 +130,10 @@ class SocialController {
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('[COMMENT_CRITICAL_ERROR]', error);
+            console.error('[SOCIAL_COMMENT_FATAL]', error.message);
             return res.status(400).json({ 
                 success: false, 
-                message: 'Dados inválidos ou erro no processamento da Voice.' 
+                message: 'Erro crítico ao salvar sua Voice. Verifique os dados.' 
             });
         } finally {
             client.release();
@@ -138,7 +142,7 @@ class SocialController {
 
     /**
      * =========================================================================
-     * 📥 GET COMMENTS (SINCRO REAL-TIME)
+     * 📥 GET COMMENTS (REAL-TIME SYNC)
      * =========================================================================
      */
     async getComments(req, res) {
@@ -160,14 +164,14 @@ class SocialController {
 
             return res.json({ success: true, data: result.rows });
         } catch (error) {
-            console.error('[GET_COMMENTS_ERROR]', error);
+            console.error('[GET_COMMENTS_ERROR]', error.message);
             return res.status(500).json({ success: false });
         }
     }
 
     /**
      * =========================================================================
-     * 🔥 TOGGLE REACTION (REACÇÕES EM COMENTÁRIOS)
+     * 🔥 TOGGLE REACTION (FEEDBACK SOCIAL EM COMENTÁRIOS)
      * =========================================================================
      */
     async toggleReaction(req, res) {
@@ -181,11 +185,11 @@ class SocialController {
             );
 
             if (check.rowCount > 0) {
-                // Remove a reação
+                // Remover reação existente
                 await db.query('DELETE FROM comment_reactions WHERE id = $1', [check.rows[0].id]);
                 return res.json({ success: true, action: 'removed' });
             } else {
-                // Adiciona a reação (🔥, 👏, 🧠, etc)
+                // Adicionar nova reação (🔥, 👏, 🧠)
                 await db.query(
                     'INSERT INTO comment_reactions (comment_id, user_id, reaction_type) VALUES ($1, $2, $3)',
                     [commentId, userId, reaction]
@@ -193,26 +197,29 @@ class SocialController {
                 return res.json({ success: true, action: 'added' });
             }
         } catch (error) {
-            console.error('[REACTION_ERROR]', error);
+            console.error('[REACTION_ERROR]', error.message);
             return res.status(500).json({ success: false });
         }
     }
 
     /**
      * =========================================================================
-     * 🤝 TOGGLE FOLLOW (NETWORKING ACADÊMICO)
+     * 🤝 TOGGLE FOLLOW (NETWORKING HUB)
      * =========================================================================
      */
     async toggleFollow(req, res) {
+        const client = await db.getClient();
         try {
             const { targetUserId } = req.body;
             const myId = req.user.id;
 
             if (myId == targetUserId) {
-                return res.status(400).json({ success: false, message: 'Operação inválida.' });
+                return res.status(400).json({ success: false, message: 'Operação de auto-seguimento inválida.' });
             }
 
-            const check = await db.query(
+            await client.query('BEGIN');
+
+            const check = await client.query(
                 'SELECT id FROM follows WHERE follower_id = $1 AND following_id = $2',
                 [myId, targetUserId]
             );
@@ -220,22 +227,28 @@ class SocialController {
             let following = false;
 
             if (check.rowCount > 0) {
-                // Unfollow
-                await db.query('DELETE FROM follows WHERE id = $1', [check.rows[0].id]);
+                // ❌ DEIXAR DE SEGUIR
+                await client.query('DELETE FROM follows WHERE id = $1', [check.rows[0].id]);
             } else {
-                // Follow
-                await db.query(
+                // ✅ SEGUIR ESTUDANTE
+                await client.query(
                     'INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)',
                     [myId, targetUserId]
                 );
+                // 🎁 Recompensa Networking: 15 Pontos
+                await pointsService.addPointsTransactional(client, myId, 15, 'Networking: Follow', targetUserId);
                 following = true;
             }
 
+            await client.query('COMMIT');
             return res.json({ success: true, following });
 
         } catch (error) {
-            console.error('[FOLLOW_ERROR]', error);
+            await client.query('ROLLBACK');
+            console.error('[FOLLOW_ERROR]', error.message);
             return res.status(500).json({ success: false });
+        } finally {
+            client.release();
         }
     }
 }
