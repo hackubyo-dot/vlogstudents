@@ -1,45 +1,44 @@
-/**
- * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - CAMPUS STATUS CONTROLLER v1.0.0
- * VIDEO | AUDIO | TEXT | LINKS (48H PERSISTENCE)
- * ============================================================================
- */
-
 const db = require('../config/db');
 const storageService = require('../services/storageService');
+const { statusSchema } = require('../utils/validators');
 
 class StatusController {
     async create(req, res) {
+        const client = await db.getClient();
         try {
-            const { type, content, backgroundColor } = req.body;
+            const validated = statusSchema.parse(req.body);
+            const { type, content, backgroundColor } = validated;
             const userId = req.user.id;
             
-            // Define expiração em 48 horas para membros VIP (ou 24h padrão)
             const expiresAt = new Date();
             expiresAt.setHours(expiresAt.getHours() + 48);
 
+            await client.query('BEGIN');
+
             let mediaUrl = null;
             if (req.file) {
-                const upload = await storageService.uploadFile(req.file, 'status_media');
+                const folder = type === 'video' ? 'status_videos' : 'status_images';
+                const upload = await storageService.uploadFile(req.file, folder);
                 mediaUrl = upload.url;
             }
 
-            const result = await db.query(
+            const result = await client.query(
                 `INSERT INTO campus_statuses (user_id, type, content, media_url, background_color, expires_at)
                  VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-                [userId, type, content, mediaUrl, backgroundColor, expiresAt]
+                [userId, type, content || "", mediaUrl, backgroundColor || "#000000", expiresAt]
             );
 
+            await client.query('COMMIT');
             return res.status(201).json({ success: true, data: result.rows[0] });
         } catch (error) {
-            console.error('[STATUS_CREATE_ERROR]', error);
-            return res.status(500).json({ success: false, message: 'Falha ao postar status.' });
-        }
+            await client.query('ROLLBACK');
+            console.error('[STATUS_ERROR]', error);
+            return res.status(400).json({ success: false, message: 'Falha ao criar status.' });
+        } finally { client.release(); }
     }
 
     async getActive(req, res) {
         try {
-            // Busca apenas status que não expiraram
             const result = await db.query(
                 `SELECT s.*, u.full_name, u.avatar_url 
                  FROM campus_statuses s
