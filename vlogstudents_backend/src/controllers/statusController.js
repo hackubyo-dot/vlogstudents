@@ -1,15 +1,16 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - STATUS CONTROLLER v2.0.0
- * MUTUAL FOLLOWERS LOGIC | BINARY UPLOADS | VIEW TRACKING | ZOD VALIDATION
+ * VLOGSTUDENTS ENTERPRISE - STATUS CONTROLLER v3.0.0 (ULTIMATE STABLE)
+ * MUTUAL FOLLOWERS | BINARY UPLOADS | VIEW TRACKING | ZOD VALIDATION
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Engenharia de Fluxo:
- * - Privacy Shield: Apenas o dono e seguidores mútuos (Networking Real) podem ver status.
- * - Dynamic Expiry: Expiração automática configurada para 48 Horas.
- * - Binary Pipeline: Upload categorizado para Video/Image/Audio no Supabase.
- * - Transactional Integrity: Garantia de persistência atômica via Neon DB.
+ * Engenharia de Fluxo e Resiliência:
+ * - Privacy Shield: Apenas contatos com seguimento mútuo visualizam Stories.
+ * - Anti-Stall Upload: Processamento binário direto para 'campus_status'.
+ * - Dynamic Expiry: Ciclo de vida estendido para 48 horas acadêmicas.
+ * - Telemetry Engine: Rastreamento atômico de visualizações único por usuário.
+ * - Transactional Integrity: Garantia de persistência total no Neon DB.
  * ============================================================================
  */
 
@@ -32,20 +33,22 @@ class StatusController {
             const { type, content, backgroundColor } = validated;
             const userId = req.user.id;
             
-            // 2. Cálculo de Expiração (48 Horas Acadêmicas)
+            // 2. Vida útil de 48 horas conforme requisitos Enterprise
             const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
             await client.query('BEGIN');
 
             let mediaUrl = null;
             if (req.file) {
-                // Upload binário categorizado por tipo de mídia
-                const folder = `status_${type}s`;
-                const upload = await storageService.uploadFile(req.file, folder);
+                // Log de auditoria industrial para monitoramento de tráfego
+                console.log(`[STATUS_UPLOAD] Processando arquivo ${req.file.mimetype} para status ${type}`);
+                
+                // Upload binário para o bucket 'campus_status' no Supabase
+                const upload = await storageService.uploadFile(req.file, 'campus_status');
                 mediaUrl = upload.url;
             }
 
-            // 3. Persistência no Neon DB
+            // 3. Persistência Atômica no Neon DB
             const result = await client.query(
                 `INSERT INTO campus_statuses (user_id, type, content, media_url, background_color, expires_at)
                  VALUES ($1, $2, $3, $4, $5, $6) 
@@ -64,18 +67,17 @@ class StatusController {
 
             return res.status(201).json({ 
                 success: true, 
-                message: 'Status publicado no campus.',
+                message: 'Status publicado com sucesso no campus.',
                 data: result.rows[0] 
             });
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('[STATUS_CREATE_ERROR]', error);
+            console.error('[STATUS_CREATE_ERROR]', error.message);
 
-            // Resposta de erro baseada no tipo de falha
             return res.status(error.name === 'ZodError' ? 400 : 500).json({ 
                 success: false, 
-                message: error.name === 'ZodError' ? 'Dados do status inválidos.' : 'Falha fatal ao postar status.' 
+                message: error.name === 'ZodError' ? 'Dados do status inválidos.' : 'Erro ao processar status no servidor.' 
             });
         } finally { 
             client.release(); 
@@ -84,26 +86,26 @@ class StatusController {
 
     /**
      * =========================================================================
-     * 📥 GET ACTIVE STATUS (MUTUAL FOLLOW LOGIC)
-     * FIX: Filtra por pessoas que se seguem de volta (Networking Real)
+     * 📥 GET ACTIVE STATUS (MUTUAL FOLLOW & PRIVACY)
      * =========================================================================
      */
     async getActive(req, res) {
         try {
             const myId = req.user.id;
 
-            // QUERY MASTER: Seleciona status ativos baseada na relação mútua
+            // QUERY MASTER: Filtra status ativos por lógica de networking real (seguimento mútuo)
             const result = await db.query(
                 `SELECT 
                     s.*, 
                     u.full_name, 
                     u.avatar_url,
+                    -- Contador de visualizações reais integrado
                     (SELECT COUNT(*) FROM status_views WHERE status_id = s.id) as views_count
                  FROM campus_statuses s
                  JOIN users u ON s.user_id = u.id
                  WHERE s.expires_at > NOW()
                  AND (
-                    -- Regra 1: Meus próprios status
+                    -- Regra 1: Meus próprios status sempre aparecem para mim
                     s.user_id = $1 
                     OR s.user_id IN (
                         -- Regra 2: Status de contatos mútuos (A segue B E B segue A)
@@ -124,17 +126,17 @@ class StatusController {
             });
 
         } catch (error) {
-            console.error('[STATUS_GET_ERROR]', error);
+            console.error('[STATUS_GET_ERROR] Falha na consulta de status:', error.message);
             return res.status(500).json({ 
-                success: false,
-                message: 'Erro ao sincronizar status do campus.'
+                success: false, 
+                message: 'Erro ao carregar o Campus Board.' 
             });
         }
     }
 
     /**
      * =========================================================================
-     * 👁️ TRACK VIEW (TELEMETRIA DE STORIES)
+     * 👁️ TRACK VIEW (TELEMETRIA ATÔMICA)
      * =========================================================================
      */
     async trackView(req, res) {
@@ -142,7 +144,7 @@ class StatusController {
             const { statusId } = req.params;
             const viewerId = req.user.id;
 
-            // Registro de visualização com proteção contra duplicidade (ON CONFLICT)
+            // Registro de visualização com proteção contra duplicidade
             await db.query(
                 `INSERT INTO status_views (status_id, viewer_id) 
                  VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -151,14 +153,14 @@ class StatusController {
 
             return res.json({ 
                 success: true,
-                message: 'Visualização registrada.'
+                message: 'Visualização registrada.' 
             });
 
-        } catch (error) {
-            console.error('[STATUS_VIEW_ERROR]', error);
+        } catch (e) { 
+            console.error('[STATUS_VIEW_TRACK_ERR]', e.message);
             return res.status(500).json({ 
                 success: false 
-            });
+            }); 
         }
     }
 
@@ -180,16 +182,17 @@ class StatusController {
             if (result.rowCount === 0) {
                 return res.status(403).json({ 
                     success: false, 
-                    message: 'Não autorizado ou status inexistente.' 
+                    message: 'Não autorizado ou status expirado.' 
                 });
             }
 
             return res.json({ 
                 success: true, 
-                message: 'Status removido.' 
+                message: 'Status removido com sucesso.' 
             });
 
         } catch (error) {
+            console.error('[STATUS_DELETE_ERR]', error.message);
             return res.status(500).json({ success: false });
         }
     }
