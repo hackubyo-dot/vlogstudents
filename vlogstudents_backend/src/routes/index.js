@@ -1,7 +1,9 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS MASTER ROUTER ORCHESTRATOR v27.0.0 (FINAL ENTERPRISE)
+ * VLOGSTUDENTS MASTER ROUTER ORCHESTRATOR v28.0.0 (FINAL ENTERPRISE)
  * ZERO 404 | ZERO MISMATCH | FULL BACKEND INTEGRATION | READY FOR FLUTTER
+ * 
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * ============================================================================
  */
 
@@ -23,6 +25,7 @@ const reelCtrl = require('../controllers/reelController');
 const socialCtrl = require('../controllers/socialController');
 const chatCtrl = require('../controllers/chatController');
 const economyCtrl = require('../controllers/economyController');
+const statusCtrl = require('../controllers/statusController');
 
 // ============================================================================
 // 🔓 AUTH MODULE (PUBLIC)
@@ -37,16 +40,19 @@ router.post('/auth/recovery/reset', authCtrl.resetPassword);
 // ============================================================================
 router.get('/users/me', auth, userCtrl.getMe);
 
-// 🔥 suporta "me" ou ID real
+// 🔥 Suporta "me" ou ID real para visualização de perfil
+router.get('/users/profile/:userId', auth, userCtrl.getProfile);
+
+// 📊 Métricas Sociais (Followers/Following/Likes)
 router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
 
-// 🔍 SEARCH USERS
+// 🔍 SEARCH USERS (Global Campus Search)
 router.get('/users/search', auth, userCtrl.searchUsers);
 
-// ✏️ UPDATE PROFILE
+// ✏️ UPDATE PROFILE (Metadata)
 router.patch('/users/update', auth, userCtrl.updateProfile);
 
-// 📸 AVATAR UPLOAD
+// 📸 AVATAR UPLOAD (Multipart)
 router.post(
     '/users/profile/avatar',
     auth,
@@ -54,24 +60,24 @@ router.post(
     userCtrl.updateAvatar
 );
 
-// ❌ SOFT DELETE ACCOUNT
+// ❌ ACCOUNT DELETION (Soft Delete)
 router.delete('/users/delete', auth, userCtrl.deleteAccount);
 
-// 🎯 REFERRAL STATS (ECONOMY LINK)
+// 🎯 REFERRAL STATS
 router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
 
 // ============================================================================
-// 🎬 REELS MODULE (PROTECTED)
+// 🎬 REELS MODULE (VIDEO CONTENT)
 // ============================================================================
 router.get('/reels', auth, reelCtrl.getFeed);
 
-// 🔥 REELS POR USUÁRIO
+// 🎥 Listar Reels de um usuário específico
 router.get('/reels/user/:userId', auth, reelCtrl.getUserReels);
 
-// 📄 DETALHE DO REEL
+// 📄 Detalhes de um Reel específico
 router.get('/reels/:id', auth, reelCtrl.getById);
 
-// 🚀 CREATE REEL (UPLOAD)
+// 🚀 CREATE REEL (Upload Industrial)
 router.post(
     '/reels/create',
     auth,
@@ -79,32 +85,54 @@ router.post(
     reelCtrl.create
 );
 
-// ✏️ UPDATE REEL
+// ✏️ UPDATE REEL (Título/Legenda)
 router.patch('/reels/update/:id', auth, reelCtrl.update);
 
 // ❌ DELETE REEL
 router.delete('/reels/delete/:id', auth, reelCtrl.delete);
 
-// 👁 TRACK VIEW (ALINHADO COM CONTROLLER FINAL)
+// 👁 TRACK VIEW (Neon DB Counter Sync)
 router.post('/reels/:id/view', auth, reelCtrl.incrementView);
 
 // ============================================================================
-// ❤️ SOCIAL MODULE
+// ❤️ SOCIAL MODULE (INTERACTIONS)
 // ============================================================================
+// Like/Unlike em Reels
 router.post('/social/like', auth, socialCtrl.toggleLike);
 
-router.post('/social/comment', auth, socialCtrl.addComment);
+// Comentários (Suporta Texto e Áudio Voices via Multipart)
+router.post(
+    '/social/comment', 
+    auth, 
+    upload.single('file'), 
+    socialCtrl.addComment
+);
 
+// Listar Comentários de um Reel
 router.get('/social/comments/:reelId', auth, socialCtrl.getComments);
 
+// Reações em Comentários (🔥, 👏, 🧠)
+router.post('/social/comment/react', auth, socialCtrl.toggleReaction);
+
+// Networking (Follow/Unfollow)
 router.post('/social/follow', auth, socialCtrl.toggleFollow);
 
-router.get('/users/profile/:userId', auth, userCtrl.getProfile);
+// ============================================================================
+// ⏳ STATUS MODULE (CAMPUS STORIES)
+// ============================================================================
+// Buscar todos os status ativos (dentro de 24h)
+router.get('/status/active', auth, statusCtrl.getActive);
 
-router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
+// Criar novo Status (Suporta Texto, Link e Mídia via Multipart)
+router.post(
+    '/status/create', 
+    auth, 
+    upload.single('file'), 
+    statusCtrl.create
+);
 
 // ============================================================================
-// 💬 CHAT MODULE (REALTIME READY)
+// 💬 CHAT MODULE (REALTIME COMMUNICATION)
 // ============================================================================
 router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
 
@@ -112,18 +140,17 @@ router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
 
 router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
 
-// 🔥 ENVIO DE MENSAGEM
 router.post('/chat/messages', auth, chatCtrl.sendMessage);
 
 // ============================================================================
-// 💰 ECONOMY MODULE
+// 💰 ECONOMY MODULE (GAMIFICATION)
 // ============================================================================
 router.get('/economy/history', auth, economyCtrl.getHistory);
 
 router.get('/economy/leaderboard', auth, economyCtrl.getLeaderboard);
 
 // ============================================================================
-// 📦 GENERIC UPLOAD (NOVO)
+// 📦 GENERIC UPLOAD
 // ============================================================================
 router.post('/upload', auth, upload.single('file'), (req, res) => {
     return res.json({
@@ -139,8 +166,8 @@ router.post('/upload', auth, upload.single('file'), (req, res) => {
 router.get('/test', (req, res) => {
     res.json({
         success: true,
-        message: 'VLOGSTUDENTS API ONLINE 🚀',
-        version: '27.0.0',
+        message: 'VLOGSTUDENTS ENTERPRISE API ONLINE 🚀',
+        version: '28.0.0',
         timestamp: new Date()
     });
 });
@@ -150,10 +177,9 @@ router.get('/test', (req, res) => {
 // ============================================================================
 router.use((req, res) => {
     console.warn(`[ROUTE_404] ${req.method} ${req.originalUrl}`);
-
     res.status(404).json({
         success: false,
-        message: `Endpoint não encontrado: ${req.method} ${req.originalUrl}`
+        message: `Endpoint não encontrado no campus: ${req.method} ${req.originalUrl}`
     });
 });
 
