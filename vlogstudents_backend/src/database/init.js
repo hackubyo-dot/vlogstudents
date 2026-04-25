@@ -1,16 +1,16 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - DATABASE ORCHESTRATOR v13.0.0 (ULTIMATE MASTER)
+ * VLOGSTUDENTS ENTERPRISE - DATABASE ORCHESTRATOR v14.0.0 (ULTIMATE STABLE)
  * HARD RESET | AUTO-HEALING | RECURSIVE THREADS | MULTI-REACTIONS | TELEMETRY
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Engenharia de Fluxo:
- * - Smart Schema Sync: Cria tabelas inexistentes e injeta colunas faltantes.
- * - Recursive Discussions: Suporte a parent_id para respostas em comentários.
- * - Social Reaction Engine: Tipagem de reações (like, love, haha, wow, etc).
- * - Story Telemetry: Rastreamento atômico de visualizações em status.
- * - Performance Layer: Índices estratégicos para busca binária em larga escala.
+ * Engenharia de Fluxo v14.0.0:
+ * - Smart Schema Sync: Auditoria total de tabelas e colunas em tempo real.
+ * - Recursive Discussions: Suporte a parent_id para hierarquia de respostas.
+ * - Social Reaction Engine: Tipagem de reações para engajamento profundo.
+ * - Story Telemetry: Rastreamento atômico de visualizações com viewed_at.
+ * - Zero Lag Performance: Índices estratégicos para grandes volumes acadêmicos.
  * ============================================================================
  */
 
@@ -18,14 +18,14 @@ const db = require('../config/db');
 
 const initializeDatabase = async () => {
     const client = await db.getClient();
-    console.log('[DB_INIT] 🔍 Iniciando auditoria total da infraestrutura v13.0.0...');
+    console.log('[DB_INIT] 🔍 Iniciando auditoria total da infraestrutura v14.0.0...');
 
     try {
         await client.query('BEGIN');
 
         /**
          * =========================================================================
-         * 🔐 EXTENSIONS & UUID ENGINE
+         * 🔐 EXTENSIONS & ENGINES
          * =========================================================================
          */
         await client.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
@@ -169,7 +169,7 @@ const initializeDatabase = async () => {
         /**
          * =========================================================================
          * 💬 COMMENTS (THREADS ACADÊMICAS RECURSIVAS)
-         * FIX: parent_id permite o sistema de respostas (V13 Upgrade)
+         * FIX: parent_id permite o sistema de respostas (V13/V14 Upgrade)
          * =========================================================================
          */
         await client.query(`
@@ -195,7 +195,6 @@ const initializeDatabase = async () => {
         /**
          * =========================================================================
          * 🔥 COMMENT REACTIONS (MULTI-TYPE ENGINE)
-         * V13: Adicionado suporte para 'type' (Emoji estilo social media)
          * =========================================================================
          */
         await client.query(`
@@ -232,7 +231,8 @@ const initializeDatabase = async () => {
 
         /**
          * =========================================================================
-         * 👁️ STATUS VIEWS (TELEMETRY ENGINE)
+         * 👁️ STATUS VIEWS (TELEMETRIA V14 - MODAL SYNC)
+         * FIX: Garantindo viewed_at para auditoria de visualização.
          * =========================================================================
          */
         await client.query(`
@@ -245,12 +245,15 @@ const initializeDatabase = async () => {
             );
         `);
 
+        // AUTO-HEAL: Garantia de carimbo de tempo
+        await client.query(`ALTER TABLE status_views ADD COLUMN IF NOT EXISTS viewed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+
         /**
          * =========================================================================
          * ⚡ PERFORMANCE INDEXES (ZERO LAG ARCHITECTURE)
          * =========================================================================
          */
-        console.log('[DB_INIT] ⚡ Otimizando acesso aos dados com índices v13...');
+        console.log('[DB_INIT] ⚡ Injetando camada de performance v14.0.0...');
 
         await client.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_users_points ON users(points_total DESC);`);
@@ -261,14 +264,15 @@ const initializeDatabase = async () => {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_status_expires ON campus_statuses(expires_at);`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_status_user ON campus_statuses(user_id);`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_status_views_sid ON status_views(status_id);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_status_views_vid ON status_views(viewer_id);`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_reactions_comment ON comment_reactions(comment_id);`);
 
         await client.query('COMMIT');
-        console.log('✅ [DB_INIT] Banco de Dados v13.0.0 sincronizado e pronto para produção.');
+        console.log('✅ [DB_INIT] Banco de Dados v14.0.0 sincronizado e pronto para produção.');
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('❌ [DB_INIT_FATAL] Falha catastrófica ao orquestrar schema:', error.message);
+        console.error('❌ [DB_INIT_FATAL] Falha catastrófica ao orquestrar schema v14:', error.message);
         throw error;
     } finally {
         client.release();
