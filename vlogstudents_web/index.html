@@ -24,8 +24,8 @@
     <title>VlogStudents | Campus Web Master</title>
 
     <!-- FAVICON & APP ICONS (FIDELITY ASSETS) -->
-    <link rel="icon" type="image/png" href="assets/images/logo.png">
-    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <link rel="icon" type="image/png" href="/assets/images/logo.png">
+    <link rel="apple-touch-icon" href="/assets/images/logo.png">
 
     <!-- GOOGLE IDENTITY SERVICES CLIENT ID (WEB LOGIN FIX) -->
     <meta name="google-signin-client_id" content="435332250244-vh9rravt3cmf1vmng29rbbs4vj3iccle.apps.googleusercontent.com">
@@ -36,11 +36,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
     <!-- DNA VISUAL VLOGSTUDENTS (CSS KERNELS) -->
-    <link rel="stylesheet" href="assets/css/variables.css">      <!-- Design Tokens & Matriz Cromática -->
-    <link rel="stylesheet" href="assets/css/style.css">          <!-- Global Style & Layout Resets -->
-    <link rel="stylesheet" href="assets/css/glassmorphism.css">   <!-- Motor de Transparência Gaussiana -->
-    <link rel="stylesheet" href="assets/css/animations.css">     <!-- Cinematic Transitions & Keyframes -->
-    <link rel="stylesheet" href="assets/css/components.css">     <!-- UI Kit: Pill Bars, Cards, Avatars -->
+    <link rel="stylesheet" href="/assets/css/variables.css">      <!-- Design Tokens & Matriz Cromática -->
+    <link rel="stylesheet" href="/assets/css/style.css">          <!-- Global Style & Layout Resets -->
+    <link rel="stylesheet" href="/assets/css/glassmorphism.css">   <!-- Motor de Transparência Gaussiana -->
+    <link rel="stylesheet" href="/assets/css/animations.css">     <!-- Cinematic Transitions & Keyframes -->
+    <link rel="stylesheet" href="/assets/css/components.css">     <!-- UI Kit: Pill Bars, Cards, Avatars -->
 
     <!-- FONTES ACADÊMICAS (LATÊNCIA ZERO) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,167 +49,156 @@
 
     <style>
         /* CSS INLINE PARA CARREGAMENTO CRÍTICO (ANTI-FLASH) */
-        body { background-color: #000000; overflow-x: hidden; }
+        body { background-color: #000000; margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        
         #splash-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000000;
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.6s var(--ease-out-expo);
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease-out;
         }
+        
         .splash-bg {
-            position: absolute;
-            width: 100%; height: 100%;
-            background-image: url('assets/images/background.png');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.4;
+            position: absolute; width: 100%; height: 100%;
+            background-image: url('/assets/images/background.png');
+            background-size: cover; background-position: center; opacity: 0.3;
         }
+
         #global-page-loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 3px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 3px;
             background: linear-gradient(to right, var(--primary-neon), var(--accent-cyan));
-            z-index: 2000;
-            display: none;
-            box-shadow: var(--shadow-neon);
+            z-index: 10000; display: none; box-shadow: 0 0 10px var(--primary-neon);
         }
+
         #vlog-toast-container {
-            position: fixed;
-            top: 20px; right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
+            position: fixed; top: 20px; right: 20px; z-index: 10001;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .spinner-neon { 
+            border-color: var(--primary-neon); 
+            border-right-color: transparent; 
+        }
+
+        /* Garantir que o conteúdo principal ocupe a tela toda */
+        #app-router-view { 
+            position: relative; 
+            width: 100%; 
+            min-height: 100vh; 
+            display: none; 
         }
     </style>
 </head>
 <body class="dark-theme">
 
-<!-- 1. CAMADA ATMOSFÉRICA (AMBIENT GLOWS) -->
-<div class="app-background-container">
-    <div class="ambient-glow glow-top-right"></div>
-    <div class="ambient-glow glow-bottom-left"></div>
-</div>
+    <!-- 1. CAMADA ATMOSFÉRICA (AMBIENT GLOWS) -->
+    <div class="app-background-container">
+        <div class="ambient-glow glow-top-right"></div>
+        <div class="ambient-glow glow-bottom-left"></div>
+    </div>
 
-<!-- 2. LOADER DE ROTA (BARRA DE PROGRESSO SUPERIOR) -->
-<div id="global-page-loader"></div>
+    <!-- 2. LOADER DE ROTA (BARRA DE PROGRESSO SUPERIOR) -->
+    <div id="global-page-loader"></div>
 
-<!-- 3. MOTOR DE SPLASH CINEMÁTICO (KEN BURNS TRANSITION) -->
-<div id="splash-screen">
-    <div class="splash-bg ken-burns"></div>
-    <div class="splash-content text-center position-relative">
-        <img src="assets/images/logo.png" alt="VlogStudents" class="pulse-animation mb-4" width="130">
-        <div class="d-flex flex-column align-items-center">
-            <div class="spinner-border text-neon mb-3" style="width: 2.5rem; height: 2.5rem; border-width: 0.2em;"></div>
-            <h5 class="fw-black text-neon ls-vwide animate__animated animate__fadeInUp">SINCRONIZANDO CAMPUS</h5>
-            <p class="text-muted text-xs fw-bold mt-2">v20.0.0 Master Edition</p>
+    <!-- 3. MOTOR DE SPLASH CINEMÁTICO (KEN BURNS TRANSITION) -->
+    <div id="splash-screen">
+        <div class="splash-bg ken-burns"></div>
+        <div class="text-center position-relative">
+            <img src="/assets/images/logo.png" alt="VlogStudents" class="pulse-animation mb-4" width="120">
+            <div class="d-flex flex-column align-items-center">
+                <div class="spinner-border text-info mb-3" style="width: 3rem; height: 3rem; border-width: 0.25em;"></div>
+                <h5 class="text-info fw-bold ls-vwide animate__animated animate__fadeInUp">SINCRONIZANDO CAMPUS</h5>
+                <p class="text-muted text-xs fw-bold mt-2">v20.0.0 Master Edition</p>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 4. APP ROUTER VIEW (INJEÇÃO DE TELAS DINÂMICAS) -->
-<!-- Este container recebe o HTML das views (Feed, Chat, Profile, etc) via main.js -->
-<main id="app-router-view" class="h-100" style="display: none;">
-    <!-- SPA CONTENT INJECTED HERE -->
-</main>
+    <!-- 4. APP ROUTER VIEW (MAIN VIEWPORT) -->
+    <main id="app-router-view"></main>
 
-<!-- 5. LIQUID GLASS NAVIGATION BAR (FLOATING MASTER NAV) -->
-<!-- Visibilidade controlada pelo Orchestrator Main.js -->
-<div id="liquid-nav-container" class="liquid-nav-container" style="display: none;">
-    <nav class="liquid-nav-bar glass-morphism glass-reflect glass-noise">
-        <a href="#/home/feed" class="nav-item active" data-nav="feed">
-            <i class="fas fa-grid-2"></i>
-            <span>FEED</span>
-        </a>
-        <a href="#/chat/list" class="nav-item" data-nav="chat">
-            <div class="position-relative">
-                <i class="fas fa-comment-dots"></i>
-                <span id="global-unread-badge" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="display: none; font-size: 8px;">0</span>
-            </div>
-            <span>VOICES</span>
-        </a>
+    <!-- 5. LIQUID GLASS NAVIGATION BAR (FLOATING MASTER NAV) -->
+    <div id="liquid-nav-container" class="liquid-nav-container" style="display: none;">
+        <nav class="liquid-nav-bar glass-morphism glass-reflect glass-noise">
+            <a href="#/home/feed" class="nav-item active" data-nav="feed">
+                <i class="fas fa-home"></i>
+                <span>FEED</span>
+            </a>
+            <a href="#/chat/list" class="nav-item" data-nav="chat">
+                <div class="position-relative">
+                    <i class="fas fa-comment"></i>
+                    <span id="global-unread-badge" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="display: none; font-size: 8px;">0</span>
+                </div>
+                <span>CHAT</span>
+            </a>
 
-        <!-- CENTRAL ACTION: UPLOAD HUB -->
-        <div class="nav-central-action" onclick="window.location.hash = '#/post/upload'">
-            <div class="btn-vlog-primary rounded-circle" style="width: 58px; height: 58px; padding: 0;">
-                <i class="fas fa-plus fa-lg"></i>
-            </div>
-        </div>
+            <!-- BOTAO CENTRAL DE UPLOAD -->
+            <a href="#/post/upload" class="nav-plus-btn">
+                <i class="fas fa-plus"></i>
+            </a>
 
-        <a href="#/points/dashboard" class="nav-item" data-nav="points">
-            <i class="fas fa-chart-line"></i>
-            <span>POINTS</span>
-        </a>
-        <a href="#/profile/view" class="nav-item" data-nav="profile">
-            <i class="fas fa-user-graduate"></i>
-            <span>PERFIL</span>
-        </a>
-    </nav>
-</div>
+            <a href="#/points/dashboard" class="nav-item" data-nav="points">
+                <i class="fas fa-coins"></i>
+                <span>VOICES</span>
+            </a>
+            <a href="#/profile/view" class="nav-item" data-nav="profile">
+                <i class="fas fa-user-graduate"></i>
+                <span>PERFIL</span>
+            </a>
+        </nav>
+    </div>
 
-<!-- 6. CONTAINER DE NOTIFICAÇÕES (TOAST SYSTEM) -->
-<div id="vlog-toast-container"></div>
+    <!-- 6. CONTAINER DE NOTIFICAÇÕES (TOAST SYSTEM) -->
+    <div id="vlog-toast-container"></div>
 
-<!-- 7. MODAIS GLOBAIS (OVERLAYS ACADÊMICOS) -->
-<div id="global-modals-root"></div>
+    <!-- 7. MODAIS GLOBAIS -->
+    <div id="global-modals-root"></div>
 
-<!--
- * ============================================================================
- * CAMADA DE INFRAESTRUTURA DE SCRIPTS (ORDERED IMPORT)
- * ============================================================================
--->
+    <!-- 
+     * ============================================================================
+     * CAMADA DE INFRAESTRUTURA DE SCRIPTS (ORDERED IMPORT)
+     * ============================================================================
+    -->
 
-<!-- A. VENDORS (DEPENDÊNCIAS EXTERNAS) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- A. VENDORS (DEPENDÊNCIAS EXTERNAS) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- B. CORE KERNELS (MOTORES DE SISTEMA) -->
+    <script src="/assets/js/core/api.js"></script>        <!-- Axios Client & Interceptors -->
+    <script src="/assets/js/core/telemetry.js"></script>  <!-- Monitoramento & Error Tracking -->
+    <script src="/assets/js/core/socket.js"></script>     <!-- Real-time Orchestrator -->
+    <script src="/assets/js/core/auth.js"></script>       <!-- Identity & Identity Manager -->
+    
+    <!-- C. UTILS (FERRAMENTAS DE DADOS) -->
+    <script src="/assets/js/utils/formatters.js"></script>     <!-- Intl, Datas, Currency -->
+    <script src="/assets/js/utils/media-resolver.js"></script>  <!-- Supabase/CDN Resolver -->
+    
+    <!-- D. MODULES (LÓGICA DE NEGÓCIO) -->
+    <script src="/assets/js/modules/feed.js"></script>    <!-- Reels, Likes, Comments -->
+    <script src="/assets/js/modules/chat.js"></script>    <!-- Messaging & Signaling -->
+    <script src="/assets/js/modules/status.js"></script>  <!-- Stories Matrix -->
+    <script src="/assets/js/modules/points.js"></script>  <!-- Economy & Leaderboard -->
+    <script src="/assets/js/modules/profile.js"></script> <!-- User Metadata CRUD -->
+    
+    <!-- E. MAIN ORCHESTRATOR (O GRANDE MAESTRO) -->
+    <script src="/assets/js/main.js"></script>           <!-- SPA Router & Bootstrap -->
 
-<!-- B. CORE KERNELS (MOTORES DE SISTEMA) -->
-<script src="assets/js/core/api.js"></script>        <!-- Axios Client & Wrappers -->
-<script src="assets/js/core/telemetry.js"></script>  <!-- Monitoramento & Erros -->
-<script src="assets/js/core/socket.js"></script>     <!-- Real-time Signaling -->
-<script src="assets/js/core/auth.js"></script>       <!-- Identity & Session Manager -->
+    <script>
+        /**
+         * Watchdog de Performance e Proteção de Interface
+         */
+        window.addEventListener('load', () => {
+            console.log('%c VLOGSTUDENTS ENTERPRISE %c Campus Web Master Online ', 
+                'background: #CCFF00; color: #000; font-weight: bold; padding: 5px;', 
+                'background: #000; color: #CCFF00; padding: 5px;');
+        });
 
-<!-- C. UTILS (FERRAMENTAS DE DADOS) -->
-<script src="assets/js/utils/formatters.js"></script>     <!-- Intl, Datas, Stats -->
-<script src="assets/js/utils/media-resolver.js"></script>  <!-- Supabase Proxy Gateway -->
-
-<!-- D. MODULES (LÓGICA DE NEGÓCIO) -->
-<script src="assets/js/modules/feed.js"></script>    <!-- Reels, Likes, Views -->
-<script src="assets/js/modules/chat.js"></script>    <!-- Messaging & WebRTC Signaling -->
-<script src="assets/js/modules/status.js"></script>  <!-- Campus Stories Matrix -->
-<script src="assets/js/modules/points.js"></script>  <!-- Economy & XP Hub -->
-<script src="assets/js/modules/profile.js"></script> <!-- Identity & Metadata CRUD -->
-
-<!-- E. MAIN ORCHESTRATOR (O GRANDE MAESTRO) -->
-<script src="assets/js/main.js"></script>           <!-- SPA Router & Boot Sequence -->
-
-<!--
- * ============================================================================
- * FIM DO ARQUIVO INDEX - VLOGSTUDENTS ENTERPRISE EDITION
- * O SISTEMA ESTÁ PRONTO PARA OPERAÇÃO WEB TOTAL.
- * ============================================================================
--->
-
-<script>
-    /**
-     * Watchdog de Performance Inicial
-     */
-    window.addEventListener('load', () => {
-        if (window.VlogTelemetry) {
-            window.VlogTelemetry.addBreadcrumb('system', 'Index Resources Loaded');
-        }
-    });
-
-    // Previne menus de contexto amadores para proteger a estética Chapa
-    document.addEventListener('contextmenu', (e) => {
-        if (window.location.hostname !== 'localhost') e.preventDefault();
-    });
-</script>
+        // Previne menu de contexto em produção para manter a imersão
+        document.addEventListener('contextmenu', (e) => {
+            if (window.location.hostname !== 'localhost') e.preventDefault();
+        });
+    </script>
 </body>
 </html>
