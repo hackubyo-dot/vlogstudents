@@ -1,17 +1,17 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - MASTER EXPRESS APP v32.0.0 (ULTIMATE EDITION)
- * SECURITY | CORS ENGINE | PERFORMANCE | OBSERVABILITY | SMART MIDDLEWARE
+ * VLOGSTUDENTS ENTERPRISE - MASTER EXPRESS APP v32.0.0 (ULTIMATE NUCLEAR EDITION)
+ * SECURITY | NUCLEAR CORS ENGINE | PERFORMANCE | OBSERVABILITY | WEB & MOBILE SYNC
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
  * Engenharia de Fluxo:
  * - Trust Proxy: Otimizado para Render.com, AWS Cloudfront e Nginx.
- * - Traceability: Injeção de X-Vlog-Trace-Id em cada transação para auditoria.
- * - Ultra-CORS: Configuração robusta para compatibilidade Web, Mobile e Desktop.
- * - Helmet Hardened: Cabeçalhos de segurança de nível bancário.
- * - Rate Limiting: Proteção contra ataques de negação de serviço (DoS).
- * - Anti-Injection: Sanitização profunda de entradas de dados.
+ * - Traceability: Injeção de X-Vlog-Trace-Id e X-Request-Id em cada transação.
+ * - Nuclear CORS: Configuração agressiva para resolver bloqueios de Preflight na Web.
+ * - Helmet Hardened: Cabeçalhos de segurança relaxados cirurgicamente para Flutter Web.
+ * - Rate Limiting: Proteção contra ataques de negação de serviço (DoS) e Brute Force.
+ * - Anti-Injection: Sanitização profunda recursiva de entradas de dados (Deep Sanitize).
  * ============================================================================
  */
 
@@ -32,20 +32,53 @@ const app = express();
 /**
  * ============================================================================
  * 🌐 INFRAESTRUTURA DE REDE (TRUST PROXY)
- * Essencial para capturar o IP real do estudante através de Proxies/Load Balancers.
+ * Configuração vital para capturar o IP real do usuário através do Render.com.
  * ============================================================================
  */
 app.set('trust proxy', 1);
 
 /**
  * ============================================================================
+ * ☢️ NUCLEAR CORS ENGINE (WEB & MOBILE COMPATIBILITY)
+ * Resolve permanentemente erros de 'CORS Preflight' e 'Method Not Allowed' na Web.
+ * ============================================================================
+ */
+const corsOptions = {
+    // origin: true reflete a origem da requisição, ideal para múltiplos domínios
+    origin: true, 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Vlog-Trace-ID', 
+        'X-Vlog-Platform', 
+        'X-Vlog-App-Version', 
+        'X-Requested-With',
+        'Accept',
+        'X-Vlog-Device-Fingerprint'
+    ],
+    credentials: true,
+    exposedHeaders: ['X-Request-Id', 'X-Vlog-Trace-Id'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+
+// Aplica o Middleware de CORS globalmente
+app.use(cors(corsOptions));
+
+// NUCLEAR FIX: Responder imediatamente a requisições OPTIONS (Preflight) em todas as rotas
+app.options('*', cors(corsOptions));
+
+/**
+ * ============================================================================
  * 🧠 REQUEST TRACING & AUDIT ENGINE
- * Gera um identificador único universal para cada interação com o campus.
+ * Injeta identificadores únicos para auditoria e monitoramento.
  * ============================================================================
  */
 app.use((req, res, next) => {
-    // Injeção de UUID para rastreamento de logs (Traceability)
+    // Gera UUID para rastreamento de logs (Traceability)
     req.id = crypto.randomUUID();
+    res.setHeader('X-Request-Id', req.id);
     res.setHeader('X-Vlog-Trace-Id', req.id);
     next();
 });
@@ -53,7 +86,7 @@ app.use((req, res, next) => {
 /**
  * ============================================================================
  * ⏱ TELEMETRIA DE PERFORMANCE
- * Monitora o tempo de resposta e alerta sobre lentidão no banco ou processamento.
+ * Monitora o tempo de resposta e detecta gargalos em tempo real.
  * ============================================================================
  */
 app.use((req, res, next) => {
@@ -71,37 +104,15 @@ app.use((req, res, next) => {
 
 /**
  * ============================================================================
- * 🌍 ULTRA-CORS ENGINE (NO RESTRICTIONS - WEB & MOBILE READY)
- * Configuração definitiva para permitir tráfego Cross-Origin sem falhas.
- * ============================================================================
- */
-app.use(cors({
-    origin: '*', // Em produção comercial, substitua pela URL específica do seu domínio
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
-        'X-Vlog-Trace-ID', 
-        'X-Vlog-Platform', 
-        'X-Vlog-App-Version', 
-        'Accept'
-    ],
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-}));
-
-/**
- * ============================================================================
- * 🔐 SECURITY HARDENING (HELMET)
- * Protege contra vulnerabilidades web conhecidas (XSS, Clickjacking, Sniffing).
+ * 🔐 SECURITY HARDENING (HELMET RELAXED)
+ * Proteção industrial ajustada para não bloquear mídias e scripts do Flutter Web.
  * ============================================================================
  */
 app.use(
     helmet({
-        // Permite carregamento de mídias do Supabase/Google Cloud em Flutter Web
+        // crossOriginResourcePolicy permite carregar fotos do Supabase/Firebase no Flutter
         crossOriginResourcePolicy: { policy: "cross-origin" },
-        // Desabilitado para compatibilidade total com o motor de renderização do Flutter
+        // contentSecurityPolicy desabilitado para compatibilidade com o motor CanvasKit do Flutter
         contentSecurityPolicy: false, 
         xssFilter: true,
         noSniff: true,
@@ -112,7 +123,7 @@ app.use(
 /**
  * ============================================================================
  * 🧼 DATA HYDRATION (PARSING)
- * Configurado para suportar grandes buffers de vídeo (Reels) e Status.
+ * Limite de 50MB para suportar uploads de vídeo (Reels) e Status.
  * ============================================================================
  */
 app.use(express.json({ limit: '50mb' }));
@@ -120,14 +131,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 /**
  * ============================================================================
- * 🛡️ ANTI-INJECTION & SANITIZATION LAYER
- * Limpeza de caracteres maliciosos para evitar XSS e Injeções básicas.
+ * 🛡️ ANTI-INJECTION RECURSIVA (DEEP SANITIZE)
+ * Sanitização automática de entradas para prevenir injeções básicas e XSS.
  * ============================================================================
  */
 app.use((req, res, next) => {
     const sanitizeValue = (val) => {
         if (typeof val === 'string') {
-            // Remove tags HTML perigosas mas mantém pontuação acadêmica
             return val.replace(/[<>;]/g, '').trim();
         }
         return val;
@@ -152,13 +162,13 @@ app.use((req, res, next) => {
 /**
  * ============================================================================
  * 🧾 INDUSTRIAL LOGGING (MORGAN)
- * Estruturação de logs para observabilidade em tempo real.
+ * Estruturação de logs para observabilidade.
  * ============================================================================
  */
 if (env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
-    // Log estruturado em formato JSON para análise em Datadog/Loki/Render
+    // Log estruturado JSON para produção
     app.use(morgan((tokens, req, res) => {
         return JSON.stringify({
             timestamp: tokens.date(req, res, 'iso'),
@@ -176,21 +186,21 @@ if (env.NODE_ENV === 'development') {
 /**
  * ============================================================================
  * 🚫 PROTECTION LAYER (RATE LIMITING)
- * Evita abusos na API e protege contra ataques de força bruta.
+ * Protege contra spam de requisições e ataques de força bruta.
  * ============================================================================
  */
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // Janela de 15 minutos
-    max: 10000, // Limite generoso para o campus acadêmico
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5000, 
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: "Tráfego excessivo detectado. Tente mais tarde." }
+    message: { success: false, message: "Tráfego excessivo. Tente novamente mais tarde." }
 });
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100, // Rigidez maior para rotas de Login e Cadastro
-    message: { success: false, message: "Muitas tentativas de acesso. Bloqueio temporário ativado." }
+    max: 50, // Limite para rotas críticas de login/registro
+    message: { success: false, message: "Muitas tentativas de acesso. Bloqueio preventivo ativado." }
 });
 
 app.use('/api/', globalLimiter);
@@ -199,7 +209,7 @@ app.use('/api/v1/auth', authLimiter);
 /**
  * ============================================================================
  * 📡 CORE API ROUTES
- * Ponto de entrada oficial para todos os módulos do ecossistema.
+ * Ponto de entrada master para a v1 da API.
  * ============================================================================
  */
 app.use('/api/v1', routes);
@@ -207,30 +217,28 @@ app.use('/api/v1', routes);
 /**
  * ============================================================================
  * 🩺 HEALTH MONITORING (DEEP CHECK)
- * Monitoramento de saúde real: Verifica API, Latência e Conexão com Neon DB.
+ * Monitora a saúde do servidor e a conectividade real com o Neon DB.
  * ============================================================================
  */
 app.get('/health', async (req, res) => {
     try {
-        const dbStart = Date.now();
-        // Ping transacional no Neon DB
+        const start = Date.now();
+        // Ping transacional no banco de dados
         await db.query('SELECT 1');
-        const dbLatency = Date.now() - dbStart;
+        const dbLatency = Date.now() - start;
 
         res.status(200).json({
-            status: 'OPERATIONAL',
+            status: 'UP',
             version: '32.0.0',
-            engine: 'Express Node.js',
-            database: 'CONNECTED (Neon DB)',
-            db_latency: `${dbLatency}ms`,
-            uptime: `${Math.floor(process.uptime())}s`,
+            database: 'CONNECTED',
+            latency: `${dbLatency}ms`,
             requestId: req.id,
             timestamp: new Date()
         });
     } catch (err) {
         console.error('[CRITICAL_HEALTH_FAIL]', err.message);
         res.status(500).json({ 
-            status: 'CRITICAL_FAILURE', 
+            status: 'DOWN', 
             database: 'DISCONNECTED', 
             error: err.message,
             requestId: req.id 
@@ -240,40 +248,30 @@ app.get('/health', async (req, res) => {
 
 /**
  * ============================================================================
- * 🖥️ SERVER DASHBOARD (STYLIZED ROOT)
- * Interface visual para confirmação de status do servidor.
+ * 🖥️ SERVER DASHBOARD (STYLIZED ROOT UI)
+ * Página de confirmação visual do status operacional.
  * ============================================================================
  */
 app.get('/', (req, res) => {
     res.status(200).send(`
         <!DOCTYPE html>
-        <html lang="pt-br">
+        <html>
         <head>
-            <meta charset="UTF-8">
-            <title>VLOGSTUDENTS | CORE ENGINE</title>
+            <title>VLOGSTUDENTS | NUCLEAR ENGINE</title>
             <style>
-                body { background: #05070a; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                .container { background: #0f172a; padding: 40px; border-radius: 24px; border: 1px solid #1e293b; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; max-width: 500px; }
-                .logo { font-size: 32px; font-weight: 800; color: #CCFF00; letter-spacing: -1px; margin-bottom: 10px; }
-                .status-badge { display: inline-block; background: #064e3b; color: #10b981; padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; margin-bottom: 20px; border: 1px solid #065f46; }
-                .metrics { display: flex; justify-content: space-around; margin-top: 30px; border-top: 1px solid #1e293b; padding-top: 20px; }
-                .metric-item { text-align: center; }
-                .metric-val { display: block; font-size: 18px; font-weight: bold; color: #CCFF00; }
-                .metric-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
-                .trace { font-family: monospace; font-size: 10px; color: #475569; margin-top: 25px; }
+                body { background: #0b0e14; color: #e2e8f0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .card { background: #161b22; padding: 40px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
+                .neon { color: #CCFF00; font-weight: 800; text-shadow: 0 0 15px rgba(204, 255, 0, 0.4); font-size: 28px; }
+                .badge { background: #238636; color: white; padding: 5px 15px; border-radius: 50px; font-size: 12px; font-weight: bold; }
+                .footer { margin-top: 20px; font-size: 10px; color: #484f58; font-family: monospace; }
             </style>
         </head>
         <body>
-            <div class="container">
-                <div class="logo">VLOGSTUDENTS <span style="color:#fff">ENTERPRISE</span></div>
-                <div class="status-badge">● SISTEMA OPERACIONAL</div>
-                <p style="color: #94a3b8">O núcleo de processamento acadêmico está ativo e pronto para conexões Flutter Web e Mobile.</p>
-                <div class="metrics">
-                    <div class="metric-item"><span class="metric-val">v32.0.0</span><span class="metric-label">Versão</span></div>
-                    <div class="metric-item"><span class="metric-val">STABLE</span><span class="metric-label">Status</span></div>
-                    <div class="metric-item"><span class="metric-val">ONLINE</span><span class="metric-label">Database</span></div>
-                </div>
-                <div class="trace">TRACE_ID: ${req.id}</div>
+            <div class="card">
+                <h1>🚀 <span class="neon">VLOGSTUDENTS</span> ENTERPRISE</h1>
+                <p><span class="badge">OPERACIONAL</span></p>
+                <p style="color: #8b949e">Núcleo Node.js v32.0.0 Online</p>
+                <div class="footer">TRACE_ID: ${req.id}</div>
             </div>
         </body>
         </html>
@@ -282,28 +280,14 @@ app.get('/', (req, res) => {
 
 /**
  * ============================================================================
- * 🚫 GLOBAL 404 HANDLER
- * Captura requisições para rotas inexistentes no campus.
- * ============================================================================
- */
-app.use((req, res) => {
-    console.warn(`[404_NOT_FOUND] ${req.method} ${req.originalUrl} | ID: ${req.id}`);
-    res.status(404).json({
-        success: false,
-        message: 'Endpoint acadêmico não localizado.',
-        requestId: req.id
-    });
-});
-
-/**
- * ============================================================================
- * 💥 MASTER ERROR HANDLER (ZERO CRASH POLICY)
- * Impede que erros internos derrubem o servidor (Recovery Protocol).
+ * 💥 GLOBAL ERROR HANDLER (ZERO CRASH PROTOCOL)
+ * Tratamento centralizado de exceções para evitar interrupções no serviço.
  * ============================================================================
  */
 app.use((err, req, res, next) => {
     const isDev = env.NODE_ENV === 'development';
     
+    // Log detalhado para o engenheiro
     console.error('[CRITICAL_EXCEPTION]', {
         requestId: req.id,
         message: err.message,
@@ -313,16 +297,16 @@ app.use((err, req, res, next) => {
 
     res.status(err.status || 500).json({
         success: false,
-        message: 'Instabilidade detectada no motor interno do campus.',
+        message: 'Instabilidade detectada no núcleo acadêmico.',
         requestId: req.id,
-        error: isDev ? err.message : 'Internal Server Error'
+        // Exponencializa o erro apenas em desenvolvimento
+        debug: isDev ? err.message : undefined
     });
 });
 
 /**
  * ============================================================================
- * MODULE EXPORT
- * Pronto para ser carregado pelo Server Orchestrator.
+ * EXPORTAÇÃO DO MÓDULO
  * ============================================================================
  */
 module.exports = app;
@@ -331,5 +315,6 @@ module.exports = app;
  * ============================================================================
  * FIM DO MASTER EXPRESS APP v32.0.0
  * ESTE CÓDIGO É PROPRIEDADE INTELECTUAL DO ECOSSISTEMA VLOGSTUDENTS.
+ * PRODUZIDO POR MASTER SOFTWARE ENGINEER.
  * ============================================================================
  */
