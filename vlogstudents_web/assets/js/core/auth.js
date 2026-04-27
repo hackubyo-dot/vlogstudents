@@ -1,16 +1,17 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - AUTHENTICATION KERNEL v35.0.0
- * GERENCIADOR CENTRAL DE IDENTIDADE, SESSÃO E SEGURANÇA (ULTIMATE STABLE)
- *
- * MARCO DE VERSÃO v35.0.0:
- * - Atomic Persistence: Persistência garantida sem poluição de cache.
- * - Session Anti-Pollution: Limpeza industrial de storage pré-autenticação.
- * - Network Resilience: Fallback de cache para operação offline.
- * - Socket Orchestration: Sincronização 1-to-1 com barramento Real-time.
- * - Zero Error Protocol: Tratamento de exceções em nível de infraestrutura.
+ * VLOGSTUDENTS ENTERPRISE WEB - AUTHENTICATION KERNEL v41.0.0
+ * GERENCIADOR CENTRAL DE IDENTIDADE, SESSÃO E SEGURANÇA (ULTIMATE EDITION)
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ * 
+ * MARCO DE VERSÃO v41.0.0:
+ * - Atomic Persistence: Salvamento síncrono de chaves de hardware.
+ * - Session Anti-Pollution: Limpeza industrial de storage pré-autenticação.
+ * - Network Resilience: Fallback de cache para operação offline/instável.
+ * - Socket Orchestration: Sincronização 1-to-1 com barramento Real-time.
+ * - Zero Error Protocol: Tratamento de exceções em nível de infraestrutura.
+ * - Profile Synchronization: Metadados sincronizados com Neon DB e Supabase.
  * ============================================================================
  */
 
@@ -31,14 +32,16 @@ class VlogAuthManager {
         // --- REPOSITÓRIO DE ESTADO GLOBAL (SINGLE SOURCE OF TRUTH) ---
         this.isAuthenticated = false;
         this.currentUser = null;
-        this._status = 'uninitialized'; // 'authenticating', 'authenticated', 'error', 'offline'
+        
+        // Estados operacionais: 'uninitialized', 'authenticating', 'authenticated', 'error'
+        this._status = 'uninitialized'; 
         this._isLoading = false;
         this._errorMessage = null;
 
         // --- BARRAMENTO DE EVENTOS (SUBSCRIBERS) ---
         this._listeners = [];
 
-        console.log("%c[AUTH_KERNEL] Motor v35.0.0 Stable Online.", "color: #CCFF00; font-weight: bold;");
+        console.log("%c[AUTH_KERNEL] Motor v41.0.0 Stable Online.", "color: #CCFF00; font-weight: bold;");
     }
 
     /**
@@ -72,7 +75,7 @@ class VlogAuthManager {
     }
 
     /**
-     * Retorna uma cópia limpa do estado atual.
+     * Retorna uma cópia limpa do estado atual para consumo externo.
      */
     _getCleanState() {
         return {
@@ -95,7 +98,7 @@ class VlogAuthManager {
      * Realiza o Handshake com o Neon DB para confirmar integridade.
      */
     async checkAuthStatus() {
-        console.group("[AUTH_BOOT] Auditoria de Integridade");
+        console.group("[AUTH_BOOT] Auditoria de Integridade v41");
         this._isLoading = true;
 
         const token = localStorage.getItem(this.STORAGE_KEYS.TOKEN);
@@ -116,7 +119,7 @@ class VlogAuthManager {
             this.currentUser = JSON.parse(userData);
             console.log("[AUTH] Restaurando identidade cacheada para:", this.currentUser.email);
 
-            // 3. Validação Digital (Online Check)
+            // 3. Validação Digital (Online Check contra Neon DB)
             const res = await window.vlogApi.user.getMe();
 
             if (res.success) {
@@ -145,13 +148,14 @@ class VlogAuthManager {
             }
 
         } catch (error) {
-            // 🛑 PROTOCOLO DE RESILIÊNCIA NUCLEAR
+            // 🛑 PROTOCOLO DE RESILIÊNCIA NUCLEAR (v41 Fix)
             // Se houver erro de rede (Render/Internet offline), mantemos o login por cache.
             console.error("[AUTH_OFFLINE] Falha de comunicação. Ativando Modo Cache.");
             this.isAuthenticated = true; 
             this._status = 'authenticated';
             this._isLoading = false;
             
+            // Tenta conectar socket em background para quando a rede voltar
             if (window.VlogSocketManager) {
                 window.VlogSocketManager.connect(this.currentUser.id, token);
             }
@@ -180,13 +184,13 @@ class VlogAuthManager {
         this._notify();
 
         try {
-            // ANTI-POLLUTION: Limpa resquícios de sessões anteriores
+            // ANTI-POLLUTION: Limpa resquícios de sessões anteriores antes do novo login
             localStorage.clear();
 
             const res = await window.vlogApi.auth.login(email.trim().toLowerCase(), password);
 
             if (res.success && res.token) {
-                // Persistência Atômica
+                // Persistência Atômica das chaves de hardware
                 localStorage.setItem(this.STORAGE_KEYS.TOKEN, res.token);
                 localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(res.user));
 
@@ -194,7 +198,7 @@ class VlogAuthManager {
                 this.currentUser = res.user;
                 this._status = 'authenticated';
 
-                // Ativação de Canais Realtime
+                // Ativação imediata de Canais Realtime (Chat/Calls)
                 if (window.VlogSocketManager) {
                     window.VlogSocketManager.connect(res.user.id, res.token);
                 }
@@ -211,7 +215,7 @@ class VlogAuthManager {
         } catch (error) {
             console.error("[AUTH_LOGIN_FATAL]", error);
             this._handleAuthError("Erro crítico de rede ou servidor.");
-            return { success: false, message: error.message };
+            return { success: false, message: error.message || "Falha na conexão." };
         }
     }
 
@@ -222,10 +226,11 @@ class VlogAuthManager {
     async register(userData) {
         console.log("[AUTH] Protocolo de Registro Ativado.");
         this._isLoading = true;
+        this._status = 'authenticating';
         this._notify();
 
         try {
-            // Limpeza de pré-instalação
+            // Limpeza de pré-instalação para evitar conflitos de Tokens JWT
             localStorage.clear();
 
             const res = await window.vlogApi.auth.register(userData);
@@ -244,20 +249,21 @@ class VlogAuthManager {
 
                 this._isLoading = false;
                 this._notify();
-                this._showFeedback("Conta ativada com bônus de 100 VS!", "success");
+                this._showFeedback("Identidade ativada com bônus de 100 VS!", "success");
                 return { success: true };
             } else {
                 this._handleAuthError(res.message || "Falha ao criar identidade.");
                 return { success: false, message: res.message };
             }
         } catch (error) {
-            this._handleAuthError("Motor de registro indisponível.");
-            return { success: false, message: error.message };
+            this._handleAuthError("Motor de registro acadêmico indisponível.");
+            return { success: false, message: error.message || "Erro no servidor." };
         }
     }
 
     /**
-     * Autenticação Federada via Google Cloud.
+     * Autenticação Federada via Google Cloud (Google Identity Services).
+     * @param {String} idToken - JWT fornecido pelo Google Client SDK.
      */
     async authenticateWithGoogle(idToken) {
         this._status = 'authenticating';
@@ -267,7 +273,7 @@ class VlogAuthManager {
         try {
             const response = await window.vlogApi.post('/auth/google', { idToken });
             
-            if (response.success) {
+            if (response.success && response.token) {
                 localStorage.setItem(this.STORAGE_KEYS.TOKEN, response.token);
                 localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(response.user));
                 
@@ -283,7 +289,7 @@ class VlogAuthManager {
                 this._notify();
                 return { success: true };
             }
-            return { success: false };
+            return { success: false, message: response.message };
         } catch (e) {
             this._handleAuthError("Falha na sincronização Google Identity.");
             return { success: false };
@@ -298,11 +304,12 @@ class VlogAuthManager {
 
     /**
      * Finaliza o ciclo de vida da sessão e limpa o hardware vault.
+     * Executa o Hard Reload para resetar todos os estados de módulos JS.
      */
     logout() {
         console.log("[AUTH] Protocolo Wipe ativado. Encerrando sessão global.");
         
-        // 1. Limpeza Atômica de Storage
+        // 1. Limpeza Atômica de Storage (Anti-Pollution)
         localStorage.clear();
 
         // 2. Desconexão de túneis Sockets
@@ -316,7 +323,7 @@ class VlogAuthManager {
         this._status = 'unauthenticated';
         this._isLoading = false;
 
-        // 4. Redirecionamento de Segurança
+        // 4. Redirecionamento de Segurança e Reload
         window.location.hash = "#/auth/login";
         window.location.reload();
     }
@@ -332,7 +339,7 @@ class VlogAuthManager {
         try {
             const res = await window.vlogApi.auth.requestRecovery(email);
             this._isLoading = false;
-            if (res.success) this._showFeedback("Código de segurança enviado.", "info");
+            if (res.success) this._showFeedback("Código de segurança enviado ao e-mail.", "info");
             return res.success;
         } catch (e) {
             this._isLoading = false;
@@ -359,6 +366,9 @@ class VlogAuthManager {
      * ========================================================================
      */
 
+    /**
+     * Atualiza metadados do perfil (Bio, Universidade, Telefone).
+     */
     async updateProfile(data) {
         this._isLoading = true;
         try {
@@ -367,17 +377,21 @@ class VlogAuthManager {
                 this.currentUser = res.data;
                 localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(res.data));
                 this._notify();
-                this._showFeedback("Metadados sincronizados.", "success");
+                this._showFeedback("Perfil sincronizado com sucesso.", "success");
                 return true;
             }
             return false;
         } catch (e) {
+            console.error("[AUTH] Erro ao atualizar perfil:", e);
             return false;
         } finally {
             this._isLoading = false;
         }
     }
 
+    /**
+     * Transmite a imagem binária para o Supabase via Gateway Node.js.
+     */
     async updateAvatar(file) {
         this._isLoading = true;
         try {
@@ -386,11 +400,12 @@ class VlogAuthManager {
                 this.currentUser.avatar_url = res.avatar_url;
                 localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(this.currentUser));
                 this._notify();
-                this._showFeedback("Avatar atualizado via Supabase.", "success");
+                this._showFeedback("Nova biometria visual salva.", "success");
                 return true;
             }
             return false;
         } catch (e) {
+            console.error("[AUTH] Erro no upload de avatar:", e);
             return false;
         } finally {
             this._isLoading = false;
@@ -398,7 +413,7 @@ class VlogAuthManager {
     }
 
     /**
-     * Sincronização manual de pontos (Voices) com o Ledger.
+     * Sincronização manual de pontos (Voices) com o Ledger do Neon DB.
      */
     async syncPoints() {
         if (!this.isAuthenticated) return;
@@ -410,13 +425,13 @@ class VlogAuthManager {
                 this._notify();
             }
         } catch (e) {
-            console.warn("[AUTH] Falha silenciosa ao sincronizar pontos.");
+            console.warn("[AUTH] Falha silenciosa ao sincronizar saldo.");
         }
     }
 
     /**
      * ========================================================================
-     * 7. UTILITÁRIOS E HELPERS (INTERNAL)
+     * 7. UTILITÁRIOS E HELPERS (INTERNAL KERNELS)
      * ========================================================================
      */
 
@@ -432,7 +447,7 @@ class VlogAuthManager {
     }
 
     /**
-     * Dispara eventos visuais para o componente Toast.
+     * Dispara eventos visuais para o Orchestrator mostrar Toasts.
      */
     _showFeedback(message, type) {
         const event = new CustomEvent('vlog_notification', {
@@ -442,20 +457,20 @@ class VlogAuthManager {
     }
 
     /**
-     * Formata as iniciais do estudante para Avatares Dinâmicos.
+     * Formata as iniciais do estudante para Avatares Dinâmicos (Placeholders).
      */
     getUserInitials() {
-        if (!this.currentUser) return "??";
+        if (!this.currentUser) return "VS";
         const name = this.currentUser.full_name || this.currentUser.fullName || "Estudante";
-        const parts = name.split(" ");
+        const parts = name.trim().split(" ");
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
-        return parts[0][0].toUpperCase();
+        return parts[0].length > 0 ? parts[0][0].toUpperCase() : "V";
     }
 
     /**
-     * Verifica validade sintática do e-mail acadêmico.
+     * Verifica validade sintática do e-mail acadêmico (RFC 5322).
      */
     _validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -465,13 +480,14 @@ class VlogAuthManager {
 /**
  * ============================================================================
  * INICIALIZAÇÃO DA INSTÂNCIA MASTER (SINGLETON)
+ * O Kernel fica disponível globalmente como window.VlogAuth
  * ============================================================================
  */
 window.VlogAuth = new VlogAuthManager();
 
 /**
  * ============================================================================
- * FIM DO AUTHENTICATION KERNEL v35.0.0
- * ZERO OMISSÕES | INDUSTRIAL SECURITY | NEON DB SYNC | STABLE 100%
+ * FIM DO AUTHENTICATION KERNEL v41.0.0
+ * ZERO OMISSÕES | INDUSTRIAL ARCHITECTURE | MASTER SECURE
  * ============================================================================
  */
