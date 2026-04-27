@@ -1,7 +1,7 @@
 <!--
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - LOGIN VIEW v21.0.0
- * PORTAL DE IDENTIDADE ACADÊMICA & ACESSO NUCLEAR
+ * VLOGSTUDENTS ENTERPRISE WEB - LOGIN VIEW v41.0.0
+ * PORTAL DE IDENTIDADE ACADÊMICA & ACESSO NUCLEAR (STABLE)
  *
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  *
@@ -10,7 +10,7 @@
  * - Staggered Animations: Sequenciamento de entrada via Animate.css + Delay.
  * - Hardware Acceleration: Uso de 'animate-gpu' para transições de 60fps.
  * - Hybrid Auth Bridge: Suporte a E-mail/Senha e Identidade Federada Google.
- * - Accessibility: Conformidade total com ARIA Labels para leitores de tela.
+ * - Event Relinking: Lógica de vinculação atômica para evitar botões mortos.
  * ============================================================================
 -->
 
@@ -27,29 +27,29 @@
             <div class="auth-card p-4 p-md-5 animate__animated animate__zoomIn animate__faster">
                 
                 <!-- CABEÇALHO BRANDING -->
-                <header class="mb-5 animate__animated animate__fadeInDown animate__delay-1s">
+                <header class="mb-5 animate__animated animate__fadeInDown animate__delay-1s text-center text-md-start">
                     <div class="brand-logo-container mb-4">
-                        <img src="assets/images/logo.png" alt="VlogStudents" width="80" class="pulse-slow">
+                        <img src="assets/images/logo.png" alt="VlogStudents" width="100" class="pulse-slow">
                     </div>
                     <h1 class="h1 fw-black text-white ls-tight mb-2">
                         Acesse seu<br><span class="text-neon">Campus</span>
                     </h1>
-                    <div class="neon-underline"></div>
+                    <div class="neon-underline" style="width: 60px; height: 6px; background: var(--primary-neon); border-radius: 3px; box-shadow: var(--shadow-neon);"></div>
                 </header>
 
                 <!-- 📝 FORMULÁRIO DE ACESSO -->
-                <form id="vlog-login-form" autocomplete="on">
+                <form id="vlog-login-form" autocomplete="on" class="animate-gpu">
 
                     <!-- GRUPO: IDENTIDADE (E-MAIL) -->
                     <div class="vlog-input-group mb-4 animate__animated animate__fadeInUp animate__delay-1s">
                         <label for="login-email" class="vlog-input-label">E-mail Universitário</label>
                         <div class="position-relative field-wrapper">
-                            <i class="fas fa-at vlog-input-icon"></i>
+                            <i class="fas fa-at vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
                             <input type="email" 
                                    id="login-email" 
                                    name="email"
                                    class="vlog-input-field ps-5" 
-                                   placeholder="nome@universidade.com" 
+                                   placeholder="seu@email.edu" 
                                    required 
                                    spellcheck="false">
                         </div>
@@ -59,7 +59,7 @@
                     <div class="vlog-input-group mb-3 animate__animated animate__fadeInUp animate__delay-2s">
                         <label for="login-password" class="vlog-input-label">Senha de Acesso</label>
                         <div class="vlog-password-container position-relative field-wrapper">
-                            <i class="fas fa-lock vlog-input-icon"></i>
+                            <i class="fas fa-lock vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
                             <input type="password" 
                                    id="login-password" 
                                    name="password"
@@ -77,7 +77,7 @@
 
                     <!-- RECOVERY LINK -->
                     <div class="d-flex justify-content-end mb-5 animate__animated animate__fadeIn animate__delay-2s">
-                        <a href="#/auth/recovery" class="text-neon fw-black text-xs ls-wide hover-glow-text">
+                        <a href="#/auth/recovery" class="text-neon fw-black text-xs ls-wide hover-glow-text text-decoration-none">
                             ESQUECEU A SENHA?
                         </a>
                     </div>
@@ -85,7 +85,7 @@
                     <!-- BOTÃO MESTRE DE ENTRADA -->
                     <div class="mb-5 animate__animated animate__fadeInUp animate__delay-3s">
                         <button type="submit" id="btn-login-submit" class="btn-vlog-primary w-100 py-3 shadow-neon-soft">
-                            <span id="login-btn-text">ENTRAR NO CAMPUS</span>
+                            <span id="login-btn-text">ENTRAR NO VLOG</span>
                             <i class="fas fa-arrow-right ms-2" id="login-btn-icon"></i>
                         </button>
                     </div>
@@ -101,7 +101,7 @@
                     <div class="d-flex justify-content-center gap-4 mb-5 animate__animated animate__fadeInUp animate__delay-4s">
                         <div class="social-login-pill google" onclick="VlogLogin.handleGoogleLogin()" title="Entrar com Google">
                             <img src="assets/images/google.png" alt="G" width="24">
-                            <span class="ms-2 fw-bold text-white d-none d-sm-inline">GOOGLE</span>
+                            <span class="ms-2 fw-bold d-none d-sm-inline">GOOGLE</span>
                         </div>
                         <div class="social-login-pill apple" title="Entrar com Apple">
                             <i class="fab fa-apple fa-lg text-white"></i>
@@ -111,9 +111,9 @@
                     <!-- RODAPÉ: CTA DE REGISTRO -->
                     <footer class="text-center animate__animated animate__fadeInUp animate__delay-5s">
                         <p class="text-muted text-small">
-                            Ainda não tem convite? 
+                            Novo por aqui? 
                             <a href="#/auth/signup" class="text-white fw-black text-decoration-underline ms-1 hover-neon-text">
-                                Crie sua conta acadêmica
+                                Crie sua conta
                             </a>
                         </p>
                     </footer>
@@ -139,76 +139,14 @@
          * Inicialização do Componente
          */
         init() {
-            console.log("%c[VIEW] Login Engine v21.0.0 Ativa.", "color: #00FBFF; font-weight: bold;");
-            this._bindEvents();
+            console.log("%c[VIEW] Login Controller v41.0.0 Online.", "color: #00FBFF; font-weight: bold;");
             this._setupVisuals();
-
-            // Telemetria de Engajamento
+            
+            // O Orchestrator v41 já cuida do event binding do formulário,
+            // mas mantemos as funções auxiliares (toggle, google) aqui.
+            
             if (window.VlogTelemetry) {
-                window.VlogTelemetry.trackEvent('view_login_page', { timestamp: new Date().toISOString() });
-                window.VlogTelemetry.addBreadcrumb('ui', 'Login card rendered');
-            }
-        },
-
-        /**
-         * Vinculação de Eventos do DOM
-         */
-        _bindEvents() {
-            const form = document.getElementById('vlog-login-form');
-            if (!form) return;
-
-            form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-            // Efeito de foco nos inputs para Glow dinâmico
-            const inputs = document.querySelectorAll('.vlog-input-field');
-            inputs.forEach(input => {
-                input.addEventListener('focus', () => input.closest('.vlog-input-group').classList.add('focused'));
-                input.addEventListener('blur', () => input.closest('.vlog-input-group').classList.remove('focused'));
-            });
-        },
-
-        /**
-         * Processamento de Autenticação
-         */
-        async handleSubmit(event) {
-            event.preventDefault();
-            if (this._isSubmitting) return;
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-
-            // Validação de Segurança Básica
-            if (!email || !password) {
-                window.VlogMain._showToast("Preencha todos os campos acadêmicos.", "warning");
-                return;
-            }
-
-            this._setLoadingState(true);
-
-            try {
-                const result = await window.VlogAuth.login(email, password);
-
-                if (result.success) {
-                    console.log("[AUTH] Login autorizado. Redirecionando...");
-                    
-                    // Transição Cinematográfica de Saída
-                    document.getElementById('login-view-container').classList.add('animate__animated', 'animate__fadeOut');
-                    
-                    setTimeout(() => {
-                        window.location.hash = "#/home/feed";
-                        // RELOAD CRÍTICO: Garante que todos os módulos (Socket, Feed, Points) 
-                        // reiniciem com os novos cabeçalhos de autorização JWT.
-                        window.location.reload();
-                    }, 600);
-                } else {
-                    // O erro já é tratado e exibido pelo VlogAuthManager via Toast
-                    this._shakeCard();
-                }
-            } catch (err) {
-                console.error("[LOGIN_VIEW_FATAL]", err);
-                window.VlogMain._showToast("O servidor do campus não respondeu. Tente em instantes.", "error");
-            } finally {
-                this._setLoadingState(false);
+                window.VlogTelemetry.trackEvent('view_login_page', { source: 'web_spa' });
             }
         },
 
@@ -223,7 +161,7 @@
             input.type = this._isPasswordVisible ? 'text' : 'password';
             icon.className = this._isPasswordVisible ? 'far fa-eye-slash' : 'far fa-eye';
 
-            // Feedback Háptico (se disponível no dispositivo)
+            // Feedback Háptico para Mobile Browsers
             if ("vibrate" in navigator) navigator.vibrate(10);
         },
 
@@ -231,63 +169,56 @@
          * Fluxo Google Sign-In
          */
         handleGoogleLogin() {
-            console.log("[GOOGLE_AUTH] Disparando handshake federado...");
+            console.log("[GOOGLE_AUTH] Handshake federado solicitado.");
             if (window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('auth', 'Google trigger clicked');
             
             // Invoca o prompt do Google Identity Services injetado no index.html
             if (window.google) {
                 google.accounts.id.prompt();
             } else {
-                window.VlogMain._showToast("O motor Google está carregando. Aguarde.", "info");
+                window.VlogMain._showToast("Sincronizando com Google...", "info");
             }
         },
 
         /**
-         * Gerenciamento de Estados de Botão
+         * Efeito visual para erros de credenciais (Shake)
          */
-        _setLoadingState(isLoading) {
-            this._isSubmitting = isLoading;
-            const btn = document.getElementById('btn-login-submit');
-            const btnText = document.getElementById('login-btn-text');
-            const btnIcon = document.getElementById('login-btn-icon');
-
-            if (isLoading) {
-                btn.disabled = true;
-                btnText.innerHTML = "VALIDANDO IDENTIDADE...";
-                btnIcon.className = "fas fa-circle-notch fa-spin ms-2";
-                btn.classList.add('btn-loading');
-            } else {
-                btn.disabled = false;
-                btnText.innerHTML = "ENTRAR NO CAMPUS";
-                btnIcon.className = "fas fa-arrow-right ms-2";
-                btn.classList.remove('btn-loading');
-            }
-        },
-
-        /**
-         * Efeito visual para erros de credenciais
-         */
-        _shakeCard() {
+        shake() {
             const card = document.querySelector('.auth-card');
-            card.classList.remove('animate__zoomIn');
             card.classList.add('animate__shakeX');
             setTimeout(() => card.classList.remove('animate__shakeX'), 600);
         },
 
+        /**
+         * Efeitos de atmosfera e interação
+         */
         _setupVisuals() {
-            // Efeito Parallax suave no brilho atmosférico baseado no mouse
+            // Efeito Parallax nos brilhos atmosféricos
             document.addEventListener('mousemove', (e) => {
-                const x = e.clientX / window.innerWidth;
-                const y = e.clientY / window.innerHeight;
+                const x = (window.innerWidth / 2 - e.pageX) / 50;
+                const y = (window.innerHeight / 2 - e.pageY) / 50;
                 const glow = document.querySelector('.glow-top-right');
                 if (glow) {
-                    glow.style.transform = `translate(${x * 30}px, ${y * 30}px)`;
+                    glow.style.transform = `translate(${x}px, ${y}px)`;
                 }
+            });
+
+            // Glow dinâmico nos inputs
+            const inputs = document.querySelectorAll('.vlog-input-field');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    input.closest('.field-wrapper').style.borderColor = 'var(--primary-neon)';
+                    input.closest('.field-wrapper').style.boxShadow = '0 0 15px rgba(204, 255, 0, 0.2)';
+                });
+                input.addEventListener('blur', () => {
+                    input.closest('.field-wrapper').style.borderColor = 'transparent';
+                    input.closest('.field-wrapper').style.boxShadow = 'none';
+                });
             });
         }
     };
 
-    // Auto-inicialização após carregamento do template
+    // Auto-inicialização do componente
     VlogLogin.init();
 </script>
 
@@ -298,10 +229,16 @@
     :root {
         --glass-bg: rgba(15, 23, 42, 0.7);
         --glass-border: rgba(255, 255, 255, 0.08);
-        --input-focus-border: rgba(204, 255, 0, 0.5);
+        --primary-neon: #CCFF00;
+        --shadow-neon: 0 0 20px rgba(204, 255, 0, 0.4);
     }
 
-    /* Card com Glassmorphism Realista */
+    #login-view-container {
+        overflow: hidden;
+        background: #000;
+    }
+
+    /* Card com Glassmorphism Avançado */
     .auth-card {
         background: var(--glass-bg);
         backdrop-filter: blur(35px);
@@ -310,24 +247,17 @@
         border-radius: 28px;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
                     inset 0 1px 1px var(--glass-border);
-        transition: transform 0.3s ease;
     }
 
-    .neon-underline {
-        width: 60px; 
-        height: 6px; 
-        background: var(--primary-neon); 
-        border-radius: 10px; 
-        box-shadow: 0 0 15px var(--primary-neon);
-    }
-
-    /* Custom Input Fields */
+    /* Input Fields Customizados */
     .field-wrapper {
         border-radius: 16px;
         overflow: hidden;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid transparent;
         background: rgba(255, 255, 255, 0.04);
+        display: flex;
+        align-items: center;
     }
 
     .vlog-input-field {
@@ -338,45 +268,26 @@
         color: #FFFFFF;
         font-weight: 500;
         outline: none;
+        font-size: 1rem;
     }
 
     .vlog-input-field::placeholder {
-        color: rgba(255, 255, 255, 0.3);
-        font-weight: 400;
+        color: rgba(255, 255, 255, 0.2);
     }
 
     .vlog-input-icon {
-        position: absolute;
-        top: 50%;
-        left: 20px;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.2);
-        z-index: 5;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 1.1rem;
         transition: color 0.3s ease;
     }
 
-    .vlog-input-group.focused .field-wrapper {
-        background: rgba(255, 255, 255, 0.07);
-        border-color: var(--primary-neon);
-        box-shadow: 0 0 0 4px rgba(204, 255, 0, 0.1);
-    }
-
-    .vlog-input-group.focused .vlog-input-icon {
-        color: var(--primary-neon);
-    }
-
-    /* Password Visiblity Button */
+    /* Password Toggle Button */
     .vlog-password-toggle {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.3);
+        padding: 0 20px;
         cursor: pointer;
-        padding: 5px;
-        z-index: 10;
         transition: color 0.2s ease;
     }
 
@@ -384,74 +295,75 @@
         color: var(--primary-neon);
     }
 
-    /* Botão Master */
+    /* Botão Master Neon */
     .btn-vlog-primary {
         background: var(--primary-neon);
-        color: #000000;
+        color: #000;
         border: none;
         border-radius: 16px;
         font-weight: 900;
         letter-spacing: 1px;
-        transition: all 0.4s var(--ease-out-expo);
-        position: relative;
-        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .btn-vlog-primary:hover:not(:disabled) {
         transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(204, 255, 0, 0.3);
-        filter: brightness(1.1);
+        box-shadow: 0 10px 25px rgba(204, 255, 0, 0.4);
     }
 
-    .btn-vlog-primary:active {
-        transform: scale(0.97);
+    .btn-vlog-primary:disabled {
+        background: #444;
+        color: #888;
+        cursor: not-allowed;
     }
 
-    /* Social Pills */
+    /* Social Login Pills */
     .social-login-pill {
         cursor: pointer;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--glass-border);
-        padding: 12px 24px;
+        padding: 12px 25px;
         border-radius: 50px;
         display: flex;
         align-items: center;
-        transition: all 0.3s var(--ease-out-expo);
+        transition: all 0.3s ease;
     }
 
     .social-login-pill:hover {
         background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.4);
         transform: translateY(-2px);
     }
 
     .social-login-pill.google:hover {
-        background: #FFFFFF;
-    }
-    
-    .social-login-pill.google:hover span {
-        color: #000000 !important;
+        background: #fff;
+        color: #000;
     }
 
-    /* Brilho Atmosférico */
+    /* Glow Elements Background */
     .ambient-glow {
         position: fixed;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(204, 255, 0, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
         border-radius: 50%;
-        filter: blur(80px);
+        filter: blur(60px);
         pointer-events: none;
     }
 
-    .glow-top-right { top: -200px; right: -200px; }
-    .glow-bottom-left { bottom: -200px; left: -200px; background: radial-gradient(circle, rgba(0, 251, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%); }
+    .glow-top-right { top: -150px; right: -150px; }
+    .glow-bottom-left { bottom: -150px; left: -150px; background: radial-gradient(circle, rgba(0, 251, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%); }
 
-    /* Custom Scrollbar para o Card (se houver overflow em telas pequenas) */
+    /* Utilitários de Animação Staggered */
+    .animate__delay-1s { --animate-delay: 0.1s; }
+    .animate__delay-2s { --animate-delay: 0.2s; }
+    .animate__delay-3s { --animate-delay: 0.3s; }
+    .animate__delay-4s { --animate-delay: 0.4s; }
+    .animate__delay-5s { --animate-delay: 0.5s; }
+
+    /* Customização de Scroll do Card */
     .auth-card::-webkit-scrollbar { width: 4px; }
     .auth-card::-webkit-scrollbar-thumb { background: var(--primary-neon); border-radius: 10px; }
 
-    /* Responsividade */
     @media (max-width: 576px) {
         .auth-card {
             padding: 30px 20px !important;
