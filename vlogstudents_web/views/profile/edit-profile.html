@@ -1,0 +1,99 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - PROFILE EDITOR v1.0.0
+ * FORMULÁRIO DE GESTÃO DE METADADOS ACADÊMICOS
+ * ============================================================================
+-->
+
+<div id="edit-profile-view" class="h-100 vw-100 bg-black animate__animated animate__slideInRight">
+
+    <!-- HEADER -->
+    <header class="navbar-glass py-3 px-4 d-flex align-items-center gap-3">
+        <button class="btn-vlog-circle-sm" onclick="window.history.back()">
+            <i class="fas fa-times"></i>
+        </button>
+        <h1 class="h4 fw-black text-white mb-0 ls-tight">Editar Perfil</h1>
+    </header>
+
+    <div class="container py-5 px-4">
+
+        <form id="profile-edit-form" class="animate__animated animate__fadeInUp animate__delay-1s">
+
+            <!-- SECTION: IDENTIDADE -->
+            <div class="mb-5">
+                <label class="vlog-input-label">DADOS DO CAMPUS</label>
+
+                <div class="vlog-input-group">
+                    <input type="text" id="edit-fullname" class="vlog-input-field" placeholder="Nome Completo" required>
+                </div>
+
+                <div class="vlog-input-group">
+                    <input type="text" id="edit-university" class="vlog-input-field" placeholder="Sua Universidade" required>
+                </div>
+            </div>
+
+            <!-- SECTION: SOBRE -->
+            <div class="mb-5">
+                <label class="vlog-input-label">SUA JORNADA (BIO)</label>
+                <div class="vlog-input-group">
+                    <textarea id="edit-bio" class="vlog-input-field" rows="4" placeholder="Conte um pouco sobre seus estudos..."></textarea>
+                </div>
+            </div>
+
+            <!-- SECTION: CONTATO -->
+            <div class="mb-5">
+                <label class="vlog-input-label">CONTATO ACADÊMICO</label>
+                <div class="vlog-input-group">
+                    <input type="tel" id="edit-phone" class="vlog-input-field" placeholder="WhatsApp / Celular">
+                </div>
+            </div>
+
+            <!-- ACTION BUTTON -->
+            <div class="fixed-bottom p-4 bg-black border-top-glass">
+                <button type="submit" class="btn-vlog-primary w-100 py-3">
+                    <i class="fas fa-sync-alt me-2"></i>SINCRONIZAR PERFIL
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+    const VlogProfileEdit = {
+        init() {
+            console.log("[VIEW] Editor de Perfil Ativo.");
+            this._hydrateForm();
+            this._setupSubmit();
+        },
+
+        _hydrateForm() {
+            const user = window.VlogAuth.currentUser;
+            if (user) {
+                document.getElementById('edit-fullname').value = user.fullName;
+                document.getElementById('edit-university').value = user.universityName;
+                document.getElementById('edit-bio').value = user.biography || "";
+                document.getElementById('edit-phone').value = user.phoneNumber || "";
+            }
+        },
+
+        _setupSubmit() {
+            document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const data = {
+                    fullName: document.getElementById('edit-fullname').value,
+                    university: document.getElementById('edit-university').value,
+                    bio: document.getElementById('edit-bio').value,
+                    phone: document.getElementById('edit-phone').value
+                };
+
+                const success = await window.VlogProfile.saveProfileEdits(data);
+                if (success) window.history.back();
+            });
+        }
+    };
+
+    VlogProfileEdit.init();
+</script>

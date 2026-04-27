@@ -1,0 +1,208 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - SEARCH PEOPLE VIEW v1.0.0
+ * MOTOR DE BUSCA GLOBAL E DESCOBERTA DE NETWORKING
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Real-Time Debouncing: Busca inteligente que aguarda 500ms após digitação.
+ * - Staggered Results: Carregamento em cascata dos perfis encontrados.
+ * - Multi-Criteria: Busca por Nome, E-mail ou Instituição.
+ * - Glassmorphism Search Bar: Barra flutuante com desfoque gaussiano de 25px.
+ * - Direct Navigation: Pivot imediato para a visualização de perfil do alvo.
+ * ============================================================================
+-->
+
+<div id="search-global-view" class="h-100 vw-100 overflow-y-auto no-scrollbar animate__animated animate__fadeIn">
+
+    <!-- 1. AURA AMBIENTE (TOP LEFT GLOW) -->
+    <div class="ambient-glow glow-top-left opacity-30"></div>
+
+    <div class="container py-5 px-4">
+
+        <!-- HEADER E BARRA DE BUSCA PREMIUM -->
+        <header class="mb-5">
+            <h1 class="h2 fw-black text-white ls-tight mb-4">Explorar<br><span class="text-neon">O Campus</span></h1>
+
+            <div class="vlog-search-container glass-morphism rounded-pill p-1 position-relative">
+                <i class="fas fa-search vlog-search-icon"></i>
+                <input
+                        type="text"
+                        id="global-search-input"
+                        class="vlog-search-input py-3 w-100"
+                        placeholder="Procurar colegas, e-mails ou faculdades..."
+                        autocomplete="off"
+                >
+            </div>
+        </header>
+
+        <!-- 2. ÁREA DE RESULTADOS -->
+        <section id="search-results-area">
+
+            <!-- ESTADO INICIAL -->
+            <div id="search-initial-state" class="text-center py-5 opacity-40">
+                <div class="icon-circle mx-auto mb-4" style="width: 100px; height: 100px; background: rgba(255,255,255,0.05);">
+                    <i class="fas fa-user-plus fa-3x text-white"></i>
+                </div>
+                <h5 class="fw-black text-white">EXPANDA SEU NETWORKING</h5>
+                <p class="text-small">Descubra estudantes de outros cursos e instituições.</p>
+            </div>
+
+            <!-- LOADER (SHIMMER) -->
+            <div id="search-loading-state" class="d-none">
+                <div class="shimmer-loader w-100 rounded-lg mb-3" style="height: 90px;"></div>
+                <div class="shimmer-loader w-100 rounded-lg mb-3" style="height: 90px;"></div>
+                <div class="shimmer-loader w-100 rounded-lg mb-3" style="height: 90px;"></div>
+            </div>
+
+            <!-- LISTA DINÂMICA -->
+            <div id="search-results-list" class="d-flex flex-column gap-3">
+                <!-- Perfis injetados via script -->
+            </div>
+
+            <!-- SEM RESULTADOS -->
+            <div id="search-empty-state" class="d-none text-center py-5 animate__animated animate__fadeIn">
+                <i class="fas fa-search-minus text-error fa-3x mb-4"></i>
+                <h5 class="fw-black text-white">NENHUM ALUNO LOCALIZADO</h5>
+                <p class="text-muted">Tente um termo de busca diferente ou verifique a conexão.</p>
+            </div>
+
+        </section>
+
+        <div style="height: 120px;"></div> <!-- Margem para Liquid Bar -->
+    </div>
+
+</div>
+
+<!-- LÓGICA DE CONTROLE DE BUSCA -->
+<script>
+    const VlogSearch = {
+        _debounceTimer: null,
+
+        init() {
+            console.log("[VIEW] Search Engine Online.");
+            this._setupSearchListener();
+        },
+
+        _setupSearchListener() {
+            const input = document.getElementById('global-search-input');
+
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+
+                // Limpa timer anterior (Debouncing)
+                clearTimeout(this._debounceTimer);
+
+                if (query.length < 2) {
+                    this._showState('initial');
+                    return;
+                }
+
+                // Inicia busca após 500ms de silêncio (Performance Neon DB)
+                this._debounceTimer = setTimeout(() => {
+                    this._executeRemoteSearch(query);
+                }, 500);
+            });
+        },
+
+        async _executeRemoteSearch(query) {
+            this._showState('loading');
+
+            try {
+                const response = await window.vlogApi.user.search(query);
+
+                if (response.success && response.data.length > 0) {
+                    this._renderResults(response.data);
+                    this._showState('results');
+                } else {
+                    this._showState('empty');
+                }
+            } catch (error) {
+                console.error("[SEARCH_ERR]", error);
+                this._showState('empty');
+            }
+        },
+
+        _renderResults(users) {
+            const list = document.getElementById('search-results-list');
+
+            list.innerHTML = users.map((user, index) => `
+                <div class="search-user-tile glass-morphism p-3 rounded-lg d-flex align-items-center animate__animated animate__fadeInUp"
+                     style="animation-delay: ${index * 0.05}s"
+                     onclick="VlogSearch.goToProfile(${user.id})">
+
+                    <div class="position-relative me-3">
+                        <img src="${window.vlogMedia.resolveAvatar(user.avatar_url, user.full_name)}" class="vlog-avatar-md rounded-circle">
+                        <div class="online-indicator" style="border-color: #121212;"></div>
+                    </div>
+
+                    <div class="flex-grow-1 overflow-hidden">
+                        <h6 class="mb-0 fw-black text-white text-truncate">${user.full_name}</h6>
+                        <p class="mb-0 text-xs text-neon fw-bold text-truncate">${user.university_name || 'Estudante Vlog'}</p>
+                        <small class="text-muted text-xs opacity-50">${user.email}</small>
+                    </div>
+
+                    <div class="action-arrow ms-2 opacity-30">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `).join('');
+        },
+
+        _showState(state) {
+            const states = {
+                initial: 'search-initial-state',
+                loading: 'search-loading-state',
+                results: 'search-results-list',
+                empty: 'search-empty-state'
+            };
+
+            Object.values(states).forEach(id => {
+                document.getElementById(id).classList.add('d-none');
+            });
+
+            document.getElementById(states[state]).classList.remove('d-none');
+        },
+
+        goToProfile(userId) {
+            if ("vibrate" in navigator) navigator.vibrate(10);
+            window.location.hash = `#/profile/view?id=${userId}`;
+        }
+    };
+
+    VlogSearch.init();
+</script>
+
+<style>
+    .search-user-tile {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        transition: all 0.3s var(--ease-out-expo);
+        cursor: pointer;
+    }
+
+    .search-user-tile:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-neon);
+        transform: scale(1.02);
+    }
+
+    .search-user-tile:active {
+        transform: scale(0.98);
+    }
+
+    .action-arrow {
+        transition: transform 0.3s ease;
+    }
+
+    .search-user-tile:hover .action-arrow {
+        transform: translateX(5px);
+        opacity: 1 !important;
+        color: var(--primary-neon);
+    }
+
+    #global-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
+    }
+</style>

@@ -1,0 +1,246 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - LOGIN VIEW v1.0.0
+ * PORTAL DE IDENTIDADE ACADÊMICA & ACESSO MASTER
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Staggered Entry: Animação em cascata para os elementos do formulário.
+ * - Glassmorphism UI: Inputs em pílulas de vidro com 35px de desfoque.
+ * - Google Auth Bridge: Botão social configurado para o Kernel GIS.
+ * - Validation Kernel: Feedback instantâneo de segurança acadêmica.
+ * ============================================================================
+-->
+
+<div id="login-view-container" class="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-5">
+
+    <!-- ELEMENTO DE BRILHO ATMOSFÉRICO (DYNAMIC GLOW) -->
+    <div class="ambient-glow glow-top-right animate__animated animate__fadeIn"></div>
+
+    <div class="row w-100 justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+            <!-- CARD DE LOGIN (CHAPA DESIGN) -->
+            <div class="auth-card p-4 p-md-5 animate__animated animate__zoomIn">
+
+                <!-- CABEÇALHO BRANDING -->
+                <header class="mb-5 animate__animated animate__fadeInDown animate__delay-1s">
+                    <h1 class="h1 fw-black text-white ls-tight mb-2">
+                        Acesse seu<br><span class="text-neon">Campus</span>
+                    </h1>
+                    <div class="neon-underline" style="width: 50px; height: 6px; background: var(--primary-neon); border-radius: 3px; box-shadow: var(--shadow-neon);"></div>
+                </header>
+
+                <!-- FORMULÁRIO DE ACESSO -->
+                <form id="vlog-login-form" class="animate-gpu">
+
+                    <!-- CAMPO: E-MAIL -->
+                    <div class="vlog-input-group animate__animated animate__fadeInUp animate__delay-1s">
+                        <label class="vlog-input-label">E-mail Universitário</label>
+                        <div class="position-relative">
+                            <i class="fas fa-at vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="email" id="login-email" class="vlog-input-field ps-5" placeholder="nome@faculdade.com" required>
+                        </div>
+                    </div>
+
+                    <!-- CAMPO: SENHA -->
+                    <div class="vlog-input-group animate__animated animate__fadeInUp animate__delay-2s">
+                        <label class="vlog-input-label">Senha de Acesso</label>
+                        <div class="vlog-password-container">
+                            <i class="fas fa-lock vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="password" id="login-password" class="vlog-input-field ps-5" placeholder="••••••••" required>
+                            <span class="vlog-password-toggle me-2" onclick="VlogLogin.togglePassword()">
+                                <i class="far fa-eye" id="password-toggle-icon"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- ESQUECEU A SENHA -->
+                    <div class="d-flex justify-content-end mb-4 animate__animated animate__fadeInUp animate__delay-2s">
+                        <a href="#/auth/recovery" class="text-neon fw-black text-xs ls-wide hover-opacity">RECUPERAR ACESSO?</a>
+                    </div>
+
+                    <!-- BOTÃO DE ENTRADA (MASTER) -->
+                    <div class="mb-5 animate__animated animate__fadeInUp animate__delay-3s">
+                        <button type="submit" id="btn-login-submit" class="btn-vlog-primary w-100 py-3">
+                            <span>ENTRAR NO VLOG</span>
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+
+                    <!-- DIVISOR SOCIAL -->
+                    <div class="d-flex align-items-center mb-4 animate__animated animate__fadeIn animate__delay-4s">
+                        <hr class="flex-grow-1 border-secondary opacity-25">
+                        <span class="mx-3 text-muted fw-black text-xs ls-vwide">OU CONECTE-SE COM</span>
+                        <hr class="flex-grow-1 border-secondary opacity-25">
+                    </div>
+
+                    <!-- BOTÕES SOCIAIS -->
+                    <div class="d-flex justify-content-center gap-4 mb-5 animate__animated animate__fadeInUp animate__delay-4s">
+                        <div class="btn-vlog-circle hover-scale" onclick="VlogLogin.handleGoogleLogin()">
+                            <img src="assets/images/google.png" alt="Google" width="24" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2991/2991148.png'">
+                        </div>
+                        <div class="btn-vlog-circle hover-scale">
+                            <i class="fab fa-apple text-white fa-lg"></i>
+                        </div>
+                    </div>
+
+                    <!-- LINK DE CADASTRO -->
+                    <footer class="text-center animate__animated animate__fadeInUp animate__delay-5s">
+                        <p class="text-muted text-small">
+                            Novo por aqui?
+                            <a href="#/auth/signup" class="text-white fw-black text-decoration-underline ms-1 hover-neon">Crie sua conta acadêmica</a>
+                        </p>
+                    </footer>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LÓGICA DE CONTROLE DA VIEW (ENCAPSULADA) -->
+<script>
+    /**
+     * Objeto de Controle da View de Login
+     */
+    const VlogLogin = {
+        _isPasswordVisible: false,
+
+        init() {
+            console.log("[VIEW] Login Dashboard Ativo.");
+            this._setupForm();
+
+            // Log de Telemetria
+            if(window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('ui', 'Login Page Displayed');
+        },
+
+        _setupForm() {
+            const form = document.getElementById('vlog-login-form');
+            const btn = document.getElementById('btn-login-submit');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+
+                // Bloqueia UI
+                this._setLoading(true);
+
+                try {
+                    const success = await window.VlogAuth.login(email, pass);
+                    if (success) {
+                        // Navegação para o Feed via Orchestrator
+                        window.location.hash = "#/home/feed";
+                    }
+                } catch (error) {
+                    // Erro tratado pelo VlogAuthManager e transmitido via vlog_notification
+                } finally {
+                    this._setLoading(false);
+                }
+            });
+        },
+
+        togglePassword() {
+            const input = document.getElementById('login-password');
+            const icon = document.getElementById('password-toggle-icon');
+            this._isPasswordVisible = !this._isPasswordVisible;
+
+            input.type = this._isPasswordVisible ? 'text' : 'password';
+            icon.className = this._isPasswordVisible ? 'far fa-eye-slash' : 'far fa-eye';
+
+            if ("vibrate" in navigator) navigator.vibrate(10);
+        },
+
+        async handleGoogleLogin() {
+            if(window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('auth', 'Google Login Clicked');
+
+            // Dispara o fluxo via AuthManager (que usa google-sign-in-web internamente ou o Client ID)
+            try {
+                // Implementação da chamada ao Motor Google do main.js
+                // O SDK do Google injeta o botão ou podemos disparar o popup
+                if (window.google) {
+                    google.accounts.id.prompt();
+                } else {
+                    window.VlogMain._showToast("Motor de identidade Google carregando...", "info");
+                }
+            } catch (e) {
+                console.error("[GOOGLE_ERR]", e);
+            }
+        },
+
+        _setLoading(isLoading) {
+            const btn = document.getElementById('btn-login-submit');
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>VALIDANDO...`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<span>ENTRAR NO VLOG</span><i class="fas fa-arrow-right ms-2"></i>`;
+            }
+        }
+    };
+
+    // Inicializa a lógica após a injeção do template
+    VlogLogin.init();
+</script>
+
+<style>
+    /* ESTILIZAÇÃO ESPECÍFICA DA VIEW (FIDELITY COMPLEMENTS) */
+    #login-view-container {
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: var(--blur-md);
+        -webkit-backdrop-filter: var(--blur-md);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--premium-shadow);
+    }
+
+    .vlog-input-icon {
+        font-size: 18px;
+        transition: color var(--anim-fast) ease;
+    }
+
+    .vlog-input-group:focus-within .vlog-input-icon {
+        color: var(--primary-neon) !important;
+    }
+
+    /* Ajuste de animação para simular o "Staggered List" do Flutter */
+    .animate__delay-1s { --animate-delay: 0.1s; }
+    .animate__delay-2s { --animate-delay: 0.2s; }
+    .animate__delay-3s { --animate-delay: 0.3s; }
+    .animate__delay-4s { --animate-delay: 0.4s; }
+    .animate__delay-5s { --animate-delay: 0.5s; }
+
+    /* Estilo do botão Google circular idêntico ao mobile */
+    .btn-vlog-circle {
+        cursor: pointer;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--anim-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-vlog-circle:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--text-secondary);
+        transform: scale(1.1);
+    }
+
+    .btn-vlog-circle img {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+</style>

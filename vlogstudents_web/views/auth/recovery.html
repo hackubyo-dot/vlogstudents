@@ -1,0 +1,305 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - RECOVERY VIEW v1.0.0
+ * PROTOCOLO DE RESTAURAÇÃO DE IDENTIDADE ACADÊMICA
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Fluxo:
+ * - Step-by-Step Kernel: Transição entre E-mail -> PIN -> Nova Senha.
+ * - OTP Input Matrix: 6 campos individuais de entrada com auto-focus.
+ * - Hardware Sync: Integração total com VlogAuth.confirmPasswordReset.
+ * - Visual Feedback: Pulso Neon em estados de validação bem-sucedida.
+ * - Adaptive Design: Proteção de layout para dispositivos Mobile e Desktop.
+ * ============================================================================
+-->
+
+<div id="recovery-view-container" class="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-5">
+
+    <!-- ELEMENTO DE BRILHO (AURA NEON) -->
+    <div class="ambient-glow glow-top-right animate__animated animate__fadeIn"></div>
+
+    <div class="row w-100 justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+            <!-- VOLTAR AO LOGIN -->
+            <div class="mb-4 animate__animated animate__fadeInLeft">
+                <a href="#/auth/login" class="btn-vlog-circle" style="width: 48px; height: 48px;">
+                    <i class="fas fa-arrow-left text-white"></i>
+                </a>
+            </div>
+
+            <!-- CARD DE RECUPERAÇÃO (GLASS ENGINE) -->
+            <div class="auth-card p-4 p-md-5 animate__animated animate__zoomIn">
+
+                <!-- PASSO 1: SOLICITAR CÓDIGO -->
+                <div id="step-1" class="recovery-step active">
+                    <header class="mb-5">
+                        <h1 class="h1 fw-black text-white ls-tight mb-3">
+                            Esqueceu a<br><span class="text-neon">Senha?</span>
+                        </h1>
+                        <p class="text-muted text-small fw-medium">
+                            Insira seu e-mail universitário para recebermos o código de segurança.
+                        </p>
+                    </header>
+
+                    <form id="form-recovery-request">
+                        <div class="vlog-input-group mb-5">
+                            <label class="vlog-input-label">E-mail Universitário</label>
+                            <div class="position-relative">
+                                <i class="fas fa-envelope vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                                <input type="email" id="recovery-email" class="vlog-input-field ps-5" placeholder="nome@faculdade.com" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-request-code" class="btn-vlog-primary w-100 py-3">
+                            <span>ENVIAR CÓDIGO</span>
+                            <i class="fas fa-paper-plane ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- PASSO 2: VALIDAR PIN -->
+                <div id="step-2" class="recovery-step">
+                    <header class="mb-5">
+                        <h1 class="h1 fw-black text-white ls-tight mb-3">
+                            Validar<br><span class="text-neon">Acesso</span>
+                        </h1>
+                        <p class="text-muted text-small fw-medium">
+                            Enviamos um PIN de 6 dígitos para o seu e-mail institucional.
+                        </p>
+                    </header>
+
+                    <div class="d-flex justify-content-between gap-2 mb-5" id="otp-container">
+                        <input type="text" maxlength="1" class="otp-input" data-index="0">
+                        <input type="text" maxlength="1" class="otp-input" data-index="1">
+                        <input type="text" maxlength="1" class="otp-input" data-index="2">
+                        <input type="text" maxlength="1" class="otp-input" data-index="3">
+                        <input type="text" maxlength="1" class="otp-input" data-index="4">
+                        <input type="text" maxlength="1" class="otp-input" data-index="5">
+                    </div>
+
+                    <button type="button" id="btn-verify-pin" class="btn-vlog-primary w-100 py-3 mb-4">
+                        <span>VERIFICAR PIN</span>
+                        <i class="fas fa-shield-check ms-2"></i>
+                    </button>
+
+                    <div class="text-center">
+                        <button type="button" class="btn-vlog-pill text-muted text-xs fw-bold" onclick="VlogRecovery.resendEmail()">
+                            NÃO RECEBI O E-MAIL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 3: NOVA SENHA -->
+                <div id="step-3" class="recovery-step">
+                    <header class="mb-5">
+                        <h1 class="h1 fw-black text-white ls-tight mb-3">
+                            Nova<br><span class="text-neon">Senha</span>
+                        </h1>
+                        <p class="text-muted text-small fw-medium">
+                            Crie uma credencial forte para acessar o campus digital.
+                        </p>
+                    </header>
+
+                    <form id="form-recovery-reset">
+                        <div class="vlog-input-group">
+                            <label class="vlog-input-label">Nova Senha</label>
+                            <input type="password" id="new-password" class="vlog-input-field" placeholder="••••••••" required minlength="6">
+                        </div>
+                        <div class="vlog-input-group mb-5">
+                            <label class="vlog-input-label">Confirmar Senha</label>
+                            <input type="password" id="confirm-new-password" class="vlog-input-field" placeholder="••••••••" required minlength="6">
+                        </div>
+
+                        <button type="submit" id="btn-reset-final" class="btn-vlog-primary w-100 py-3">
+                            <span>ATUALIZAR SEGURANÇA</span>
+                            <i class="fas fa-sync-alt ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- PASSO 4: SUCESSO -->
+                <div id="step-4" class="recovery-step text-center">
+                    <div class="success-icon-container mb-4">
+                        <div class="pulse-neon rounded-circle d-inline-flex p-4">
+                            <i class="fas fa-check-double text-neon fa-4x"></i>
+                        </div>
+                    </div>
+                    <h2 class="h2 fw-black text-white mb-3">Sucesso!</h2>
+                    <p class="text-muted mb-5">Sua senha foi redefinida. Você já pode acessar o sistema.</p>
+
+                    <a href="#/auth/login" class="btn-vlog-primary w-100 py-3">
+                        <span>VOLTAR AO LOGIN</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /**
+     * Motor de Recuperação VlogStudents
+     */
+    const VlogRecovery = {
+        _email: '',
+        _pin: '',
+
+        init() {
+            console.log("[VIEW] Recovery Engine Online.");
+            this._setupEventListeners();
+            this._setupOTPBehavior();
+        },
+
+        _setupEventListeners() {
+            // Formulário 1: Solicitação
+            document.getElementById('form-recovery-request').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('recovery-email').value;
+                this._email = email;
+
+                this._setLoading('btn-request-code', true);
+
+                try {
+                    const success = await window.VlogAuth.requestPasswordReset(email);
+                    if (success) this._goToStep(2);
+                } finally {
+                    this._setLoading('btn-request-code', false);
+                }
+            });
+
+            // Botão Verificação PIN
+            document.getElementById('btn-verify-pin').addEventListener('click', () => {
+                const pinValues = Array.from(document.querySelectorAll('.otp-input')).map(i => i.value).join('');
+                if (pinValues.length === 6) {
+                    this._pin = pinValues;
+                    this._goToStep(3);
+                } else {
+                    window.VlogMain._showToast("Insira o PIN completo de 6 dígitos.", "warning");
+                }
+            });
+
+            // Formulário 3: Reset Final
+            document.getElementById('form-recovery-reset').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pass = document.getElementById('new-password').value;
+                const confirm = document.getElementById('confirm-new-password').value;
+
+                if (pass !== confirm) {
+                    window.VlogMain._showToast("As senhas não coincidem.", "error");
+                    return;
+                }
+
+                this._setLoading('btn-reset-final', true);
+
+                try {
+                    const success = await window.VlogAuth.confirmPasswordReset(this._email, this._pin, pass);
+                    if (success) this._goToStep(4);
+                } finally {
+                    this._setLoading('btn-reset-final', false);
+                }
+            });
+        },
+
+        _setupOTPBehavior() {
+            const inputs = document.querySelectorAll('.otp-input');
+            inputs.forEach((input, index) => {
+                input.addEventListener('keyup', (e) => {
+                    if (e.key >= 0 && e.key <= 9) {
+                        if (index < inputs.length - 1) inputs[index + 1].focus();
+                    } else if (e.key === 'Backspace') {
+                        if (index > 0) inputs[index - 1].focus();
+                    }
+                });
+            });
+        },
+
+        _goToStep(stepNumber) {
+            const steps = document.querySelectorAll('.recovery-step');
+            steps.forEach(s => s.classList.remove('active', 'animate__fadeIn'));
+
+            const target = document.getElementById(`step-${stepNumber}`);
+            target.classList.add('active', 'animate__animated', 'animate__fadeIn');
+
+            if ("vibrate" in navigator) navigator.vibrate(20);
+        },
+
+        _setLoading(btnId, isLoading) {
+            const btn = document.getElementById(btnId);
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO...`;
+            } else {
+                btn.disabled = false;
+                const labels = {
+                    'btn-request-code': '<span>ENVIAR CÓDIGO</span><i class="fas fa-paper-plane ms-2"></i>',
+                    'btn-reset-final': '<span>ATUALIZAR SEGURANÇA</span><i class="fas fa-sync-alt ms-2"></i>'
+                };
+                btn.innerHTML = labels[btnId];
+            }
+        },
+
+        resendEmail() {
+            this._goToStep(1);
+        }
+    };
+
+    VlogRecovery.init();
+</script>
+
+<style>
+    /* DESIGN RECOVERY STEPS */
+    .recovery-step {
+        display: none;
+    }
+
+    .recovery-step.active {
+        display: block;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: var(--blur-lg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* OTP Inputs Chapa Style */
+    .otp-input {
+        width: 14%;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        text-align: center;
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--primary-neon);
+        transition: all var(--anim-fast) ease;
+    }
+
+    .otp-input:focus {
+        border-color: var(--primary-neon);
+        background: rgba(204, 255, 0, 0.05);
+        box-shadow: var(--shadow-neon);
+        outline: none;
+    }
+
+    .success-icon-container .pulse-neon {
+        background: rgba(204, 255, 0, 0.1);
+        display: inline-block;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 255, 0, 0.4); }
+        70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(204, 255, 0, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 255, 0, 0); }
+    }
+</style>

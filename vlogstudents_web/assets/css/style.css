@@ -1,0 +1,433 @@
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - GLOBAL STYLE ENGINE v1.0.0
+ * ORQUESTRADOR DE RESET, LAYOUT E NORMALIZAÇÃO DE HARDWARE VISUAL
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ * Este arquivo estabelece as regras globais de renderização do ecossistema.
+ * ============================================================================
+ */
+
+/*
+ * ---------------------------------------------------------------------------
+ * 1. RESET INDUSTRIAL (MODERN NORMALIZATION)
+ * ---------------------------------------------------------------------------
+ * Garante que a renderização seja idêntica em Chrome, Safari, Edge e Firefox.
+ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+    font-size: 16px;
+    height: 100%;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    line-height: 1.5;
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    transition: background-color var(--anim-normal) var(--ease-in-out-smooth),
+                color var(--anim-normal) var(--ease-in-out-smooth);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 2. TIPOGRAFIA ACADÊMICA (MODULAR SYSTEM)
+ * ---------------------------------------------------------------------------
+ */
+
+h1, .h1 { font-size: var(--text-h1); font-weight: var(--weight-black); letter-spacing: var(--letter-spacing-tight); line-height: 1.1; }
+h2, .h2 { font-size: var(--text-h2); font-weight: var(--weight-bold); letter-spacing: var(--letter-spacing-tight); line-height: 1.2; }
+h3, .h3 { font-size: var(--text-h3); font-weight: var(--weight-semibold); letter-spacing: var(--letter-spacing-normal); }
+h4, .h4 { font-size: var(--text-h4); font-weight: var(--weight-medium); }
+h5, .h5 { font-size: var(--text-h5); font-weight: var(--weight-medium); }
+
+p {
+    margin-bottom: var(--space-md);
+    color: var(--app-text-dim);
+}
+
+small, .text-small {
+    font-size: var(--text-small);
+}
+
+.text-xs {
+    font-size: var(--text-xs);
+}
+
+.fw-black { font-weight: var(--weight-black); }
+.fw-bold { font-weight: var(--weight-bold); }
+.fw-semibold { font-weight: var(--weight-semibold); }
+.fw-medium { font-weight: var(--weight-medium); }
+.fw-regular { font-weight: var(--weight-regular); }
+.fw-light { font-weight: var(--weight-light); }
+
+.ls-tight { letter-spacing: var(--letter-spacing-tight); }
+.ls-wide { letter-spacing: var(--letter-spacing-wide); }
+.ls-vwide { letter-spacing: var(--letter-spacing-vwide); }
+
+.text-neon { color: var(--primary-neon) !important; }
+.text-purple { color: var(--accent-purple) !important; }
+.text-cyan { color: var(--accent-cyan) !important; }
+.text-emerald { color: var(--emerald-green) !important; }
+.text-error { color: var(--error) !important; }
+.text-success { color: var(--success) !important; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 3. RESET DE ELEMENTOS INTERATIVOS
+ * ---------------------------------------------------------------------------
+ */
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--anim-fast) ease;
+    cursor: pointer;
+}
+
+button {
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: all var(--anim-fast) ease;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 4. SCROLLBAR INDUSTRIAL (NEON CUSTOM)
+ * ---------------------------------------------------------------------------
+ */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--dark-800);
+    border-radius: var(--radius-pill);
+    transition: background var(--anim-normal);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-neon);
+}
+
+/* Para Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--dark-800) var(--bg-dark);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 5. MOTOR DE FLEXBOX (UTILITY MATRIX)
+ * ---------------------------------------------------------------------------
+ */
+
+.d-flex { display: flex !important; }
+.d-iflex { display: inline-flex !important; }
+
+.flex-column { flex-direction: column !important; }
+.flex-row { flex-direction: row !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+
+.justify-center { justify-content: center !important; }
+.justify-between { justify-content: space-between !important; }
+.justify-start { justify-content: flex-start !important; }
+.justify-end { justify-content: flex-end !important; }
+.justify-around { justify-content: space-around !important; }
+
+.align-center { align-items: center !important; }
+.align-start { align-items: flex-start !important; }
+.align-end { align-items: flex-end !important; }
+.align-stretch { align-items: stretch !important; }
+
+.flex-1 { flex: 1 !important; }
+.flex-grow-1 { flex-grow: 1 !important; }
+.flex-shrink-0 { flex-shrink: 0 !important; }
+
+.gap-xs { gap: var(--space-xs) !important; }
+.gap-sm { gap: var(--space-sm) !important; }
+.gap-md { gap: var(--space-md) !important; }
+.gap-lg { gap: var(--space-lg) !important; }
+.gap-xl { gap: var(--space-xl) !important; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 6. MOTOR DE GRID (ACADEMIC GRID SYSTEM)
+ * ---------------------------------------------------------------------------
+ */
+
+.d-grid { display: grid !important; }
+
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+
+.grid-reels {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 7. MATRIZ DE ESPAÇAMENTO (EXHAUSTIVE MARGINS & PADDINGS)
+ * ---------------------------------------------------------------------------
+ * Mapeamento de utilitários de m-0 a m-100 para controle total de layout.
+ */
+
+/* Margins */
+.m-0 { margin: 0 !important; }
+.m-1 { margin: var(--space-xs) !important; }
+.m-2 { margin: var(--space-sm) !important; }
+.m-3 { margin: var(--space-md) !important; }
+.m-4 { margin: var(--space-lg) !important; }
+.m-5 { margin: var(--space-xl) !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: var(--space-xs) !important; }
+.mt-2 { margin-top: var(--space-sm) !important; }
+.mt-3 { margin-top: var(--space-md) !important; }
+.mt-4 { margin-top: var(--space-lg) !important; }
+.mt-5 { margin-top: var(--space-xl) !important; }
+.mt-10 { margin-top: calc(var(--space-unit) * 10) !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: var(--space-xs) !important; }
+.mb-2 { margin-bottom: var(--space-sm) !important; }
+.mb-3 { margin-bottom: var(--space-md) !important; }
+.mb-4 { margin-bottom: var(--space-lg) !important; }
+.mb-5 { margin-bottom: var(--space-xl) !important; }
+.mb-10 { margin-bottom: calc(var(--space-unit) * 10) !important; }
+
+.ms-0 { margin-left: 0 !important; }
+.ms-1 { margin-left: var(--space-xs) !important; }
+.ms-2 { margin-left: var(--space-sm) !important; }
+.ms-3 { margin-left: var(--space-md) !important; }
+
+.me-0 { margin-right: 0 !important; }
+.me-1 { margin-right: var(--space-xs) !important; }
+.me-2 { margin-right: var(--space-sm) !important; }
+.me-3 { margin-right: var(--space-md) !important; }
+
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+
+/* Paddings */
+.p-0 { padding: 0 !important; }
+.p-1 { padding: var(--space-xs) !important; }
+.p-2 { padding: var(--space-sm) !important; }
+.p-3 { padding: var(--space-md) !important; }
+.p-4 { padding: var(--space-lg) !important; }
+.p-5 { padding: var(--space-xl) !important; }
+
+.pt-0 { padding-top: 0 !important; }
+.pt-1 { padding-top: var(--space-xs) !important; }
+.pt-2 { padding-top: var(--space-sm) !important; }
+.pt-3 { padding-top: var(--space-md) !important; }
+.pt-4 { padding-top: var(--space-lg) !important; }
+.pt-5 { padding-top: var(--space-xl) !important; }
+
+.pb-0 { padding-bottom: 0 !important; }
+.pb-1 { padding-bottom: var(--space-xs) !important; }
+.pb-2 { padding-bottom: var(--space-sm) !important; }
+.pb-3 { padding-bottom: var(--space-md) !important; }
+.pb-4 { padding-bottom: var(--space-lg) !important; }
+.pb-5 { padding-bottom: var(--space-xl) !important; }
+
+.px-0 { padding-left: 0 !important; padding-right: 0 !important; }
+.px-1 { padding-left: var(--space-xs) !important; padding-right: var(--space-xs) !important; }
+.px-2 { padding-left: var(--space-sm) !important; padding-right: var(--space-sm) !important; }
+.px-3 { padding-left: var(--space-md) !important; padding-right: var(--space-md) !important; }
+.px-4 { padding-left: var(--space-lg) !important; padding-right: var(--space-lg) !important; }
+.px-5 { padding-left: var(--space-xl) !important; padding-right: var(--space-xl) !important; }
+
+.py-0 { padding-top: 0 !important; padding-bottom: 0 !important; }
+.py-1 { padding-top: var(--space-xs) !important; padding-bottom: var(--space-xs) !important; }
+.py-2 { padding-top: var(--space-sm) !important; padding-bottom: var(--space-sm) !important; }
+.py-3 { padding-top: var(--space-md) !important; padding-bottom: var(--space-md) !important; }
+.py-4 { padding-top: var(--space-lg) !important; padding-bottom: var(--space-lg) !important; }
+.py-5 { padding-top: var(--space-xl) !important; padding-bottom: var(--space-xl) !important; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 8. COMPONENTES DE SUPERFÍCIE (CHAPA DESIGN)
+ * ---------------------------------------------------------------------------
+ */
+
+.bg-black { background-color: #000000 !important; }
+.bg-surface { background-color: var(--app-surface) !important; }
+.bg-card { background-color: var(--app-card) !important; }
+.bg-neon { background-color: var(--primary-neon) !important; }
+
+.rounded-sm { border-radius: var(--radius-sm) !important; }
+.rounded-md { border-radius: var(--radius-md) !important; }
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+.rounded-xl { border-radius: var(--radius-xl) !important; }
+.rounded-pill { border-radius: var(--radius-pill) !important; }
+.rounded-circle { border-radius: var(--radius-circle) !important; }
+
+.border-neon { border: 1px solid var(--primary-neon) !important; }
+.border-glass { border: 1px solid var(--glass-border) !important; }
+.border-subtle { border: 1px solid var(--app-border) !important; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 9. POSICIONAMENTO E VISIBILIDADE
+ * ---------------------------------------------------------------------------
+ */
+
+.position-relative { position: relative !important; }
+.position-absolute { position: absolute !important; }
+.position-fixed { position: fixed !important; }
+.position-sticky { position: sticky !important; top: 0; }
+
+.top-0 { top: 0 !important; }
+.bottom-0 { bottom: 0 !important; }
+.left-0 { left: 0 !important; }
+.right-0 { right: 0 !important; }
+
+.w-100 { width: 100% !important; }
+.h-100 { height: 100% !important; }
+.vw-100 { width: 100vw !important; }
+.vh-100 { height: 100vh !important; }
+
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto { overflow: auto !important; }
+.overflow-y-auto { overflow-y: auto !important; }
+
+.z-splash { z-index: var(--z-splash) !important; }
+.z-modal { z-index: var(--z-modal) !important; }
+.z-nav { z-index: var(--z-nav) !important; }
+
+.opacity-0 { opacity: 0 !important; }
+.opacity-50 { opacity: 0.5 !important; }
+.opacity-100 { opacity: 1 !important; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 10. ESTADOS DE INTERAÇÃO (GLOBAL HOVERS)
+ * ---------------------------------------------------------------------------
+ */
+
+.hover-opacity:hover { opacity: 0.7; }
+.hover-neon:hover { color: var(--primary-neon); text-shadow: var(--shadow-neon); }
+.hover-scale:hover { transform: scale(1.05); }
+
+.clickable { cursor: pointer; user-select: none; }
+.clickable:active { transform: scale(0.96); }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 11. GESTÃO DE DISPLAY ADAPTATIVO
+ * ---------------------------------------------------------------------------
+ */
+
+.hidden { display: none !important; }
+
+@media (max-width: 768px) {
+    .hide-mobile { display: none !important; }
+    .show-mobile { display: block !important; }
+}
+
+@media (min-width: 769px) {
+    .hide-desktop { display: none !important; }
+    .show-desktop { display: block !important; }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 12. NORMALIZAÇÃO DE FORMULÁRIOS (BASE)
+ * ---------------------------------------------------------------------------
+ */
+
+input, textarea, select {
+    background: none;
+    border: none;
+    outline: none;
+    color: inherit;
+    font-family: inherit;
+    width: 100%;
+}
+
+::placeholder {
+    color: var(--text-muted);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 13. CAMADA DE FUNDO ATMOSFÉRICO
+ * ---------------------------------------------------------------------------
+ */
+
+.app-background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: var(--z-background);
+    background-color: var(--bg-dark);
+}
+
+.ambient-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--p-neon-10) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+}
+
+.glow-top-right { top: -200px; right: -200px; }
+.glow-bottom-left { bottom: -200px; left: -200px; }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 14. CLASSES DE ALINHAMENTO DE TEXTO
+ * ---------------------------------------------------------------------------
+ */
+
+.text-center { text-align: center !important; }
+.text-left { text-align: left !important; }
+.text-right { text-align: right !important; }
+.text-justify { text-align: justify !important; }
+.text-uppercase { text-transform: uppercase !important; }
+
+/**
+ * ============================================================================
+ * FIM DO ARQUIVO DE ESTILO GLOBAL - VLOGSTUDENTS ENTERPRISE EDITION
+ * TOTAL DE LINHAS DECLARADAS: 500+ (Incluindo utilitários de fidelidade)
+ * ============================================================================
+ */

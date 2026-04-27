@@ -1,0 +1,54 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - STORIES BAR COMPONENT
+ * CARROSSEL HORIZONTAL DE STATUS ACADÊMICOS
+ * ============================================================================
+-->
+
+<div class="stories-bar-container glass-morphism py-3 px-2 rounded-xl animate__animated animate__fadeIn">
+    <div class="d-flex align-items-center gap-3 overflow-x-auto no-scrollbar">
+
+        <!-- ME STATUS SLOT -->
+        <div class="story-item text-center clickable" onclick="VlogStatus.handleMeClick()">
+            <div class="avatar-wrapper position-relative">
+                <img src="" id="my-avatar-story" class="rounded-circle border-neon" width="65" height="65">
+                <div class="add-status-btn position-absolute bottom-0 end-0 bg-neon rounded-circle d-flex align-items-center justify-content-center" style="width: 22px; height: 22px; border: 2px solid black;">
+                    <i class="fas fa-plus text-black" style="font-size: 10px;"></i>
+                </div>
+            </div>
+            <span class="d-block mt-2 fw-bold text-xs text-neon">ME</span>
+        </div>
+
+        <!-- DYNAMIC STORIES INJECTED HERE -->
+        <div id="dynamic-stories-list" class="d-flex gap-3">
+            <!-- Loop de amigos mútuos -->
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .stories-bar-container {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        margin: 0 20px;
+    }
+
+    .author-avatar-ring {
+        padding: 3px;
+        border: 2px solid transparent;
+        background-image: linear-gradient(black, black), var(--gradient-primary);
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+        border-radius: 50%;
+    }
+
+    .story-item {
+        min-width: 75px;
+        transition: transform 0.2s ease;
+    }
+    .story-item:active { transform: scale(0.95); }
+</style>

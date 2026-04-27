@@ -1,0 +1,265 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - STATUS VIEWER VIEW v1.0.0
+ * MOTOR DE VISUALIZAÇÃO IMERSIVA E SEQUENCIAL (STORIES)
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Segmented Heartbeat: Barras de progresso sincronizadas com o tempo da mídia.
+ * - Multi-Format Rendering: Suporte para Texto, Imagem e Vídeo HD.
+ * - Gesture Logic: Tap à esquerda (Back), Tap à direita (Next), Long Press (Pause).
+ * - Owner Auditor: Modal de visualizações reais exclusivo para o proprietário.
+ * - Cinematic Transitions: Cross-fade entre slides de um mesmo usuário.
+ * ============================================================================
+-->
+
+<div id="status-viewer-root" class="vh-100 vw-100 bg-black overflow-hidden position-relative animate__animated animate__fadeIn">
+
+    <!-- 1. CAMADA DE CONTEÚDO (MÍDIA CENTRAL) -->
+    <div id="status-content-render" class="w-100 h-100 d-flex align-items-center justify-content-center">
+        <!-- Injetado dinamicamente: Video, Imagem ou Bloco de Texto -->
+        <div class="shimmer-loader w-100 h-100"></div>
+    </div>
+
+    <!-- 2. BARRAS DE PROGRESSO SEGMENTADAS (TOP OVERLAY) -->
+    <div class="status-top-interface position-absolute top-0 w-100 p-3 pt-4" style="z-index: 100;">
+        <div id="status-progress-segments" class="d-flex gap-2 mb-3">
+            <!-- Gerado via JavaScript: n segmentos para n slides -->
+        </div>
+
+        <!-- HEADER: IDENTIDADE DO ESTUDANTE -->
+        <div class="d-flex align-items-center px-2">
+            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                <div class="avatar-ring-neon p-1">
+                    <img id="viewer-user-avatar" src="" class="rounded-circle" width="42" height="42">
+                </div>
+                <div>
+                    <h6 id="viewer-user-name" class="mb-0 fw-black text-white ls-wide" style="font-size: 14px;">Carregando...</h6>
+                    <small id="viewer-status-time" class="text-white opacity-50 fw-bold" style="font-size: 10px;">AGORA</small>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn-vlog-circle-sm" onclick="VlogStatusViewer.togglePause()">
+                    <i class="fas fa-pause" id="pause-icon"></i>
+                </button>
+                <button class="btn-vlog-circle-sm" onclick="VlogStatus.closeViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. GESTURE NAVIGATION OVERLAYS (INVISIBLE) -->
+    <div class="gesture-zones fixed-top w-100 h-100 d-flex" style="z-index: 50;">
+        <div class="zone-left h-100" style="width: 30%;"
+             onclick="VlogStatusViewer.handlePrev()"
+             onmousedown="VlogStatusViewer.startPress()"
+             onmouseup="VlogStatusViewer.endPress()"
+             onmouseleave="VlogStatusViewer.endPress()"></div>
+
+        <div class="zone-right h-100" style="width: 70%;"
+             onclick="VlogStatusViewer.handleNext()"
+             onmousedown="VlogStatusViewer.startPress()"
+             onmouseup="VlogStatusViewer.endPress()"
+             onmouseleave="VlogStatusViewer.endPress()"></div>
+    </div>
+
+    <!-- 4. FOOTER: AUDITORIA E ADICIONAR (SOMENTE DONO) -->
+    <div id="viewer-owner-footer" class="position-absolute bottom-0 w-100 p-5 d-none animate__animated animate__fadeInUp" style="z-index: 100;">
+        <div class="d-flex justify-content-between align-items-center">
+
+            <!-- CONTADOR DE VIEWS -->
+            <button class="btn-view-audit glass-morphism rounded-pill px-4 py-2 d-flex align-items-center gap-2" onclick="VlogStatusViewer.showViewers()">
+                <i class="fas fa-eye text-white"></i>
+                <span id="status-viewer-count" class="fw-black text-white text-xs">0</span>
+            </button>
+
+            <!-- QUICK ADD -->
+            <button class="btn-vlog-primary btn-vlog-pill" onclick="window.location.hash = '#/status/create'">
+                <i class="fas fa-plus me-2"></i>MAIS STATUS
+            </button>
+
+        </div>
+    </div>
+
+    <!-- 5. MODAL DE LISTA DE VISUALIZADORES (BOTTOM SHEET) -->
+    <div id="viewers-audit-sheet" class="vlog-bottom-sheet d-none">
+        <div class="modal-handle"></div>
+        <div class="p-4 px-5">
+            <h5 class="fw-black text-white ls-vwide text-center mb-4">QUEM VIU</h5>
+            <div id="viewers-list-container" class="d-flex flex-column gap-3">
+                <!-- Lista de usuários injetada -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- LÓGICA DE ORQUESTRAÇÃO DO VISUALIZADOR -->
+<script>
+    const VlogStatusViewer = {
+        _longPressTimer: null,
+        _isPaused: false,
+
+        init() {
+            console.log("[VIEW] Status Viewer Kernel Ativo.");
+            // O VlogStatusModule já gerencia o estado. Aqui apenas reagimos à UI local.
+            this._setupInputShield();
+        },
+
+        /**
+         * Impede que cliques acidentais em elementos de UI disparem a navegação
+         */
+        _setupInputShield() {
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (e) => e.stopPropagation());
+            });
+        },
+
+        handleNext() {
+            if (window.VlogStatus) window.VlogStatus.nextSlide();
+        },
+
+        handlePrev() {
+            if (window.VlogStatus) window.VlogStatus.prevSlide();
+        },
+
+        startPress() {
+            this._longPressTimer = setTimeout(() => {
+                this._isPaused = true;
+                if (window.VlogStatus) window.VlogStatus.pause();
+                document.getElementById('status-viewer-root').classList.add('status-paused');
+            }, 200);
+        },
+
+        endPress() {
+            clearTimeout(this._longPressTimer);
+            if (this._isPaused) {
+                this._isPaused = false;
+                if (window.VlogStatus) window.VlogStatus.resume();
+                document.getElementById('status-viewer-root').classList.remove('status-paused');
+            }
+        },
+
+        togglePause() {
+            this._isPaused = !this._isPaused;
+            const icon = document.getElementById('pause-icon');
+            if (this._isPaused) {
+                window.VlogStatus.pause();
+                icon.className = 'fas fa-play';
+            } else {
+                window.VlogStatus.resume();
+                icon.className = 'fas fa-pause';
+            }
+        },
+
+        async showViewers() {
+            const state = window.VlogStatus._viewerState;
+            const user = state.userList[state.currentUserIndex];
+            const slide = user.slides[state.currentStatusIndex];
+
+            await window.VlogStatus.openViewersAudit(slide.id);
+            document.getElementById('viewers-audit-sheet').classList.remove('d-none');
+        }
+    };
+
+    VlogStatusViewer.init();
+</script>
+
+<style>
+    /*
+     * ========================================================================
+     * CSS DE ALTA FIDELIDADE - STATUS VIEWER
+     * ========================================================================
+     */
+
+    #status-viewer-root {
+        cursor: pointer;
+        user-select: none;
+        touch-action: none;
+    }
+
+    /* Estilo para vídeos de status */
+    .status-video-active {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .status-img-full {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        animation: zoomEffect 5s linear forwards;
+    }
+
+    @keyframes zoomEffect {
+        from { transform: scale(1); }
+        to { transform: scale(1.05); }
+    }
+
+    /* Camada de Gradiente superior para leitura */
+    .status-top-interface {
+        background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    }
+
+    .avatar-ring-neon {
+        border-radius: 50%;
+        border: 2px solid var(--primary-neon);
+        box-shadow: 0 0 15px rgba(204, 255, 0, 0.3);
+    }
+
+    /* Efeito visual de pausa */
+    .status-paused .status-top-interface,
+    .status-paused #viewer-owner-footer {
+        opacity: 0.2;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Auditoria Styles */
+    .btn-view-audit {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-audit:active {
+        transform: translateY(-10px);
+        background: var(--primary-neon);
+        color: black;
+    }
+
+    /* Estilização das pílulas de progresso */
+    .status-progress-segment {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .status-progress-fill {
+        height: 100%;
+        background: var(--primary-neon);
+        width: 0%;
+        box-shadow: 0 0 8px var(--primary-neon);
+    }
+
+    /* Background para Status de Texto */
+    .status-bg-full {
+        width: 100%;
+        height: 100%;
+        transition: background-color 0.5s ease;
+    }
+
+    .status-bg-full h2 {
+        font-size: 32px;
+        padding: 40px;
+        line-height: 1.3;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+</style>

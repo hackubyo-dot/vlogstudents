@@ -1,0 +1,264 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - POINTS DASHBOARD v1.0.0
+ * VOICES (VS) MANAGEMENT | ACADEMIC RANKING | SOCIAL MINING
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Emerald XP Kernel: Gráfico circular de nível usando Conic-Gradients puros.
+ * - Encapsulated Mining: Histórico limitado a 6 slots visuais com scroll interno.
+ * - Healthy Vision Green: Calibragem 00E676 para conforto visual prolongado.
+ * - Real-Time Sync: Data-binding direto com o saldo do Neon DB.
+ * - Dual Leaderboard: Alternância entre Ranking Global e Campus Local.
+ * ============================================================================
+-->
+
+<div id="points-dashboard-view" class="h-100 vw-100 overflow-y-auto no-scrollbar animate__animated animate__fadeIn">
+
+    <!-- 1. AURA ATMOSFÉRICA ECONÔMICA -->
+    <div class="ambient-glow glow-top-right" style="background: radial-gradient(circle, rgba(0, 230, 118, 0.08) 0%, transparent 70%);"></div>
+
+    <div class="container-fluid py-5 px-4">
+
+        <!-- HEADER ACADÊMICO -->
+        <header class="d-flex align-items-center justify-content-between mb-5">
+            <div>
+                <h1 class="h2 fw-black text-white ls-tight mb-1">Minha Voz</h1>
+                <p class="text-muted text-xs fw-bold ls-vwide">ECONOMIA DO CAMPUS</p>
+            </div>
+            <button class="btn-vlog-circle-sm" onclick="VlogPointsView.showInfo()">
+                <i class="fas fa-question"></i>
+            </button>
+        </header>
+
+        <!-- 2. MASTER BALANCE CARD (XP KERNEL) -->
+        <section class="points-master-card glass-morphism rounded-xl p-5 mb-5 text-center position-relative overflow-hidden">
+            <div class="glass-reflect"></div>
+
+            <!-- GRAFICO CIRCULAR DE PROGRESSÃO -->
+            <div class="xp-chart-container mx-auto mb-4">
+                <div id="xp-circular-progress" class="xp-progress-ring">
+                    <div class="xp-inner-content d-flex flex-column align-items-center justify-content-center">
+                        <h1 id="economy-balance-total" class="fw-black text-white mb-0" style="font-size: 3.5rem; letter-spacing: -2px;">0</h1>
+                        <span class="text-emerald fw-black ls-vwide" style="font-size: 10px;">VOICES (VS)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NÍVEL ACADÊMICO -->
+            <div class="level-badge-container d-inline-block px-4 py-2 rounded-pill mb-3" style="background: rgba(0, 230, 118, 0.1);">
+                <span id="economy-level-name" class="fw-black text-emerald ls-wide" style="font-size: 13px;">CARREGANDO...</span>
+            </div>
+
+            <p id="economy-points-needed" class="text-muted text-small fw-semibold mb-0">Sincronizando saldo com o Neon DB...</p>
+        </section>
+
+        <!-- 3. QUICK ACTIONS GRID -->
+        <section class="row g-4 mb-5">
+            <div class="col-6">
+                <button class="btn-economy-action w-100 glass-morphism p-4 rounded-xl d-flex flex-column align-items-center gap-3" onclick="VlogPoints.shareInvite()">
+                    <div class="icon-circle bg-emerald-alpha">
+                        <i class="fas fa-user-plus text-emerald"></i>
+                    </div>
+                    <span class="fw-black text-white text-xs ls-wide">INDICAR</span>
+                </button>
+            </div>
+            <div class="col-6">
+                <button class="btn-economy-action w-100 glass-morphism p-4 rounded-xl d-flex flex-column align-items-center gap-3" onclick="VlogPointsView.openMarket()">
+                    <div class="icon-circle bg-purple-alpha">
+                        <i class="fas fa-shopping-bag text-purple"></i>
+                    </div>
+                    <span class="fw-black text-white text-xs ls-wide">RESGATAR</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 4. QUADRO DE HONRA (RANKING) -->
+        <section class="ranking-section mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h4 class="fw-black text-white mb-0">Quadro de Honra</h4>
+
+                <!-- TAB SELECTOR CHAPA -->
+                <div class="tab-selector-chapa d-flex p-1 rounded-md glass-morphism">
+                    <button class="tab-btn active" data-rank-tab="global">GLOBAL</button>
+                    <button class="tab-btn" data-rank-tab="campus">CAMPUS</button>
+                </div>
+            </div>
+
+            <div id="economy-ranking-list" class="d-flex flex-column gap-3">
+                <!-- RANKING TILES INJETADOS POR MODULES/POINTS.JS -->
+                <div class="text-center p-4">
+                    <div class="spinner-border text-neon" role="status"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ATIVIDADE DE MINERAÇÃO (ENCAPSULADA) -->
+        <section class="mining-section mb-5">
+            <h4 class="fw-black text-white mb-4">Atividade de Mineração</h4>
+
+            <div class="mining-history-container glass-morphism rounded-xl overflow-hidden">
+                <div id="economy-history-list" class="p-4 overflow-y-auto no-scrollbar" style="max-height: 520px;">
+                    <!-- EXTRATO INJETADO POR MODULES/POINTS.JS -->
+                    <div class="shimmer-loader w-100 mb-3" style="height: 60px;"></div>
+                    <div class="shimmer-loader w-100 mb-3" style="height: 60px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <div style="height: 100px;"></div> <!-- Espaçamento para a Liquid Bar -->
+    </div>
+
+    <!-- MODAL DE RESGATE (REDEEM) -->
+    <div id="redeem-modal" class="vlog-bottom-sheet d-none">
+        <div class="modal-handle"></div>
+        <div class="p-5 text-center">
+            <i class="fas fa-store fa-3x text-neon mb-4"></i>
+            <h2 class="fw-black text-white mb-3">Campus Marketplace</h2>
+            <p class="text-muted mb-5">Troque suas Voices por vantagens exclusivas e itens limitados.</p>
+            <div class="row g-3" id="marketplace-items-grid">
+                <!-- Itens carregados dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- LÓGICA DE INTERFACE LOCAL -->
+<script>
+    const VlogPointsView = {
+        init() {
+            console.log("[VIEW] Dashboard Econômico Online.");
+
+            // Ativa o módulo global de pontos
+            if(window.VlogPoints) {
+                window.VlogPoints.init();
+            }
+
+            this._setupTabInteractions();
+            this._updateXPRing();
+        },
+
+        _setupTabInteractions() {
+            const tabs = document.querySelectorAll('[data-rank-tab]');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+        },
+
+        /**
+         * Sincroniza o anel de progresso visual com o XP real
+         */
+        _updateXPRing() {
+            const ring = document.getElementById('xp-circular-progress');
+            if (!ring) return;
+
+            // Intervalo de verificação de estado para animação
+            const syncInterval = setInterval(() => {
+                if (window.VlogPoints) {
+                    const progress = window.VlogPoints.calculateXPProgress();
+                    const tierColor = window.VlogPoints.getLevelColor();
+
+                    // Aplica gradiente cônico dinâmico (Emulação do Painter)
+                    ring.style.background = `conic-gradient(${tierColor} ${progress}%, rgba(255,255,255,0.05) 0deg)`;
+
+                    if (progress > 0) clearInterval(syncInterval);
+                }
+            }, 500);
+        },
+
+        openMarket() {
+            const modal = document.getElementById('redeem-modal');
+            modal.classList.remove('d-none');
+            modal.classList.add('animate__slideInUp');
+        },
+
+        showInfo() {
+            window.VlogMain._showToast("Minere Voices através de interação social e conteúdo de qualidade.", "info");
+        }
+    };
+
+    VlogPointsView.init();
+</script>
+
+<style>
+    /*
+     * ========================================================================
+     * CSS DE ALTA FIDELIDADE - DASHBOARD ECONOMY
+     * ========================================================================
+     */
+
+    .text-emerald { color: #00E676 !important; }
+    .bg-emerald-alpha { background: rgba(0, 230, 118, 0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .bg-purple-alpha { background: rgba(138, 43, 226, 0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+    /* Estilo do Anel de XP (CSS Conic Gradient Engine) */
+    .xp-chart-container {
+        width: 200px; height: 200px;
+        position: relative;
+    }
+
+    .xp-progress-ring {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 1.5s var(--ease-out-expo);
+        box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+
+    .xp-inner-content {
+        width: calc(100% - 30px);
+        height: calc(100% - 30px);
+        background: var(--bg-dark);
+        border-radius: 50%;
+    }
+
+    /* Tab Selector Chapa */
+    .tab-selector-chapa {
+        background: rgba(255, 255, 255, 0.05);
+        gap: 5px;
+    }
+
+    .tab-selector-chapa .tab-btn {
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.3);
+        background: transparent;
+        transition: all 0.3s ease;
+    }
+
+    .tab-selector-chapa .tab-btn.active {
+        background: white;
+        color: black;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    /* Transaction Tile Customizations */
+    .transaction-tile {
+        transition: transform 0.2s ease;
+    }
+
+    .transaction-tile:hover {
+        transform: scale(1.02);
+    }
+
+    /* Botões de Ação Econômica */
+    .btn-economy-action {
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-economy-action:active {
+        transform: scale(0.92);
+    }
+
+    /* Shimmer para Histórico */
+    .mining-history-container {
+        border: 1px solid var(--border-dark);
+    }
+</style>

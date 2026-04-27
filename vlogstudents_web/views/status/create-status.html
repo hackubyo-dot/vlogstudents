@@ -1,0 +1,234 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - STATUS CREATOR VIEW v1.0.0
+ * MOTOR DE CRIAÇÃO IMERSIVA (STORIES)
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Multi-Format Input: Suporte para Texto Puro, Imagem e Vídeo.
+ * - Dynamic Background: Seletor de cores para status de texto.
+ * - Real-Time Preview: Visualização idêntica ao resultado final (WYSIWYG).
+ * - Binary Stream: Integração com Supabase via API de transmissão.
+ * - Social Mining Integration: Ganho imediato de +15 VS após publicação.
+ * ============================================================================
+-->
+
+<div id="status-create-view" class="vh-100 vw-100 bg-black overflow-hidden animate__animated animate__slideInUp">
+
+    <!-- 1. HEADER DOCK (ACTIONS) -->
+    <header class="fixed-top p-4 d-flex align-items-center justify-content-between" style="z-index: 100;">
+        <button class="btn-vlog-circle-sm" onclick="window.history.back()">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div id="upload-progress-pill" class="badge-vlog badge-neon d-none">
+            <span id="progress-percent">0%</span>
+        </div>
+
+        <button id="btn-publish-status" class="btn-vlog-primary btn-vlog-pill" onclick="VlogStatusCreate.publish()">
+            <span>POSTAR</span>
+            <i class="fas fa-paper-plane ms-2"></i>
+        </button>
+    </header>
+
+    <!-- 2. MAIN PREVIEW AREA (WYSIWYG) -->
+    <main id="status-preview-engine" class="w-100 h-100 d-flex align-items-center justify-content-center transition-all" style="background-color: #1A1A1B;">
+
+        <!-- PLACEHOLDER PARA TEXTO -->
+        <textarea
+                id="status-text-input"
+                class="status-main-textarea animate__animated animate__zoomIn"
+                placeholder="O que está a pensar?"
+                maxlength="200"
+        ></textarea>
+
+        <!-- PREVIEW DE MÍDIA (VÍDEO/IMAGEM) -->
+        <div id="media-preview-container" class="w-100 h-100 d-none">
+            <!-- Injetado dinamicamente via JS -->
+        </div>
+
+    </main>
+
+    <!-- 3. LIQUID TOOL BAR (DOCK DE HARDWARE) -->
+    <footer class="fixed-bottom p-4 pb-5">
+        <div class="d-flex justify-content-center">
+            <div class="tool-dock glass-morphism rounded-pill px-4 py-3 d-flex gap-5">
+
+                <!-- TEXT TOOL -->
+                <button class="tool-item active" data-type="text" onclick="VlogStatusCreate.setMode('text')">
+                    <i class="fas fa-font"></i>
+                </button>
+
+                <!-- IMAGE TOOL -->
+                <button class="tool-item" data-type="image" onclick="VlogStatusCreate.triggerPicker('image')">
+                    <i class="fas fa-image"></i>
+                </button>
+
+                <!-- VIDEO TOOL -->
+                <button class="tool-item" data-type="video" onclick="VlogStatusCreate.triggerPicker('video')">
+                    <i class="fas fa-video"></i>
+                </button>
+
+                <!-- COLOR TOOL (TEXT MODE ONLY) -->
+                <button id="color-wheel-btn" class="tool-item" onclick="VlogStatusCreate.cycleColors()">
+                    <i class="fas fa-palette"></i>
+                </button>
+
+            </div>
+        </div>
+    </footer>
+
+    <!-- FILE INPUTS (HIDDEN) -->
+    <input type="file" id="status-file-picker" class="d-none" accept="image/*,video/*">
+
+</div>
+
+<script>
+    const VlogStatusCreate = {
+        _currentMode: 'text',
+        _selectedFile: null,
+        _colors: ['#1A1A1B', '#8A2BE2', '#00FBFF', '#FF4500', '#00E676', '#CCFF00', '#FF3B30'],
+        _currentColorIdx: 0,
+
+        init() {
+            console.log("[VIEW] Status Creator Online.");
+            this._setupFileWatcher();
+
+            if(window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('ui', 'Status Creator Opened');
+        },
+
+        setMode(mode) {
+            this._currentMode = mode;
+            this._selectedFile = null;
+
+            // Reset UI
+            document.getElementById('status-text-input').classList.remove('d-none');
+            document.getElementById('media-preview-container').classList.add('d-none');
+            document.getElementById('color-wheel-btn').style.display = 'block';
+
+            document.querySelectorAll('.tool-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === mode);
+            });
+        },
+
+        triggerPicker(type) {
+            const picker = document.getElementById('status-file-picker');
+            picker.accept = type === 'image' ? 'image/*' : 'video/*';
+            this._currentMode = type;
+            picker.click();
+        },
+
+        _setupFileWatcher() {
+            const picker = document.getElementById('status-file-picker');
+            picker.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                this._selectedFile = file;
+                this._renderPreview(file);
+            };
+        },
+
+        _renderPreview(file) {
+            const container = document.getElementById('media-preview-container');
+            const textArea = document.getElementById('status-text-input');
+            const colorBtn = document.getElementById('color-wheel-btn');
+
+            textArea.classList.add('d-none');
+            colorBtn.style.display = 'none';
+            container.classList.remove('d-none');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (file.type.startsWith('video')) {
+                    container.innerHTML = `
+                        <video class="w-100 h-100 object-fit-contain" autoplay loop muted>
+                            <source src="${e.target.result}" type="${file.type}">
+                        </video>
+                    `;
+                } else {
+                    container.innerHTML = `<img src="${e.target.result}" class="w-100 h-100 object-fit-contain">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        },
+
+        cycleColors() {
+            this._currentColorIdx = (this._currentColorIdx + 1) % this._colors.length;
+            const newColor = this._colors[this._currentColorIdx];
+            document.getElementById('status-preview-engine').style.backgroundColor = newColor;
+            if("vibrate" in navigator) navigator.vibrate(10);
+        },
+
+        async publish() {
+            const btn = document.getElementById('btn-publish-status');
+            const progressPill = document.getElementById('upload-progress-pill');
+            const content = document.getElementById('status-text-input').value;
+
+            if (this._currentMode === 'text' && !content.trim()) {
+                window.VlogMain._showToast("Escreva algo para postar.", "warning");
+                return;
+            }
+
+            btn.disabled = true;
+            progressPill.classList.remove('d-none');
+
+            try {
+                const success = await window.VlogStatus.postStatus({
+                    type: this._currentMode,
+                    content: content,
+                    file: this._selectedFile,
+                    bgColor: this._colors[this._currentColorIdx]
+                });
+
+                if (success) {
+                    window.history.back();
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                progressPill.classList.add('d-none');
+            }
+        }
+    };
+
+    VlogStatusCreate.init();
+</script>
+
+<style>
+    .status-main-textarea {
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        font-size: 32px;
+        font-weight: 900;
+        width: 80%;
+        max-height: 50vh;
+        outline: none;
+        resize: none;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .tool-dock {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--premium-shadow);
+    }
+
+    .tool-item {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 20px;
+        transition: all 0.3s var(--ease-out-expo);
+    }
+
+    .tool-item.active, .tool-item:hover {
+        color: var(--primary-neon);
+        transform: scale(1.2);
+    }
+
+    .object-fit-contain { object-fit: contain; }
+</style>

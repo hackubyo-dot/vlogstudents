@@ -1,0 +1,568 @@
+/**
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - UI KIT & COMPONENTS v1.0.0
+ * ORQUESTRADOR DE COMPONENTES ATÔMICOS E ESTRUTURAS DE INTERFACE
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ * Este arquivo contém a gramática visual completa dos componentes do sistema.
+ * ============================================================================
+ */
+
+/*
+ * ---------------------------------------------------------------------------
+ * 1. BOTÕES INDUSTRIAIS (ACTION ENGINE)
+ * ---------------------------------------------------------------------------
+ */
+
+/* Botão Primário Neon (Assinatura Vlog) */
+.btn-vlog-primary {
+    background: var(--primary-neon);
+    color: var(--bg-dark);
+    font-weight: var(--weight-black);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    padding: 18px 32px;
+    border-radius: var(--radius-md);
+    border: none;
+    box-shadow: var(--neon-shadow);
+    transition: all var(--anim-normal) var(--ease-out-expo);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-vlog-primary:hover {
+    background: #e6ff00;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(var(--primary-neon-rgb), 0.4);
+}
+
+.btn-vlog-primary:active {
+    transform: scale(0.96);
+}
+
+.btn-vlog-primary::after {
+    content: "";
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(rgba(255,255,255,0.2), transparent);
+    transform: rotate(45deg);
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+/* Botão Glass (Estilo Secundário) */
+.btn-vlog-glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur-sm);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    font-weight: var(--weight-bold);
+    padding: 16px 28px;
+    border-radius: var(--radius-md);
+    transition: all var(--anim-normal) ease;
+}
+
+.btn-vlog-glass:hover {
+    background: var(--glass-white-20);
+    border-color: var(--text-secondary);
+}
+
+/* Botão Pílula (Compacto) */
+.btn-vlog-pill {
+    padding: 10px 24px;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-small);
+}
+
+/* Botão Circular (Ícones) */
+.btn-vlog-circle {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--radius-circle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: white;
+}
+
+.btn-vlog-circle i {
+    font-size: 22px;
+}
+
+.btn-vlog-circle:hover {
+    background: var(--primary-neon);
+    color: black;
+    border-color: var(--primary-neon);
+}
+
+/* Botão de Resgate (Emerald) */
+.btn-vlog-emerald {
+    background: var(--emerald-green);
+    color: black;
+    box-shadow: 0 0 15px rgba(var(--emerald-green-rgb), 0.3);
+}
+
+/* Botão de Risco (Erro/Cancel) */
+.btn-vlog-danger {
+    background: rgba(var(--error-rgb), 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+}
+
+.btn-vlog-danger:hover {
+    background: var(--error);
+    color: white;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 2. INPUTS E CAMPOS DE DADOS (CHAPA DESIGN)
+ * ---------------------------------------------------------------------------
+ */
+
+.vlog-input-group {
+    margin-bottom: var(--space-lg);
+    position: relative;
+    width: 100%;
+}
+
+.vlog-input-label {
+    display: block;
+    color: var(--primary-neon);
+    font-size: 11px;
+    font-weight: var(--weight-black);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-vwide);
+    margin-bottom: 10px;
+    padding-left: 4px;
+}
+
+.vlog-input-field {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    padding: 18px 24px;
+    color: white;
+    font-size: 16px;
+    font-weight: var(--weight-medium);
+    transition: all var(--anim-normal) ease;
+}
+
+.vlog-input-field:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary-neon);
+    box-shadow: 0 0 20px rgba(var(--primary-neon-rgb), 0.15);
+}
+
+.vlog-input-field::placeholder {
+    color: var(--text-muted);
+}
+
+/* Input de Senha com Toggle */
+.vlog-password-container {
+    position: relative;
+}
+
+.vlog-password-toggle {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+/* Input de Busca do Campus */
+.vlog-search-input {
+    background: var(--glass-bg);
+    border-radius: var(--radius-pill);
+    padding: 14px 24px 14px 50px;
+    border: 1px solid transparent;
+}
+
+.vlog-search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 3. MOTOR DE AVATARES E IDENTIDADE (IDENTITY ENGINE)
+ * ---------------------------------------------------------------------------
+ */
+
+.vlog-avatar {
+    position: relative;
+    display: inline-block;
+    border-radius: var(--radius-circle);
+    object-fit: cover;
+}
+
+.vlog-avatar-xs { width: 24px; height: 24px; }
+.vlog-avatar-sm { width: 40px; height: 40px; }
+.vlog-avatar-md { width: 64px; height: 64px; }
+.vlog-avatar-lg { width: 85px; height: 85px; }
+.vlog-avatar-xl { width: 120px; height: 120px; }
+
+/* Anel de Status (Story Border) */
+.avatar-status-ring {
+    padding: 3px;
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--bg-dark), var(--bg-dark)), var(--gradient-primary);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    border-radius: var(--radius-circle);
+}
+
+/* Indicador Online */
+.online-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--success);
+    border: 2px solid var(--bg-dark);
+    border-radius: var(--radius-circle);
+}
+
+/* Selo de Verificado */
+.verified-seal {
+    width: 18px;
+    height: 18px;
+    background: var(--primary-neon);
+    color: black;
+    border-radius: var(--radius-circle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    vertical-align: middle;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 4. MATRIZ DE CARDS (SURFACE SYSTEM)
+ * ---------------------------------------------------------------------------
+ */
+
+.vlog-card {
+    background: var(--card-dark);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-dark);
+    padding: var(--space-lg);
+    transition: all var(--anim-normal) var(--ease-out-expo);
+}
+
+.vlog-card-hover:hover {
+    transform: translateY(-8px);
+    border-color: var(--border-dark-heavy);
+    box-shadow: var(--premium-shadow);
+}
+
+/* Card de Reel (Vídeo Preview) */
+.reel-preview-card {
+    aspect-ratio: 9 / 16;
+    background: #111;
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.reel-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+/* Card de Economia (Voices) */
+.points-card {
+    background: linear-gradient(135deg, #1A1A1A 0%, #050505 100%);
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    padding: 40px 20px;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 5. LIQUID PILL NAVIGATION (WEB HUB)
+ * ---------------------------------------------------------------------------
+ */
+
+.liquid-nav-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    width: 90%;
+    max-width: 500px;
+}
+
+.liquid-nav-bar {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-pill);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: var(--premium-shadow);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    transition: all var(--anim-normal) var(--ease-out-expo);
+}
+
+.nav-item.active {
+    background: var(--accent-purple);
+    color: white;
+    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+}
+
+.nav-item i {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.nav-item span {
+    font-size: 11px;
+    font-weight: var(--weight-black);
+    text-transform: uppercase;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 6. CAMPUS STORIES / STATUS SEGMENTS
+ * ---------------------------------------------------------------------------
+ */
+
+.status-row {
+    display: flex;
+    gap: var(--space-md);
+    overflow-x: auto;
+    padding: var(--space-md) 0;
+    scrollbar-width: none;
+}
+
+.status-row::-webkit-scrollbar { display: none; }
+
+.status-item {
+    flex-shrink: 0;
+    text-align: center;
+    cursor: pointer;
+    width: 80px;
+}
+
+.status-circle {
+    width: 75px;
+    height: 75px;
+    border-radius: var(--radius-circle);
+    padding: 3px;
+    border: 2px solid var(--primary-neon);
+    margin-bottom: 8px;
+    transition: transform var(--anim-fast) ease;
+}
+
+.status-circle img {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-circle);
+    object-fit: cover;
+}
+
+.status-item:active .status-circle {
+    transform: scale(0.9);
+}
+
+/* Barras de progresso de Status (Segmentadas) */
+.status-progress-container {
+    display: flex;
+    gap: 4px;
+    padding: 10px;
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    z-index: 10;
+}
+
+.status-progress-segment {
+    height: 3px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.status-progress-fill {
+    height: 100%;
+    background: var(--primary-neon);
+    width: 0%;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 7. MODAIS E BOTTOM SHEETS (DIALOGUE ENGINE)
+ * ---------------------------------------------------------------------------
+ */
+
+.vlog-modal {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-dark-heavy);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    animation: slideInUp var(--anim-normal) var(--ease-out-expo);
+}
+
+.modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border-dark-heavy);
+    border-radius: var(--radius-pill);
+    margin: 15px auto;
+}
+
+.vlog-bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 85vh;
+    background: var(--surface-dark);
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    z-index: var(--z-modal);
+    overflow-y: auto;
+    border-top: 1px solid var(--border-dark-heavy);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 8. TELEMETRIA E INDICADORES (DATA VIS)
+ * ---------------------------------------------------------------------------
+ */
+
+.progress-vlog {
+    height: 8px;
+    background: var(--dark-800);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.progress-vlog-bar {
+    height: 100%;
+    background: var(--gradient-points);
+    border-radius: var(--radius-pill);
+}
+
+.badge-vlog {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: var(--weight-black);
+    text-transform: uppercase;
+}
+
+.badge-neon { background: var(--p-neon-10); color: var(--primary-neon); border: 1px solid var(--p-neon-30); }
+.badge-purple { background: var(--a-purple-10); color: var(--accent-purple); border: 1px solid var(--a-purple-30); }
+
+/*
+ * ---------------------------------------------------------------------------
+ * 9. COMPONENTES DE CHAT (MESSAGING UI)
+ * ---------------------------------------------------------------------------
+ */
+
+.chat-bubble {
+    max-width: 75%;
+    padding: 16px 20px;
+    border-radius: 22px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.chat-bubble-me {
+    background: var(--primary-neon);
+    color: black;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+    font-weight: var(--weight-medium);
+}
+
+.chat-bubble-other {
+    background: var(--glass-bg);
+    color: white;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+    border: 1px solid var(--glass-border);
+}
+
+.chat-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 10. COMPONENTES DE VÍDEO (REEL CONTROLS)
+ * ---------------------------------------------------------------------------
+ */
+
+.reel-action-column {
+    position: absolute;
+    right: 15px;
+    bottom: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
+}
+
+.reel-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: white;
+}
+
+.reel-action-btn i {
+    font-size: 28px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.reel-action-btn span {
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+}
+
+/**
+ * ============================================================================
+ * FIM DO ARQUIVO DE COMPONENTES - VLOGSTUDENTS ENTERPRISE EDITION
+ * TOTAL DE LINHAS DECLARADAS: 550+ (Design Kit Completo)
+ * ============================================================================
+ */

@@ -1,0 +1,255 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - SIGNUP VIEW v1.0.0
+ * PORTAL DE CRIAÇÃO DE IDENTIDADE ACADÊMICA & NETWORKING
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Staggered UI: Animação sequencial (0.1s de intervalo) para cada input.
+ * - Referral Engine: Campo opcional para injeção de convites (Bônus Neon).
+ * - Compliance Guard: Validação de Termos de Uso e Conduta Acadêmica.
+ * - Glassmorphism v2: Blur intenso de 45px para isolamento do formulário.
+ * - High Contrast: Calibragem para leitura perfeita em qualquer brilho.
+ * ============================================================================
+-->
+
+<div id="signup-view-container" class="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-5">
+
+    <!-- CAMADA ATMOSFÉRICA (AURA PURPLE/NEON) -->
+    <div class="ambient-glow glow-bottom-left animate__animated animate__fadeIn"></div>
+    <div class="ambient-glow glow-top-right animate__animated animate__fadeIn opacity-50"></div>
+
+    <div class="row w-100 justify-content-center">
+        <div class="col-12 col-sm-11 col-md-9 col-lg-6 col-xl-5">
+
+            <!-- VOLTAR AO LOGIN -->
+            <div class="mb-4 animate__animated animate__fadeInLeft">
+                <a href="#/auth/login" class="btn-vlog-circle" style="width: 48px; height: 48px;">
+                    <i class="fas fa-chevron-left text-white"></i>
+                </a>
+            </div>
+
+            <!-- CARD DE CADASTRO (CHAPA DESIGN) -->
+            <div class="auth-card p-4 p-md-5 animate__animated animate__fadeInUp">
+
+                <!-- HEADER INSPIRACIONAL -->
+                <header class="mb-5">
+                    <h1 class="h1 fw-black text-white ls-tight mb-2 animate__animated animate__fadeInDown animate__delay-1s">
+                        Criar Conta<br><span class="text-neon">Acadêmica</span>
+                    </h1>
+                    <p class="text-muted text-small fw-semibold animate__animated animate__fadeIn animate__delay-1s">
+                        Garanta agora seu bônus de <span class="text-neon">+100 Voices (VS)</span>
+                    </p>
+                </header>
+
+                <!-- FORMULÁRIO DE REGISTRO -->
+                <form id="vlog-signup-form" class="row g-3">
+
+                    <!-- CAMPO: NOME COMPLETO -->
+                    <div class="col-12 vlog-input-group animate__animated animate__fadeInUp animate__delay-1s">
+                        <label class="vlog-input-label">Nome e Sobrenome</label>
+                        <div class="position-relative">
+                            <i class="fas fa-user-graduate vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="text" id="signup-name" class="vlog-input-field ps-5" placeholder="Como deseja ser chamado?" required minlength="3">
+                        </div>
+                    </div>
+
+                    <!-- CAMPO: E-MAIL ACADÊMICO -->
+                    <div class="col-12 vlog-input-group animate__animated animate__fadeInUp animate__delay-2s">
+                        <label class="vlog-input-label">E-mail da sua Faculdade</label>
+                        <div class="position-relative">
+                            <i class="fas fa-envelope vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="email" id="signup-email" class="vlog-input-field ps-5" placeholder="exemplo@universidade.edu" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 vlog-input-group animate__animated animate__fadeInUp animate__delay-3s">
+                        <label class="vlog-input-label">Crie uma Senha</label>
+                        <div class="vlog-password-container">
+                            <i class="fas fa-shield-alt vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="password" id="signup-password" class="vlog-input-field ps-5" placeholder="Min. 6 caracteres" required minlength="6">
+                        </div>
+                    </div>
+
+                    <!-- CAMPO: UNIVERSIDADE -->
+                    <div class="col-md-6 vlog-input-group animate__animated animate__fadeInUp animate__delay-3s">
+                        <label class="vlog-input-label">Sua Instituição</label>
+                        <div class="position-relative">
+                            <i class="fas fa-school vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="text" id="signup-university" class="vlog-input-field ps-5" placeholder="Nome da faculdade" required>
+                        </div>
+                    </div>
+
+                    <!-- CAMPO: REFERRAL CODE (MODERNO) -->
+                    <div class="col-12 vlog-input-group animate__animated animate__fadeInUp animate__delay-4s">
+                        <label class="vlog-input-label">Código de Convite (Opcional)</label>
+                        <div class="position-relative">
+                            <i class="fas fa-ticket-alt vlog-input-icon position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="text" id="signup-referral" class="vlog-input-field ps-5" placeholder="Tem um convite? Cole aqui para +25 VS">
+                        </div>
+                    </div>
+
+                    <!-- TERMOS DE USO -->
+                    <div class="col-12 mb-4 animate__animated animate__fadeIn animate__delay-4s">
+                        <div class="form-check custom-checkbox d-flex align-items-start gap-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" id="signup-terms" required>
+                            <label class="form-check-label text-muted text-xs fw-medium" for="signup-terms" style="cursor: pointer;">
+                                Concordo com os <span class="text-white">Termos de Conduta</span> e as <span class="text-white">Políticas de Privacidade</span> do Ecossistema VlogStudents Enterprise.
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- BOTÃO DE CRIAÇÃO MASTER -->
+                    <div class="col-12 mb-5 animate__animated animate__fadeInUp animate__delay-5s">
+                        <button type="submit" id="btn-signup-submit" class="btn-vlog-primary w-100 py-3">
+                            <span>CONCLUIR CADASTRO ACADÊMICO</span>
+                            <i class="fas fa-check-circle ms-2"></i>
+                        </button>
+                    </div>
+
+                    <!-- REDIRECIONAMENTO LOGIN -->
+                    <footer class="text-center animate__animated animate__fadeInUp animate__delay-5s">
+                        <p class="text-muted text-small">
+                            Já é um membro?
+                            <a href="#/auth/login" class="text-white fw-black text-decoration-underline ms-1 hover-neon">Acesse sua conta</a>
+                        </p>
+                    </footer>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LÓGICA DE CONTROLE DA VIEW SIGNUP -->
+<script>
+    /**
+     * Objeto de Controle da View de Cadastro
+     */
+    const VlogSignup = {
+        init() {
+            console.log("[VIEW] Signup Engine Inicializada.");
+            this._setupValidation();
+
+            if(window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('ui', 'Signup Page Loaded');
+        },
+
+        _setupValidation() {
+            const form = document.getElementById('vlog-signup-form');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const terms = document.getElementById('signup-terms').checked;
+                if (!terms) {
+                    window.dispatchEvent(new CustomEvent('vlog_notification', {
+                        detail: { message: "Você precisa aceitar os termos de conduta.", type: "warning" }
+                    }));
+                    return;
+                }
+
+                const userData = {
+                    fullName: document.getElementById('signup-name').value,
+                    email: document.getElementById('signup-email').value,
+                    password: document.getElementById('signup-password').value,
+                    university: document.getElementById('signup-university').value,
+                    referralCode: document.getElementById('signup-referral').value
+                };
+
+                this._setLoading(true);
+
+                try {
+                    // Chamada ao Kernel de Autenticação Central
+                    const success = await window.VlogAuth.register(userData);
+                    if (success) {
+                        // Sincroniza com o Feed se for o primeiro acesso
+                        window.location.hash = "#/home/feed";
+                    }
+                } catch (error) {
+                    // Erros reportados via Toast global
+                } finally {
+                    this._setLoading(false);
+                }
+            });
+        },
+
+        _setLoading(isLoading) {
+            const btn = document.getElementById('btn-signup-submit');
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO...`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<span>CONCLUIR CADASTRO ACADÊMICO</span><i class="fas fa-check-circle ms-2"></i>`;
+            }
+        }
+    };
+
+    // Auto-execução após carregamento do template
+    VlogSignup.init();
+</script>
+
+<style>
+    /* COMPLEMENTOS DE DESIGN SIGNUP */
+    #signup-view-container {
+        position: relative;
+        z-index: 1;
+        overflow-y: auto;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: var(--blur-lg);
+        -webkit-backdrop-filter: var(--blur-lg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        transition: transform var(--anim-normal) ease;
+    }
+
+    /* Estilização customizada do Checkbox Neon */
+    .custom-checkbox .form-check-input {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 2px solid var(--glass-border);
+        width: 22px;
+        height: 22px;
+        margin-top: 2px;
+        cursor: pointer;
+        transition: all var(--anim-fast) ease;
+    }
+
+    .custom-checkbox .form-check-input:checked {
+        background-color: var(--primary-neon);
+        border-color: var(--primary-neon);
+        box-shadow: var(--neon-shadow);
+    }
+
+    .custom-checkbox .form-check-input:focus {
+        box-shadow: none;
+        border-color: var(--primary-neon);
+    }
+
+    /* Grid Responsivo para Mobile */
+    @media (max-width: 576px) {
+        .auth-card {
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+            padding: 20px !important;
+        }
+
+        .h1 {
+            font-size: 2.5rem;
+        }
+    }
+
+    /* Staggered Delay Utilities */
+    .animate__delay-1s { --animate-delay: 0.15s; }
+    .animate__delay-2s { --animate-delay: 0.25s; }
+    .animate__delay-3s { --animate-delay: 0.35s; }
+    .animate__delay-4s { --animate-delay: 0.45s; }
+    .animate__delay-5s { --animate-delay: 0.55s; }
+</style>

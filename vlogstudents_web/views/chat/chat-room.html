@@ -1,0 +1,197 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - CHAT ROOM VIEW v1.0.0
+ * ENGINE DE MENSAGERIA INSTANTÂNEA E MEDIA EXCHANGE
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ * ============================================================================
+-->
+
+<div id="chat-room-view" class="vh-100 vw-100 d-flex flex-column bg-black position-relative">
+
+    <!-- 1. APP BAR (ADAPTIVE BLUR) -->
+    <header class="navbar-glass py-3 px-4 d-flex align-items-center gap-3">
+        <button class="btn-vlog-circle-sm" onclick="window.history.back()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <div class="d-flex align-items-center flex-grow-1 gap-3 clickable" onclick="VlogChatRoom.openUserProfile()">
+            <div class="position-relative">
+                <img id="room-target-avatar" src="" class="vlog-avatar-sm rounded-circle">
+                <div id="room-target-status" class="online-indicator"></div>
+            </div>
+            <div>
+                <h6 id="room-target-name" class="mb-0 fw-black text-white ls-tight">Carregando...</h6>
+                <small id="room-typing-indicator" class="text-success fw-bold d-none animate__animated animate__pulse animate__infinite">escrevendo...</small>
+                <small id="room-target-sub" class="text-muted text-xs">Online no campus</small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-1">
+            <button class="btn-vlog-circle-sm" onclick="VlogChatRoom.startCall('voice')">
+                <i class="fas fa-phone-alt"></i>
+            </button>
+            <button class="btn-vlog-circle-sm" onclick="VlogChatRoom.startCall('video')">
+                <i class="fas fa-video"></i>
+            </button>
+            <button class="btn-vlog-circle-sm">
+                <i class="fas fa-info-circle"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. MESSAGE STREAM (REVERSE) -->
+    <div id="messages-container" class="flex-grow-1 overflow-y-auto p-4 d-flex flex-column no-scrollbar" style="margin-top: 80px;">
+        <!-- Mensagens injetadas via assets/js/modules/chat.js -->
+    </div>
+
+    <!-- 3. INPUT PILL DOCK (WHATSAPP STYLE) -->
+    <div class="chat-input-dock p-3 pb-4">
+        <div class="d-flex align-items-end gap-2 px-2">
+
+            <!-- ATTACHMENT ACTION -->
+            <button class="btn-vlog-circle" style="background: rgba(255,255,255,0.1);" onclick="VlogChatRoom.openMediaVault()">
+                <i class="fas fa-plus"></i>
+            </button>
+
+            <!-- COMPACT PILL INPUT -->
+            <div class="flex-grow-1 glass-morphism rounded-pill px-4 d-flex align-items-center">
+                <textarea
+                        id="chat-input-field"
+                        rows="1"
+                        class="vlog-text-input py-3"
+                        placeholder="Diz algo ao campus..."
+                        oninput="VlogChatRoom.handleInput(this)"
+                ></textarea>
+                <button class="ms-2 text-muted hover-neon">
+                    <i class="far fa-smile fa-lg"></i>
+                </button>
+            </div>
+
+            <!-- DUAL ACTION: MIC / SEND -->
+            <button id="btn-chat-action" class="btn-vlog-primary rounded-circle" style="width: 52px; height: 52px; padding: 0;" onclick="VlogChatRoom.submit()">
+                <i class="fas fa-microphone" id="chat-action-icon"></i>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- 4. MEDIA VAULT OVERLAY (HIDDEN) -->
+    <div id="media-vault-overlay" class="vlog-bottom-sheet d-none">
+        <div class="modal-handle"></div>
+        <div class="p-5">
+            <div class="row g-4 text-center">
+                <div class="col-4">
+                    <div class="vault-icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-image fa-2x"></i>
+                    </div>
+                    <span class="text-xs fw-bold mt-2 d-block">GALERIA</span>
+                </div>
+                <div class="col-4">
+                    <div class="vault-icon-box bg-danger bg-opacity-10 text-danger">
+                        <i class="fas fa-camera fa-2x"></i>
+                    </div>
+                    <span class="text-xs fw-bold mt-2 d-block">CÂMERA</span>
+                </div>
+                <div class="col-4">
+                    <div class="vault-icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-file-pdf fa-2x"></i>
+                    </div>
+                    <span class="text-xs fw-bold mt-2 d-block">DOCUMENTO</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const VlogChatRoom = {
+        _isTyping: false,
+        _typingTimer: null,
+
+        init() {
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            const roomId = urlParams.get('id');
+
+            if (roomId) {
+                window.VlogChat.loadMessages(roomId);
+                this._setupInputSync();
+            }
+        },
+
+        handleInput(el) {
+            // Auto-expansão do textarea
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+
+            const actionIcon = document.getElementById('chat-action-icon');
+            const hasText = el.value.trim().length > 0;
+
+            // Muda ícone Mic -> Send
+            actionIcon.className = hasText ? 'fas fa-paper-plane' : 'fas fa-microphone';
+
+            // Watchdog de Digitação
+            this._triggerTypingSignal();
+        },
+
+        _triggerTypingSignal() {
+            if (!this._isTyping) {
+                this._isTyping = true;
+                window.VlogSocketManager.sendTypingStatus(true);
+            }
+            clearTimeout(this._typingTimer);
+            this._typingTimer = setTimeout(() => {
+                this._isTyping = false;
+                window.VlogSocketManager.sendTypingStatus(false);
+            }, 2000);
+        },
+
+        submit() {
+            const input = document.getElementById('chat-input-field');
+            const content = input.value.trim();
+
+            if (content) {
+                window.VlogChat.sendMessage(content);
+                input.value = '';
+                input.style.height = 'auto';
+                this.handleInput(input);
+            } else {
+                // Gatilho de gravação de áudio acadêmico
+                window.VlogMain._showToast("Iniciando gravação de áudio...", "success");
+            }
+        },
+
+        openMediaVault() {
+            const vault = document.getElementById('media-vault-overlay');
+            vault.classList.toggle('d-none');
+            if("vibrate" in navigator) navigator.vibrate(20);
+        }
+    };
+
+    VlogChatRoom.init();
+</script>
+
+<style>
+    .vlog-text-input {
+        background: transparent;
+        border: none;
+        color: white;
+        width: 100%;
+        resize: none;
+        max-height: 150px;
+        padding: 10px 0;
+    }
+
+    .vlog-text-input:focus { outline: none; }
+
+    .vault-icon-box {
+        width: 70px; height: 70px;
+        border-radius: 20px;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto;
+        transition: transform 0.2s ease;
+    }
+
+    .vault-icon-box:active { transform: scale(0.9); }
+</style>

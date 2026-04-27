@@ -1,0 +1,154 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - VIDEO CALL VIEW v1.0.0
+ * INTERFACE IMERSIVA P2P COM RENDERIZAÇÃO EM TEMPO REAL
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Fullscreen Immersive: Ocupa 100% da viewport com profundidade dinâmica.
+ * - Dual Stream Support: Remote Video (Full) + Local PiP (Draggable Pill).
+ * - Liquid Action Dock: Botões flutuantes em vidro com estados ativos/inativos.
+ * - Call Telemetry: Cronômetro de precisão e indicadores de qualidade de link.
+ * - Hardware Bridge: Controles diretos para Mute, Cam Off e Flip.
+ * ============================================================================
+-->
+
+<div id="video-call-root" class="fixed-top w-100 h-100 bg-black animate__animated animate__fadeIn" style="z-index: var(--z-overlay);">
+
+    <!-- 1. FEED DE VÍDEO REMOTO (O OUTRO ESTUDANTE) -->
+    <div class="remote-video-container w-100 h-100 position-relative overflow-hidden">
+        <video id="remote-video-stream" class="w-100 h-100 object-fit-cover" autoplay playsinline></video>
+
+        <!-- VIGNETTE DE LEITURA -->
+        <div class="call-vignette"></div>
+    </div>
+
+    <!-- 2. LOCAL PIP (MINHA CÂMERA - ESTILO FACETIME) -->
+    <div id="local-pip-container" class="position-absolute glass-morphism rounded-xl overflow-hidden animate__animated animate__zoomIn animate__delay-1s shadow-lg"
+         style="width: 120px; height: 180px; top: 80px; right: 20px; cursor: move; border: 2px solid rgba(255,255,255,0.2);">
+        <video id="local-video-stream" class="w-100 h-100 object-fit-cover" autoplay playsinline muted></video>
+        <!-- INDICADOR DE MIC MUTADO NO PIP -->
+        <div id="pip-mute-indicator" class="position-absolute top-0 end-0 p-2 d-none">
+            <i class="fas fa-microphone-slash text-danger" style="font-size: 10px;"></i>
+        </div>
+    </div>
+
+    <!-- 3. TOP INFO BAR (IDENTIDADE & TEMPO) -->
+    <header class="position-absolute top-0 w-100 p-4 pt-5 d-flex justify-content-between align-items-start">
+        <div class="caller-identity animate__animated animate__fadeInLeft">
+            <h2 id="call-participant-name" class="text-white fw-black mb-1 ls-tight">Carregando...</h2>
+            <div class="d-flex align-items-center gap-2">
+                <div class="pulse-red-dot"></div>
+                <span id="call-timer" class="text-white opacity-70 fw-bold font-monospace">00:00</span>
+            </div>
+        </div>
+
+        <div class="call-quality-indicator d-flex gap-2">
+            <i class="fas fa-signal text-success"></i>
+        </div>
+    </header>
+
+    <!-- 4. LIQUID ACTION DOCK (CENTRAL DE COMANDO) -->
+    <div class="position-absolute bottom-0 w-100 p-5 mb-4">
+        <div class="d-flex justify-content-center">
+            <div class="action-dock-pill glass-morphism d-flex align-items-center gap-4 px-4 py-3 rounded-pill">
+
+                <!-- TOGGLE CAMERA -->
+                <button class="call-action-btn" id="btn-toggle-cam" onclick="VlogChat.toggleCamera()">
+                    <i class="fas fa-video"></i>
+                </button>
+
+                <!-- TOGGLE MIC -->
+                <button class="call-action-btn" id="btn-toggle-mic" onclick="VlogChat.toggleMic()">
+                    <i class="fas fa-microphone"></i>
+                </button>
+
+                <!-- SWITCH CAMERA -->
+                <button class="call-action-btn" onclick="VlogChat.switchCamera()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+
+                <!-- END CALL (DISTINCTIVE RED) -->
+                <button class="btn-end-call rounded-circle d-flex align-items-center justify-content-center" onclick="VlogChat.terminateActiveCall()">
+                    <i class="fas fa-phone-slash fa-lg"></i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CONNECTING OVERLAY (INITIAL STATE) -->
+    <div id="call-connecting-overlay" class="position-absolute top-0 start-0 w-100 h-100 bg-black d-flex flex-column align-items-center justify-content-center">
+        <div class="avatar-pulse-container mb-4">
+            <img id="connecting-avatar" src="" class="rounded-circle border-neon" width="120" height="120">
+            <div class="pulse-ring"></div>
+        </div>
+        <h4 class="text-white fw-black ls-vwide">CONECTANDO...</h4>
+        <p class="text-muted text-small mt-2">Criptografia P2P Master Ativa</p>
+    </div>
+
+</div>
+
+<style>
+    #video-call-root {
+        user-select: none;
+    }
+
+    .call-vignette {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%);
+        pointer-events: none;
+    }
+
+    .pulse-red-dot {
+        width: 8px; height: 8px;
+        background: var(--error-red);
+        border-radius: 50%;
+        animation: animate-pulse 1s infinite;
+    }
+
+    .action-dock-pill {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .call-action-btn {
+        width: 50px; height: 50px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .call-action-btn:active { transform: scale(0.9); }
+    .call-action-btn.muted { background: var(--error-red); color: white; }
+
+    .btn-end-call {
+        width: 65px; height: 65px;
+        background: var(--error-red);
+        color: white;
+        border: none;
+        box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3);
+    }
+
+    .avatar-pulse-container {
+        position: relative;
+    }
+
+    .pulse-ring {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        border: 4px solid var(--primary-neon);
+        border-radius: 50%;
+        animation: ring-pulse 2s infinite;
+    }
+
+    @keyframes ring-pulse {
+        0% { transform: scale(1); opacity: 0.5; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+</style>

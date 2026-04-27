@@ -1,0 +1,283 @@
+<!--
+ * ============================================================================
+ * VLOGSTUDENTS ENTERPRISE WEB - PROFILE VIEW v1.0.0
+ * ORQUESTRADOR DE IDENTIDADE, PRESTÍGIO ACADÊMICO & GESTÃO DE MÍDIA
+ *
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ *
+ * Engenharia de Interface:
+ * - Anti-Stall Engine: Carregamento reativo sincronizado com Neon DB.
+ * - Identity Matrix: Avatar com anel de gradiente e selo de influência (VS).
+ * - Action Control Center: Botões dinâmicos (Edit/Earn vs Follow/Chat/Call).
+ * - Media Grid Engine: Galeria de Vlogs em 3 colunas (High Performance).
+ * - Passport QR Kernel: Modal de convite VIP com QR Code real.
+ * ============================================================================
+-->
+
+<div id="profile-root-container" class="h-100 vw-100 overflow-y-auto no-scrollbar animate__animated animate__fadeIn">
+
+    <!-- 1. CAMADA ATMOSFÉRICA (AURA NEON) -->
+    <div class="ambient-glow glow-top-right opacity-50"></div>
+
+    <!-- 2. STICKY APP BAR (FIDELITY MATCH) -->
+    <header class="navbar-glass sticky-top py-3 px-4 d-flex align-items-center justify-content-between">
+        <button id="profile-back-btn" class="btn-vlog-circle-sm" onclick="window.history.back()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <h6 id="profile-header-handle" class="mb-0 fw-black text-white ls-vwide text-uppercase" style="font-size: 13px;">@estudante.vlog</h6>
+
+        <button class="btn-vlog-circle-sm" onclick="VlogProfileView.openPassport()">
+            <i class="fas fa-qrcode"></i>
+        </button>
+    </header>
+
+    <div class="container-fluid py-4">
+
+        <!-- 3. PRIMARY IDENTITY SECTION -->
+        <section class="text-center mb-5">
+            <!-- AVATAR RENDERER -->
+            <div id="profile-avatar-render" class="mb-4">
+                <div class="shimmer-loader rounded-circle mx-auto" style="width: 130px; height: 130px;"></div>
+            </div>
+
+            <h2 id="profile-full-name" class="fw-black text-white ls-tight mb-2">CARREGANDO...</h2>
+
+            <!-- ACADEMIC TAG -->
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-4" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <i class="fas fa-school text-muted text-xs"></i>
+                <span id="profile-university-name" class="text-muted fw-bold ls-wide" style="font-size: 10px;">CAMPUS DIGITAL</span>
+            </div>
+
+            <!-- INFLUENCE SEAL (VS POINTS) -->
+            <div class="d-block mb-4">
+                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill border-neon-subtle bg-dark">
+                    <i class="fas fa-verified text-neon"></i>
+                    <span id="profile-points-total" class="fw-black text-neon h5 mb-0">0 VS</span>
+                </div>
+            </div>
+
+            <!-- BIOGRAPHY -->
+            <div class="px-5 mb-5">
+                <p id="profile-biography-text" class="text-secondary fst-italic ls-wide" style="font-size: 14px;">
+                    Sincronizando jornada acadêmica...
+                </p>
+            </div>
+
+            <!-- 4. METRICS DASHBOARD -->
+            <div class="metrics-grid glass-morphism rounded-xl py-4 mx-4 d-flex justify-content-around">
+                <div class="metric-item text-center">
+                    <h4 id="profile-stat-posts" class="fw-black text-white mb-0">0</h4>
+                    <span class="text-muted fw-bold ls-vwide" style="font-size: 9px;">VLOGS</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item text-center">
+                    <h4 id="profile-stat-followers" class="fw-black text-white mb-0">0</h4>
+                    <span class="text-muted fw-bold ls-vwide" style="font-size: 9px;">SEGUIDORES</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item text-center">
+                    <h4 id="profile-stat-following" class="fw-black text-white mb-0">0</h4>
+                    <span class="text-muted fw-bold ls-vwide" style="font-size: 9px;">SEGUINDO</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ACTION CONTROL CENTER (DINÂMICO) -->
+        <section id="profile-action-controls" class="mb-5 px-4 d-flex gap-3">
+            <!-- Injetado por modules/profile.js baseando-se em _isMe -->
+        </section>
+
+        <!-- 6. MEDIA TABS & GRID -->
+        <section class="media-section">
+            <ul class="nav nav-tabs border-0 justify-content-center gap-5 mb-2" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active border-0 bg-transparent text-muted py-3" id="vlogs-tab" data-bs-toggle="tab" data-bs-target="#vlogs-grid-pane" type="button">
+                        <i class="fas fa-grid-2 fa-lg"></i>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link border-0 bg-transparent text-muted py-3" id="saved-tab" data-bs-toggle="tab" data-bs-target="#saved-grid-pane" type="button">
+                        <i class="fas fa-bookmark fa-lg"></i>
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="profileTabsContent">
+                <!-- GRID DE VLOGS REAIS -->
+                <div class="tab-pane fade show active" id="vlogs-grid-pane" role="tabpanel">
+                    <div id="profile-vlogs-grid" class="row g-1 px-1">
+                        <!-- Vlogs injetados aqui -->
+                    </div>
+                </div>
+                <!-- GRID DE SALVAMENTOS (PLACEHOLDER) -->
+                <div class="tab-pane fade" id="saved-grid-pane" role="tabpanel">
+                    <div class="text-center p-5 opacity-20">
+                        <i class="fas fa-lock fa-3x mb-3"></i>
+                        <p class="fw-black">SALVAMENTOS PRIVADOS</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div style="height: 120px;"></div>
+    </div>
+
+    <!-- 7. PASSPORT QR MODAL (BOTTOM SHEET) -->
+    <div id="passport-modal" class="vlog-bottom-sheet d-none">
+        <div class="modal-handle"></div>
+        <div class="p-5 text-center">
+            <h5 class="fw-black text-white ls-vwide mb-4">MEU PASSAPORTE</h5>
+            <div id="profile-passport-qr" class="bg-white p-4 d-inline-block rounded-xl mb-4">
+                <!-- QR CODE INJECTED HERE -->
+            </div>
+            <h4 id="passport-handle" class="text-neon fw-black">@estudante.vlog</h4>
+            <p class="text-muted text-small mt-3">Aponte a câmera para convidar este colega para sua rede.</p>
+            <button class="btn-vlog-primary w-100 mt-4" onclick="VlogProfileView.closePassport()">CONCLUÍDO</button>
+        </div>
+    </div>
+
+    <!-- 8. SYNC OVERLAY (SAVE MODAL) -->
+    <div id="sync-overlay" class="fixed-top w-100 h-100 bg-black bg-opacity-80 d-none flex-column align-items-center justify-content-center" style="z-index: 2000;">
+        <div class="spinner-border text-neon mb-3" style="width: 3rem; height: 3rem;"></div>
+        <h5 id="sync-overlay-text" class="text-white fw-bold">Sincronizando...</h5>
+    </div>
+
+</div>
+
+<!-- LÓGICA DE INTERFACE LOCAL -->
+<script>
+    const VlogProfileView = {
+        init() {
+            console.log("[VIEW] Identity Hub Online.");
+
+            // Captura ID da rota se houver (ex: #/profile/view?id=123)
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            const targetId = urlParams.get('id') || 'me';
+
+            // Ativa o módulo global de perfil
+            if(window.VlogProfile) {
+                window.VlogProfile.init(targetId);
+            }
+
+            this._handleScrollEffect();
+        },
+
+        _handleScrollEffect() {
+            const container = document.getElementById('profile-root-container');
+            const header = document.querySelector('.navbar-glass');
+
+            container.addEventListener('scroll', () => {
+                if (container.scrollTop > 50) {
+                    header.style.backgroundColor = "rgba(0, 0, 0, 0.9)";
+                    header.style.borderBottomColor = "var(--glass-border)";
+                } else {
+                    header.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+                    header.style.borderBottomColor = "transparent";
+                }
+            });
+        },
+
+        openPassport() {
+            const modal = document.getElementById('passport-modal');
+            modal.classList.remove('d-none');
+            modal.classList.add('animate__slideInUp');
+            if(window.VlogProfile) window.VlogProfile.showPassportModal();
+        },
+
+        closePassport() {
+            const modal = document.getElementById('passport-modal');
+            modal.classList.add('animate__slideOutDown');
+            setTimeout(() => {
+                modal.classList.add('d-none');
+                modal.classList.remove('animate__slideOutDown', 'animate__slideInUp');
+            }, 500);
+        },
+
+        openEditModal() {
+            // Navega para a view de edição via Router
+            window.location.hash = "#/profile/edit";
+        }
+    };
+
+    VlogProfileView.init();
+</script>
+
+<style>
+    /*
+     * ========================================================================
+     * CSS DE ALTA FIDELIDADE - PROFILE HUB
+     * ========================================================================
+     */
+
+    .avatar-gradient-ring {
+        display: inline-block;
+        padding: 5px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        box-shadow: 0 0 30px rgba(204, 255, 0, 0.2);
+    }
+
+    .avatar-edit-badge {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 38px;
+        height: 38px;
+        background: var(--primary-neon);
+        border: 4px solid var(--bg-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black;
+        font-size: 14px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .border-neon-subtle {
+        border: 1px solid rgba(var(--primary-neon-rgb), 0.3);
+    }
+
+    .metrics-grid {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--glass-border);
+    }
+
+    .metric-divider {
+        width: 1px;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.05);
+        align-self: center;
+    }
+
+    /* Vlogs Grid Layout */
+    .vlog-grid-item {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        background: #111;
+        overflow: hidden;
+    }
+
+    .vlog-grid-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .vlog-grid-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 50%);
+    }
+
+    /* Tab States */
+    .nav-tabs .nav-link.active {
+        color: var(--primary-neon) !important;
+        border-bottom: 3px solid var(--primary-neon) !important;
+    }
+
+    #profile-vlogs-grid .vlog-grid-item {
+        border: 0.5px solid rgba(0,0,0,0.5);
+    }
+</style>
