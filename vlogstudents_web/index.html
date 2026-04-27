@@ -3,13 +3,14 @@
 <head>
     <!--
      * ============================================================================
-     * VLOGSTUDENTS ENTERPRISE WEB - SUPREME ENTRYPOINT v41.0.0
+     * VLOGSTUDENTS ENTERPRISE WEB - SUPREME ENTRYPOINT v61.0.0
      * ORQUESTRADOR CENTRAL DE INFRAESTRUTURA VISUAL E LOGICA (NUCLEAR)
      *
      * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
      *
      * Arquitetura de Interface:
-     * - Purified Splash: Imersão total sem distrações visuais de branding.
+     * - Purified Splash: Imersão total apenas com atmosfera e motor de pulso.
+     * - Stamped Navigation: Liquid Bar configurada com rotas atômicas v61.
      * - Meta-Data Industrial: SEO, Social Graph (OG), Viewport-fit cover.
      * - Global Design Tokens: Matriz cromática neon e motores de Glassmorphism.
      * - Google Identity: Configuração GIS integrada para handshake Node.js.
@@ -23,24 +24,24 @@
 
     <title>VlogStudents | Campus Web Master</title>
 
-    <!-- FAVICON & APP ICONS -->
+    <!-- FAVICON & APP ICONS (FIDELITY ASSETS) -->
     <link rel="icon" type="image/png" href="/assets/images/logo.png">
     <link rel="apple-touch-icon" href="/assets/images/logo.png">
 
-    <!-- GOOGLE IDENTITY SERVICES CLIENT ID (WEB SYNC) -->
+    <!-- GOOGLE IDENTITY SERVICES CLIENT ID (WEB LOGIN FIX) -->
     <meta name="google-signin-client_id" content="435332250244-vh9rravt3cmf1vmng29rbbs4vj3iccle.apps.googleusercontent.com">
 
-    <!-- VENDOR CSS (EXTERNAL CORE) -->
+    <!-- VENDOR CSS (EXTERNAL INFRASTRUCTURE) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
     <!-- DNA VISUAL VLOGSTUDENTS (INDUSTRIAL KERNELS) -->
-    <link rel="stylesheet" href="/assets/css/variables.css">      <!-- Matriz Cromática -->
-    <link rel="stylesheet" href="/assets/css/style.css">          <!-- Global Layouts -->
-    <link rel="stylesheet" href="/assets/css/glassmorphism.css">   <!-- Glass Engine -->
-    <link rel="stylesheet" href="/assets/css/animations.css">     <!-- Keyframes & Transitions -->
-    <link rel="stylesheet" href="/assets/css/components.css">     <!-- UI Kit Master -->
+    <link rel="stylesheet" href="/assets/css/variables.css">      <!-- Design Tokens -->
+    <link rel="stylesheet" href="/assets/css/style.css">          <!-- Global Style & Resets -->
+    <link rel="stylesheet" href="/assets/css/glassmorphism.css">   <!-- Motor de Transparência -->
+    <link rel="stylesheet" href="/assets/css/animations.css">     <!-- Cinematic Transitions -->
+    <link rel="stylesheet" href="/assets/css/components.css">     <!-- UI Kit: Pill Bars, Cards -->
 
     <!-- FONTES ACADÊMICAS (LATÊNCIA ZERO) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,7 +52,7 @@
         /* CSS CRÍTICO (ANTI-FLASH & BOOTSTRAP VISUAL) */
         body { background-color: #000000; margin: 0; overflow: hidden; height: 100vh; width: 100vw; font-family: 'Inter', sans-serif; }
         
-        /* SPLASH SCREEN PURIFICADA (APENAS ATMOSFERA E LOADING) */
+        /* SPLASH SCREEN PURIFICADA (MÁXIMA IMERSÃO) */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #000000; z-index: 9999;
@@ -63,10 +64,10 @@
             position: absolute; width: 100%; height: 100%;
             background-image: url('/assets/images/background.png');
             background-size: cover; background-position: center; 
-            opacity: 0.5; /* Opacidade aumentada conforme solicitado */
+            opacity: 0.5; /* Opacidade calibrada para visibilidade do fundo */
         }
 
-        /* CONTAINER SPA (INJEÇÃO DE CONTEÚDO) */
+        /* CONTAINER SPA (INJEÇÃO DE CONTEÚDO DINÂMICO) */
         #app-router-view { 
             position: relative; width: 100%; height: 100vh; 
             display: none; z-index: 10;
@@ -74,12 +75,12 @@
             overflow-x: hidden;
         }
 
-        /* BARRA DE PROGRESSO DE ROTA (VIRTUAL LOADER) */
+        /* BARRA DE PROGRESSO DE CARREGAMENTO (VIRTUAL LOADER) */
         #global-page-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 3px;
             background: linear-gradient(to right, var(--primary-neon), var(--accent-cyan));
             z-index: 10000; display: none;
-            box-shadow: 0 0 12px var(--primary-neon);
+            box-shadow: 0 0 15px var(--primary-neon);
         }
 
         /* TOAST SYSTEM CONTAINER */
@@ -88,7 +89,7 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* CUSTOM SPINNER NEON */
+        /* CUSTOM SPINNER NEON (CONFORME IMAGEM) */
         .spinner-neon { 
             width: 4rem; height: 4rem; border-width: 0.15em; 
             color: var(--primary-neon) !important;
@@ -103,49 +104,55 @@
         <div class="ambient-glow glow-bottom-left"></div>
     </div>
 
-    <!-- 2. LOADER DE ROTA (PROGRESSIVE BAR) -->
+    <!-- 2. LOADER DE ROTA (BARRA SUPERIOR) -->
     <div id="global-page-loader"></div>
 
-    <!-- 3. SPLASH SCREEN PURIFICADA (THE CLEAN BOOT) -->
+    <!-- 3. SPLASH SCREEN PURIFICADA (BOOT CINEMÁTICO) -->
     <div id="splash-screen">
         <div class="splash-bg ken-burns"></div>
-        <!-- Removido branding e textos: Apenas animação de pulso industrial -->
+        <!-- Apenas o motor de pulso: Sem textos ou logos para foco no fundo -->
         <div class="spinner-border spinner-neon" role="status"></div>
     </div>
 
-    <!-- 4. MAIN VIEWPORT (CONTEÚDO DINÂMICO SPA) -->
-    <!-- Este container recebe os templates do /views via Orchestrator -->
+    <!-- 4. MAIN VIEWPORT (CONTEÚDO SPA) -->
     <main id="app-router-view"></main>
 
-    <!-- 5. LIQUID GLASS NAVIGATION HUB (FLOATING MASTER) -->
-    <!-- Visibilidade controlada dinamicamente via Main Orchestrator -->
+    <!-- 5. LIQUID GLASS NAVIGATION HUB (STAMPED PATHS v61) -->
     <div id="liquid-nav-container" class="liquid-nav-container" style="display: none;">
         <nav class="liquid-nav-bar glass-morphism glass-reflect">
+            
+            <!-- Rota: Feed Principal -->
             <a href="#/home/feed" class="nav-item active" data-nav="feed">
                 <i class="fas fa-home"></i>
                 <span>FEED</span>
             </a>
-            <a href="#/chat/list" class="nav-item" data-nav="chat">
+            
+            <!-- Rota: Inbox / Chat List -->
+            <a href="#/chat/chat-list" class="nav-item" data-nav="chat">
                 <div class="position-relative">
-                    <i class="fas fa-comment"></i>
+                    <i class="fas fa-comment-dots"></i>
                     <span id="global-unread-badge" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="display: none; font-size: 8px;">0</span>
                 </div>
                 <span>CHAT</span>
             </a>
 
-            <!-- AÇÃO CENTRAL: UPLOAD HUB -->
-            <a href="#/post/upload" class="nav-plus-btn">
+            <!-- AÇÃO CENTRAL: CREATE STATUS / UPLOAD HUB -->
+            <a href="#/status/create-status" class="nav-plus-btn">
                 <i class="fas fa-plus"></i>
             </a>
 
+            <!-- Rota: Dashboard de Pontos (Economy) -->
             <a href="#/points/dashboard" class="nav-item" data-nav="points">
-                <i class="fas fa-coins"></i>
-                <span>VOICES</span>
+                <i class="fas fa-chart-line"></i>
+                <span>POINTS</span>
             </a>
-            <a href="#/profile/view" class="nav-item" data-nav="profile">
-                <i class="fas fa-user-graduate"></i>
+
+            <!-- Rota: Perfil do Usuário -->
+            <a href="#/profile/view-profile" class="nav-item" data-nav="profile">
+                <i class="fas fa-user-circle"></i>
                 <span>PERFIL</span>
             </a>
+            
         </nav>
     </div>
 
@@ -168,25 +175,24 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- B. CORE KERNELS (MOTORES DE SISTEMA) -->
-    <script src="/assets/js/core/api.js"></script>        <!-- Axios Client & Interceptors -->
-    <script src="/assets/js/core/telemetry.js"></script>  <!-- Monitoramento & Error Tracking -->
+    <script src="/assets/js/core/api.js"></script>        <!-- Axios Client & Blindagem -->
+    <script src="/assets/js/core/telemetry.js"></script>  <!-- Monitoramento Industrial -->
     <script src="/assets/js/core/socket.js"></script>     <!-- Real-time Orchestrator -->
-    <script src="/assets/js/core/auth.js"></script>       <!-- Identity & Identity Manager -->
+    <script src="/assets/js/core/auth.js"></script>       <!-- Identity & Session Kernel -->
     
     <!-- C. UTILS (FERRAMENTAS DE DADOS) -->
-    <script src="/assets/js/utils/formatters.js"></script>     <!-- Intl, Datas, Currency -->
-    <script src="/assets/js/utils/media-resolver.js"></script>  <!-- Supabase/CDN Resolver -->
+    <script src="/assets/js/utils/formatters.js"></script>     <!-- Intl & Helpers -->
+    <script src="/assets/js/utils/media-resolver.js"></script>  <!-- Supabase Resolver -->
     
     <!-- D. MODULES (LÓGICA DE NEGÓCIO) -->
-    <script src="/assets/js/modules/feed.js"></script>    <!-- Reels, Likes, Comments -->
-    <script src="/assets/js/modules/chat.js"></script>    <!-- Messaging & Signaling -->
+    <script src="/assets/js/modules/feed.js"></script>    <!-- Reels Engine -->
+    <script src="/assets/js/modules/chat.js"></script>    <!-- Messaging -->
     <script src="/assets/js/modules/status.js"></script>  <!-- Stories Matrix -->
-    <script src="/assets/js/modules/points.js"></script>  <!-- Economy & Leaderboard -->
-    <script src="/assets/js/modules/profile.js"></script> <!-- User Metadata CRUD -->
+    <script src="/assets/js/modules/points.js"></script>  <!-- Economy Hub -->
+    <script src="/assets/js/modules/profile.js"></script> <!-- Profile Logic -->
     
     <!-- E. MAIN ORCHESTRATOR (O GRANDE MAESTRO) -->
-    <!-- Este script inicia o boot sequencial v41 -->
-    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/main.js"></script>           <!-- SPA Router Boot v61 -->
 
     <script>
         /**
@@ -198,7 +204,7 @@
                 'background: #000; color: #CCFF00; padding: 5px;');
         });
 
-        // Previne menu de contexto em produção para manter a estética industrial
+        // Previne menu de contexto em produção para manter a imersão industrial
         document.addEventListener('contextmenu', (e) => {
             if (window.location.hostname !== 'localhost') e.preventDefault();
         });
