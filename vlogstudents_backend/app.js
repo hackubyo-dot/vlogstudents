@@ -1,14 +1,14 @@
 /**
  * ============================================================================
  * VLOGSTUDENTS ENTERPRISE - MASTER EXPRESS APP v32.0.0 (ULTIMATE NUCLEAR EDITION)
- * SECURITY | NUCLEAR CORS ENGINE | PERFORMANCE | OBSERVABILITY | WEB & MOBILE SYNC
+ * SECURITY | RESTRICTED CORS ENGINE | PERFORMANCE | OBSERVABILITY | WEB & MOBILE SYNC
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
  * Engenharia de Fluxo:
  * - Trust Proxy: Otimizado para Render.com, AWS Cloudfront e Nginx.
  * - Traceability: Injeção de X-Vlog-Trace-Id e X-Request-Id em cada transação.
- * - Nuclear CORS: Configuração agressiva para resolver bloqueios de Preflight na Web.
+ * - Industrial CORS: Whitelist específica para a URL de produção e local (Web-Ready).
  * - Helmet Hardened: Cabeçalhos de segurança relaxados cirurgicamente para Flutter Web.
  * - Rate Limiting: Proteção contra ataques de negação de serviço (DoS) e Brute Force.
  * - Anti-Injection: Sanitização profunda recursiva de entradas de dados (Deep Sanitize).
@@ -39,13 +39,32 @@ app.set('trust proxy', 1);
 
 /**
  * ============================================================================
- * ☢️ NUCLEAR CORS ENGINE (WEB & MOBILE COMPATIBILITY)
- * Resolve permanentemente erros de 'CORS Preflight' e 'Method Not Allowed' na Web.
+ * 🧠 REQUEST TRACING & AUDIT ENGINE
+ * Injeta identificadores únicos para auditoria e monitoramento de falhas.
+ * ============================================================================
+ */
+app.use((req, res, next) => {
+    // Gera UUID universal para rastreamento de logs (Traceability)
+    req.id = crypto.randomUUID();
+    res.setHeader('X-Request-Id', req.id);
+    res.setHeader('X-Vlog-Trace-Id', req.id);
+    next();
+});
+
+/**
+ * ============================================================================
+ * ☢️ RESTRICTED NUCLEAR CORS ENGINE
+ * Whitelist oficial para produção e ambiente de desenvolvimento local.
+ * Resolve erros de Preflight e garante persistência de cookies/headers.
  * ============================================================================
  */
 const corsOptions = {
-    // origin: true reflete a origem da requisição, ideal para múltiplos domínios
-    origin: true, 
+    // Configuração de Whitelist solicitada
+    origin: [
+        'https://vlogstudents-web.onrender.com', 
+        'http://localhost:3000',
+        'http://localhost:5000' // Porta padrão alternativa
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
         'Content-Type', 
@@ -57,31 +76,17 @@ const corsOptions = {
         'Accept',
         'X-Vlog-Device-Fingerprint'
     ],
-    credentials: true,
+    credentials: true, // Essencial para sessões baseadas em cookies ou tokens manuais
     exposedHeaders: ['X-Request-Id', 'X-Vlog-Trace-Id'],
     preflightContinue: false,
     optionsSuccessStatus: 204
 };
 
-// Aplica o Middleware de CORS globalmente
+// Aplicação do Middleware CORS com as novas origens restritas
 app.use(cors(corsOptions));
 
-// NUCLEAR FIX: Responder imediatamente a requisições OPTIONS (Preflight) em todas as rotas
+// NUCLEAR FIX: Resposta imediata para Preflight em todos os endpoints
 app.options('*', cors(corsOptions));
-
-/**
- * ============================================================================
- * 🧠 REQUEST TRACING & AUDIT ENGINE
- * Injeta identificadores únicos para auditoria e monitoramento.
- * ============================================================================
- */
-app.use((req, res, next) => {
-    // Gera UUID para rastreamento de logs (Traceability)
-    req.id = crypto.randomUUID();
-    res.setHeader('X-Request-Id', req.id);
-    res.setHeader('X-Vlog-Trace-Id', req.id);
-    next();
-});
 
 /**
  * ============================================================================
@@ -105,14 +110,14 @@ app.use((req, res, next) => {
 /**
  * ============================================================================
  * 🔐 SECURITY HARDENING (HELMET RELAXED)
- * Proteção industrial ajustada para não bloquear mídias e scripts do Flutter Web.
+ * Proteção industrial ajustada para não bloquear os motores do Flutter Web (CanvasKit).
  * ============================================================================
  */
 app.use(
     helmet({
-        // crossOriginResourcePolicy permite carregar fotos do Supabase/Firebase no Flutter
+        // crossOriginResourcePolicy permite carregar recursos (fotos/vídeos) de outros domínios
         crossOriginResourcePolicy: { policy: "cross-origin" },
-        // contentSecurityPolicy desabilitado para compatibilidade com o motor CanvasKit do Flutter
+        // Desabilitado temporariamente para compatibilidade máxima com plugins do Flutter
         contentSecurityPolicy: false, 
         xssFilter: true,
         noSniff: true,
@@ -122,8 +127,8 @@ app.use(
 
 /**
  * ============================================================================
- * 🧼 DATA HYDRATION (PARSING)
- * Limite de 50MB para suportar uploads de vídeo (Reels) e Status.
+ * 🧼 DATA HYDRATION & PARSING
+ * Configurado para 50MB visando suportar Vlogs (Reels) e mídias pesadas.
  * ============================================================================
  */
 app.use(express.json({ limit: '50mb' }));
@@ -132,12 +137,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 /**
  * ============================================================================
  * 🛡️ ANTI-INJECTION RECURSIVA (DEEP SANITIZE)
- * Sanitização automática de entradas para prevenir injeções básicas e XSS.
+ * Motor de limpeza profunda para prevenir XSS e Injeções de SQL básicas.
  * ============================================================================
  */
 app.use((req, res, next) => {
     const sanitizeValue = (val) => {
         if (typeof val === 'string') {
+            // Remove caracteres de escape perigosos preservando o texto acadêmico
             return val.replace(/[<>;]/g, '').trim();
         }
         return val;
@@ -162,13 +168,13 @@ app.use((req, res, next) => {
 /**
  * ============================================================================
  * 🧾 INDUSTRIAL LOGGING (MORGAN)
- * Estruturação de logs para observabilidade.
+ * Estruturação de logs para observabilidade centralizada.
  * ============================================================================
  */
 if (env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
-    // Log estruturado JSON para produção
+    // Formato JSON estruturado para análise em Cloudwatch/Loki/Render Logs
     app.use(morgan((tokens, req, res) => {
         return JSON.stringify({
             timestamp: tokens.date(req, res, 'iso'),
@@ -186,21 +192,21 @@ if (env.NODE_ENV === 'development') {
 /**
  * ============================================================================
  * 🚫 PROTECTION LAYER (RATE LIMITING)
- * Protege contra spam de requisições e ataques de força bruta.
+ * Protege contra ataques de força bruta e inundações de requisições.
  * ============================================================================
  */
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
+    windowMs: 15 * 60 * 1000, // 15 Minutos
     max: 5000, 
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: "Tráfego excessivo. Tente novamente mais tarde." }
+    message: { success: false, message: "Tráfego excessivo. Tente mais tarde." }
 });
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 50, // Limite para rotas críticas de login/registro
-    message: { success: false, message: "Muitas tentativas de acesso. Bloqueio preventivo ativado." }
+    max: 50, // Maior rigor para login e registro
+    message: { success: false, message: "Muitas tentativas de acesso detectadas." }
 });
 
 app.use('/api/', globalLimiter);
@@ -209,7 +215,7 @@ app.use('/api/v1/auth', authLimiter);
 /**
  * ============================================================================
  * 📡 CORE API ROUTES
- * Ponto de entrada master para a v1 da API.
+ * Gateway principal para todos os controladores acadêmicos.
  * ============================================================================
  */
 app.use('/api/v1', routes);
@@ -217,13 +223,13 @@ app.use('/api/v1', routes);
 /**
  * ============================================================================
  * 🩺 HEALTH MONITORING (DEEP CHECK)
- * Monitora a saúde do servidor e a conectividade real com o Neon DB.
+ * Auditoria de saúde: Verifica servidor e conectividade transacional com Neon DB.
  * ============================================================================
  */
 app.get('/health', async (req, res) => {
     try {
         const start = Date.now();
-        // Ping transacional no banco de dados
+        // Ping transacional real
         await db.query('SELECT 1');
         const dbLatency = Date.now() - start;
 
@@ -249,29 +255,29 @@ app.get('/health', async (req, res) => {
 /**
  * ============================================================================
  * 🖥️ SERVER DASHBOARD (STYLIZED ROOT UI)
- * Página de confirmação visual do status operacional.
+ * Página visual de confirmação do status operacional.
  * ============================================================================
  */
 app.get('/', (req, res) => {
     res.status(200).send(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-br">
         <head>
             <title>VLOGSTUDENTS | NUCLEAR ENGINE</title>
             <style>
                 body { background: #0b0e14; color: #e2e8f0; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; }
                 .card { background: #161b22; padding: 40px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
                 .neon { color: #CCFF00; font-weight: 800; text-shadow: 0 0 15px rgba(204, 255, 0, 0.4); font-size: 28px; }
-                .badge { background: #238636; color: white; padding: 5px 15px; border-radius: 50px; font-size: 12px; font-weight: bold; }
-                .footer { margin-top: 20px; font-size: 10px; color: #484f58; font-family: monospace; }
+                .badge { background: #238636; color: white; padding: 5px 15px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+                .trace { margin-top: 25px; font-size: 10px; color: #484f58; font-family: monospace; }
             </style>
         </head>
         <body>
             <div class="card">
                 <h1>🚀 <span class="neon">VLOGSTUDENTS</span> ENTERPRISE</h1>
-                <p><span class="badge">OPERACIONAL</span></p>
-                <p style="color: #8b949e">Núcleo Node.js v32.0.0 Online</p>
-                <div class="footer">TRACE_ID: ${req.id}</div>
+                <p><span class="badge">Núcleo Operacional</span></p>
+                <p style="color: #8b949e">Gateway de Produção v32.0.0 Online</p>
+                <div class="trace">REQUEST_TRACE_ID: ${req.id}</div>
             </div>
         </body>
         </html>
@@ -280,33 +286,31 @@ app.get('/', (req, res) => {
 
 /**
  * ============================================================================
- * 💥 GLOBAL ERROR HANDLER (ZERO CRASH PROTOCOL)
- * Tratamento centralizado de exceções para evitar interrupções no serviço.
+ * 💥 MASTER ERROR HANDLER (ZERO CRASH PROTOCOL)
+ * Tratamento final de exceções para garantir 100% de Uptime.
  * ============================================================================
  */
 app.use((err, req, res, next) => {
     const isDev = env.NODE_ENV === 'development';
     
-    // Log detalhado para o engenheiro
     console.error('[CRITICAL_EXCEPTION]', {
         requestId: req.id,
         message: err.message,
-        stack: isDev ? err.stack : 'PROTECTED',
+        stack: isDev ? err.stack : 'REDACTED',
         path: req.originalUrl
     });
 
     res.status(err.status || 500).json({
         success: false,
-        message: 'Instabilidade detectada no núcleo acadêmico.',
+        message: 'Ocorreu uma instabilidade interna no campus acadêmico.',
         requestId: req.id,
-        // Exponencializa o erro apenas em desenvolvimento
         debug: isDev ? err.message : undefined
     });
 });
 
 /**
  * ============================================================================
- * EXPORTAÇÃO DO MÓDULO
+ * EXPORTAÇÃO DO MÓDULO PARA O SERVER ORCHESTRATOR
  * ============================================================================
  */
 module.exports = app;
@@ -315,6 +319,5 @@ module.exports = app;
  * ============================================================================
  * FIM DO MASTER EXPRESS APP v32.0.0
  * ESTE CÓDIGO É PROPRIEDADE INTELECTUAL DO ECOSSISTEMA VLOGSTUDENTS.
- * PRODUZIDO POR MASTER SOFTWARE ENGINEER.
  * ============================================================================
  */
