@@ -1,22 +1,24 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE - MASTER SERVER v21.0.0 (ULTIMATE MASTER)
- * HTTP | EXPRESS | SOCKET.IO SIGNALING | PRO MONITORING | ZERO ERROR
+ * VLOGSTUDENTS ENTERPRISE - MASTER SERVER v22.0.0 (GOLD EDITION)
+ * HTTP | EXPRESS | SOCKET.IO SIGNALING | STATIC WEB HOSTING | ZERO ERROR
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Engenharia de Infraestrutura:
- * - Anti-Latency: Fix de DNS para priorizar IPv4 (Conexão acelerada com Neon).
- * - Realtime Core: Engine Socket.io preparada para Handshake WebRTC (Video Calls).
- * - industrial Monitoring: Health Check avançado com latência de banco de dados.
- * - Route Scanner: Mapeamento automático de endpoints na inicialização.
- * - Dashboard 2.0: Interface web industrial para status do servidor em tempo real.
+ * Engenharia de Infraestrutura e Roteamento:
+ * - Web Frontend Mapping: Aponta a raiz (/) para o diretório vlogstudents_web.
+ * - SPA Route Support: Fallback para index.html em rotas não-API.
+ * - Signaling Core: Orquestração WebRTC para Chamadas de Voz/Vídeo ativa.
+ * - Industrial Monitoring: Dashboard de sistema movido para /system/status.
+ * - Anti-Latency: Priorização de IPv4 para comunicação ultra-rápida com Neon.
  * ============================================================================
  */
 
 const http = require('http');
 const os = require('os');
 const dns = require('dns');
+const path = require('path');
+const express = require('express');
 
 const app = require('./app');
 const env = require('./src/config/env');
@@ -28,7 +30,7 @@ const { Server } = require('socket.io');
 // ============================================================================
 // ⚡ NETWORK & PERFORMANCE OPTIMIZATION
 // ============================================================================
-// Prioriza IPv4 para evitar "stalls" na resolução de nomes com o Neon DB
+// Prioriza IPv4 para evitar latência na resolução de DNS do Render/Neon
 dns.setDefaultResultOrder('ipv4first');
 
 // ============================================================================
@@ -36,7 +38,7 @@ dns.setDefaultResultOrder('ipv4first');
 // ============================================================================
 const server = http.createServer(app);
 
-// Inicializa Socket.io com suporte a Signaling (WebRTC) e CORS Industrial
+// Inicializa Socket.io com suporte a Signaling (WebRTC) Industrial
 const io = new Server(server, {
     cors: { 
         origin: "*", 
@@ -44,7 +46,7 @@ const io = new Server(server, {
         credentials: true
     },
     transports: ['websocket', 'polling'],
-    allowEIO3: true // Compatibilidade retroativa
+    allowEIO3: true
 });
 
 // Injeção do Gerenciador de Sockets (Chat + Call Signaling)
@@ -52,7 +54,19 @@ const { initializeSocket } = require('./src/socket/socketManager');
 initializeSocket(io);
 
 // ============================================================================
-// 🎨 DASHBOARD HTML (VISUAL MASTER NEON)
+// 📂 WEB FRONTEND CONFIGURATION (STATIC HOSTING)
+// ============================================================================
+/**
+ * Localização do diretório Web em relação ao Backend.
+ * No Render, os diretórios vlogstudents_backend e vlogstudents_web são irmãos.
+ */
+const webPath = path.join(__dirname, '../vlogstudents_web');
+
+// 1. Servir ficheiros estáticos (CSS, JS, Imagens)
+app.use(express.static(webPath));
+
+// ============================================================================
+// 🎨 MONITORING DASHBOARD (RELOCATED TO /system/status)
 // ============================================================================
 const dashboardHTML = () => `
 <!DOCTYPE html>
@@ -78,7 +92,7 @@ const dashboardHTML = () => `
 <body>
     <div class="container">
         <h1>🚀 VLOGSTUDENTS</h1>
-        <p class="subtitle">Enterprise Infrastructure v21.0.0</p>
+        <p class="subtitle">Enterprise Backend Dashboard v22.0.0</p>
 
         <div class="card">
             <div class="status ok pulse">ONLINE</div>
@@ -111,7 +125,7 @@ const dashboardHTML = () => `
         </div>
 
         <div class="endpoint-bar">
-            CORE: /api/v1 | SOCKETS: SIGNALING_ACTIVE | DB: NEON_CLOUD_CONNECTED | REGION: ${os.hostname()}
+            FRONTEND: / | API: /api/v1 | MONITOR: /system/status | REGION: ${os.hostname()}
         </div>
     </div>
 </body>
@@ -119,70 +133,40 @@ const dashboardHTML = () => `
 `;
 
 // ============================================================================
-// 📡 ADVANCED MONITORING ENDPOINTS
+// 📡 ROUTING HIERARCHY
 // ============================================================================
 
-// 📊 HEALTH CHECK (Latência de Banco + Métricas de Sistema)
+// 1. Health Check avançado
 app.get('/health', async (req, res) => {
     try {
         const start = Date.now();
-        await db.query('SELECT 1'); // Ping no Neon DB
+        await db.query('SELECT 1');
         const dbLatency = Date.now() - start;
 
         res.json({
             status: 'Operational',
-            version: '21.0.0',
+            version: '22.0.0',
+            database: { status: 'Connected', latency: `${dbLatency}ms` },
             uptime: `${Math.floor(process.uptime())}s`,
-            database: {
-                status: 'Connected',
-                latency: `${dbLatency}ms`
-            },
-            system: {
-                load: os.loadavg(),
-                freeMemory: `${Math.round(os.freemem() / 1024 / 1024)}MB`
-            },
             timestamp: new Date()
         });
     } catch (err) {
-        res.status(500).json({
-            status: 'Degraded',
-            database: 'Disconnected',
-            error: err.message
-        });
+        res.status(500).json({ status: 'Degraded', error: err.message });
     }
 });
 
-// 🖥 DASHBOARD WEB
-app.get('/', (req, res) => res.send(dashboardHTML()));
+// 2. Dashboard Administrativo
+app.get('/system/status', (req, res) => res.send(dashboardHTML()));
 
-// ============================================================================
-// 🔍 ROUTE SCANNER LOGIC (DEBUG & AUDIT)
-// ============================================================================
-const scanAndPrintRoutes = (app) => {
-    console.log('[SCANNER] 📚 Mapeando malha de rotas...');
-    const routes = [];
-
-    app._router.stack.forEach((middleware) => {
-        if (middleware.route) {
-            routes.push({
-                method: Object.keys(middleware.route.methods)[0].toUpperCase(),
-                path: middleware.route.path
-            });
-        } else if (middleware.name === 'router') {
-            middleware.handle.stack.forEach((handler) => {
-                if (handler.route) {
-                    routes.push({
-                        method: Object.keys(handler.route.methods)[0].toUpperCase(),
-                        path: '/api/v1' + handler.route.path
-                    });
-                }
-            });
-        }
-    });
-
-    console.log(`[SCANNER] ✅ ${routes.length} endpoints registrados.`);
-    return routes;
-};
+// 3. SPA Fallback (Serve o Frontend para qualquer rota não mapeada)
+// Isso permite que o usuário atualize a página na Web (#/perfil) sem dar 404
+app.get('*', (req, res) => {
+    // Se a requisição for para API, deixa o roteador de API tratar (já feito no app.js)
+    if (req.path.startsWith('/api/v1')) return;
+    
+    // Caso contrário, entrega o index.html da web
+    res.sendFile(path.join(webPath, 'index.html'));
+});
 
 // ============================================================================
 // 🚀 MASTER BOOTSTRAP SEQUENCE
@@ -194,9 +178,9 @@ const startServer = async () => {
         console.log('====================================================');
 
         // 1. DATABASE AUDIT & INITIALIZATION
-        console.log('[DATABASE] 🔍 Executando Auto-Healing...');
+        console.log('[DATABASE] 🔍 Executando Auditoria...');
         await initializeDatabase();
-        console.log('[DATABASE] ✅ Schema Sincronizado.');
+        console.log('[DATABASE] ✅ Pronto.');
 
         // 2. PORT SELECTION
         const PORT = env.PORT || 3000;
@@ -204,40 +188,21 @@ const startServer = async () => {
         // 3. LISTEN PROTOCOL
         server.listen(PORT, () => {
             console.log('----------------------------------------------------');
-            console.log(`✅ SERVER: http://localhost:${PORT}`);
-            console.log(`📡 REALTIME: Handshake Signaling pronto`);
-            console.log(`❤️ HEALTH: http://localhost:${PORT}/health`);
+            console.log(`✅ WEB APP: ${env.APP_URL || 'http://localhost:' + PORT}`);
+            console.log(`📡 API BASE: http://localhost:${PORT}/api/v1`);
+            console.log(`🧠 REALTIME: Signaling Engine Active`);
+            console.log(`📊 MONITOR: http://localhost:${PORT}/system/status`);
             console.log('----------------------------------------------------');
-
-            // Mapeamento visual das rotas para o log industrial
-            if (env.NODE_ENV !== 'production') {
-                const routes = scanAndPrintRoutes(app);
-                routes.forEach(r => console.log(`  → [${r.method}] ${r.path}`));
-            }
         });
 
-        // ============================================================================
-        // 🧨 GRACEFUL SHUTDOWN & ERROR HANDLING
-        // ============================================================================
+        // GRACEFUL SHUTDOWN
         process.on('SIGTERM', () => {
-            console.log('[SYSTEM] ⚠️ SIGTERM Recebido. Encerrando conexões...');
-            server.close(() => {
-                console.log('[SYSTEM] 💀 Nuclear Shutdown Complete.');
-                process.exit(0);
-            });
-        });
-
-        process.on('uncaughtException', (err) => {
-            console.error('[CRITICAL_EXCEPTION] 🧨', err);
-            // Em produção, aqui dispararíamos um alerta (Sentry/DataDog)
-        });
-
-        process.on('unhandledRejection', (reason, promise) => {
-            console.error('[UNHANDLED_REJECTION] ⚠️ em:', promise, 'motivo:', reason);
+            console.log('[SYSTEM] 💀 Nuclear Shutdown Complete.');
+            process.exit(0);
         });
 
     } catch (error) {
-        console.error('\n❌ [BOOT_ERROR] Falha catastrófica no arranque:', error);
+        console.error('\n❌ [BOOT_ERROR] Falha catastrófica:', error);
         process.exit(1);
     }
 };
