@@ -6,30 +6,30 @@
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
  * MARCO DE VERSÃO v51.0.0:
- * - Global Event Delegation: Captura 'submit' no document (Resolve botões mortos).
+ * - Global Event Delegation: Monitoramento de submissões no nível do 'document'.
+ * - Anti-Stall v4: Saída de emergência da Splash Screen (8 segundos).
  * - Multi-Phase Recovery Logic: Gestão atômica do fluxo de Reset de Senha.
- * - Anti-Stall v4: Motor de saída forçada de Splash Screen (Failsafe 8s).
- * - Haptic Navigation Sync: Feedback tátil em interações críticas.
- * - Industrial Route Guarding: Handshake obrigatório com Neon DB / Auth Kernel.
- * - SPA Template Engine: Carregamento assíncrono de views com transição rítmica.
+ * - Haptic Navigation Sync: Vibração em interações para Mobile Browsers.
+ * - Stamped Content Injector: Motor de templates assíncronos com Fade-in.
+ * - Route Guard Industrial: Handshake obrigatório com Neon DB e Auth Kernel.
  * ============================================================================
  */
 
 class VlogMainOrchestrator {
     /**
      * CONSTRUTOR MESTRE
-     * Inicializa o universo de rotas, repositórios de UI e estado do ecossistema.
+     * Centraliza a inteligência de rotas, estados de hardware e referências de UI.
      */
     constructor() {
-        // --- MAPEAMENTO DE ROTAS DO CAMPUS ---
+        // --- DICIONÁRIO DE ROTAS DO ECOSSISTEMA ---
         this.ROUTES = {
-            // Segmento de Identidade (Público)
+            // Segmento Público (Livre)
             SPLASH: '/',
             LOGIN: '/auth/login',
             SIGNUP: '/auth/signup',
             RECOVERY: '/auth/recovery',
 
-            // Segmento Operacional (Privado - Auth Required)
+            // Segmento Restrito (Requer Token JWT Válido)
             FEED: '/home/feed',
             CHAT_LIST: '/chat/list',
             CHAT_ROOM: '/chat/room',
@@ -41,18 +41,18 @@ class VlogMainOrchestrator {
             UPLOAD: '/post/upload'
         };
 
-        // --- REPOSITÓRIO DE ESTADO DO NÚCLEO (SINGLE SOURCE OF TRUTH) ---
+        // --- REPOSITÓRIO DE ESTADO (SINGLE SOURCE OF TRUTH) ---
         this._state = {
             currentPath: null,
             previousPath: null,
             isAppReady: false,
             isProcessingRoute: false,
             bootStartTime: Date.now(),
-            recoveryEmail: "", // Cache volátil para o fluxo de reset
+            recoveryEmail: "", // Cache temporário para transição de passos no reset
             activeModules: new Set()
         };
 
-        // --- REFERÊNCIAS DE HARDWARE VISUAL (DOM) ---
+        // --- MAPA DE HARDWARE VISUAL (DOM ELEMENTS) ---
         this._ui = {
             splash: document.getElementById('splash-screen'),
             appView: document.getElementById('app-router-view'),
@@ -62,56 +62,60 @@ class VlogMainOrchestrator {
             body: document.body
         };
 
-        console.log("%c[SYSTEM] Orchestrator v51.0.0 Atomic Booting...", "color: #CCFF00; font-weight: bold;");
+        console.log("%c[SYSTEM] Orchestrator v51.0.0 Unified Engine Online.", "color: #CCFF00; font-weight: bold;");
     }
 
     /**
      * ========================================================================
      * 1. PROTOCOLO DE INICIALIZAÇÃO (BOOT SEQUENCE)
+     * Executa a subida sequencial dos motores de sistema.
      * ========================================================================
      */
     async start() {
-        console.group("[BOOT_SEQUENCE] Ativando Ecossistema v51");
+        console.group("[BOOT_SEQUENCE] Ativando Protocolos Master");
         
-        // ANTI-STALL PROTECTOR (Garantia de UX: 8 segundos para liberar o viewport)
+        // ANTI-STALL PROTECTOR (UX Guarantee)
+        // Se o servidor ou rede travar, liberamos a tela em 8s para o usuário interagir.
         const safetyExit = setTimeout(() => {
             if (!this._state.isAppReady) {
-                console.warn("[ANTI-STALL] Latência crítica detectada. Forçando interface SPA.");
+                console.warn("[ANTI-STALL] Tempo de boot excedido. Forçando interface SPA.");
                 this._exitSplashScreen();
             }
         }, 8000);
 
         try {
-            // A. Inicializa Kernel de Diagnóstico e Telemetria
+            // A. Inicialização de Telemetria e Diagnóstico
             if (window.VlogTelemetry) window.VlogTelemetry.init();
 
-            // B. DELEGAÇÃO GLOBAL DE EVENTOS (ZERO FAIL LOGIC)
-            // Vincula os listeners ao 'document' uma única vez para evitar perda de escopo.
+            // B. DELEGAÇÃO GLOBAL DE EVENTOS (ZERO FAIL)
+            // Resolve o erro de botões mortos: Capturamos o submit no 'document'.
             this._bindGlobalEvents();
 
-            // C. Auditoria de Sessão (Neon DB Handshake)
+            // C. Auditoria de Identidade (Handshake com Neon DB via Auth Kernel)
             if (window.VlogAuth) {
                 await window.VlogAuth.checkAuthStatus();
+            } else {
+                console.error("[CRITICAL] VlogAuth Kernel não localizado!");
             }
 
             // D. Ativação do Motor de Roteamento SPA
             window.addEventListener('hashchange', () => this._handleRouteChange());
-            await this._handleRouteChange();
+            await this._handleRouteChange(); // Processa a rota inicial
 
-            // E. Monitoramento de Rede
-            this._registerNetworkHandlers();
+            // E. Handlers de Monitoramento de Rede e Sessão
+            this._registerSystemHandlers();
 
-            // F. Liberação da Splash Screen
+            // F. Liberação da Splash Screen Cinematográfica
             clearTimeout(safetyExit);
-            const loadDuration = Date.now() - this._state.bootStartTime;
-            const remainingSplash = Math.max(2000 - loadDuration, 0); // Mínimo de 2s para estética
+            const loadTime = Date.now() - this._state.bootStartTime;
+            const remainingSplash = Math.max(2000 - loadTime, 0); // Mínimo de 2s para estética
 
             setTimeout(() => this._exitSplashScreen(), remainingSplash);
 
         } catch (error) {
-            console.error("[BOOT_FATAL] Falha catastrófica no motor principal:", error);
+            console.error("[BOOT_FATAL] Erro catastrófico no motor principal:", error);
             this._exitSplashScreen();
-            this._showToast("Falha na sincronização do campus.", "error");
+            this._showToast("Falha na sincronização do campus central.", "error");
         }
 
         console.groupEnd();
@@ -119,47 +123,47 @@ class VlogMainOrchestrator {
 
     /**
      * ========================================================================
-     * 2. MOTOR DE EVENTOS GLOBAIS (EVENT DELEGATION)
-     * Resolve o erro de botões que param de funcionar após navegação SPA.
+     * 2. MOTOR DE DELEGAÇÃO GLOBAL (EVENT DELEGATION)
+     * Esta é a chave para o funcionamento 100% dos botões dinâmicos.
      * ========================================================================
      */
     _bindGlobalEvents() {
-        console.log("[SYSTEM] Vinculando Delegatários Globais...");
+        console.log("[SYSTEM] Vinculando Delegatários Globais de Eventos...");
 
-        // --- CAPTURA DE SUBMISSÕES DE FORMULÁRIO (ALL VIEWS) ---
+        // --- CAPTURA DE SUBMISSÕES DE FORMULÁRIOS (QUALQUER TELA) ---
         document.addEventListener('submit', async (e) => {
             const formId = e.target.id;
             
-            // Handler: LOGIN
+            // Handler: PROTOCOLO DE LOGIN
             if (formId === 'vlog-login-form') {
                 e.preventDefault();
                 await this._handleLoginSubmission(e.target);
             }
 
-            // Handler: SIGNUP
+            // Handler: PROTOCOLO DE REGISTRO
             if (formId === 'vlog-signup-form') {
                 e.preventDefault();
                 await this._handleSignupSubmission(e.target);
             }
 
-            // Handler: RECOVERY STEP 1 (Solicitar Código)
+            // Handler: RECUPERAÇÃO PASSO 1 (SOLICITAR PIN)
             if (formId === 'form-recovery-request') {
                 e.preventDefault();
                 await this._handleRecoveryRequest(e.target);
             }
 
-            // Handler: RECOVERY STEP 2 (Resetar Senha)
+            // Handler: RECUPERAÇÃO PASSO 2 (RESETAR SENHA)
             if (formId === 'form-recovery-reset') {
                 e.preventDefault();
                 await this._handleRecoveryReset(e.target);
             }
         });
 
-        // --- CAPTURA DE CLIQUES (HAPTIC & NAVIGATION) ---
+        // --- CAPTURA DE CLIQUES (UX & HAPTIC FEEDBACK) ---
         document.addEventListener('click', (e) => {
-            const clickable = e.target.closest('button, .clickable, .nav-item, a');
+            const clickable = e.target.closest('button, .nav-item, .social-circle, .btn-fidelity-back, a');
             if (clickable) {
-                // Feedback Háptico Industrial
+                // Micro-vibração industrial para browsers compatíveis
                 if ("vibrate" in navigator) navigator.vibrate(10);
             }
         });
@@ -167,35 +171,44 @@ class VlogMainOrchestrator {
 
     /**
      * ========================================================================
-     * 3. HANDLERS DE LÓGICA DE NEGÓCIO (AUTH FLOWS)
+     * 3. HANDLERS DE AÇÃO DE NEGÓCIO (BUSINESS LOGIC)
+     * Gerencia a comunicação entre a UI e o Kernel de Autenticação.
      * ========================================================================
      */
 
+    // Lógica de Login
     async _handleLoginSubmission(form) {
-        const email = form.querySelector('#login-email')?.value;
-        const pass = form.querySelector('#login-password')?.value;
+        const emailInput = form.querySelector('#login-email');
+        const passInput = form.querySelector('#login-password');
         const btn = form.querySelector('button[type="submit"]');
 
-        if (!email || !pass) return this._showToast("Credenciais incompletas.", "warning");
+        if (!emailInput?.value || !passInput?.value) {
+            return this._showToast("Credenciais acadêmicas incompletas.", "warning");
+        }
 
         this._toggleBtnLoading(btn, true);
 
         try {
-            const result = await window.VlogAuth.login(email, pass);
+            // Chamada ao Kernel v45
+            const result = await window.VlogAuth.login(emailInput.value, passInput.value);
+
             if (result.success) {
+                this._showToast("Identidade validada com sucesso!", "success");
                 window.location.hash = this.ROUTES.FEED;
-                // RELOAD NUCLEAR: Essencial para injetar novos tokens JWT nos cabeçalhos
+                // RELOAD NUCLEAR: Essencial para injetar novos tokens JWT nos cabeçalhos de todos os módulos
                 window.location.reload(); 
             } else {
-                this._showToast(result.message, "error");
-                this._toggleBtnLoading(btn, false, 'ENTRAR NO VLOG <i class="fas fa-arrow-right ms-2"></i>');
+                this._showToast(result.message || "Acesso negado.", "error");
+                this._toggleBtnLoading(btn, false, 'ENTRAR NO VLOG <i class="fas fa-chevron-right ms-2"></i>');
             }
         } catch (err) {
-            this._showToast("O servidor não respondeu.", "error");
+            console.error("[LOGIN_SUBMIT_ERR]", err);
+            this._showToast("O servidor master não respondeu.", "error");
             this._toggleBtnLoading(btn, false, "TENTAR NOVAMENTE");
         }
     }
 
+    // Lógica de Registro (Signup)
     async _handleSignupSubmission(form) {
         const btn = form.querySelector('button[type="submit"]');
         this._toggleBtnLoading(btn, true);
@@ -211,56 +224,69 @@ class VlogMainOrchestrator {
         try {
             const result = await window.VlogAuth.register(data);
             if (result.success) {
+                this._showToast("Conta criada! Bem-vindo ao ecossistema.", "success");
                 window.location.hash = this.ROUTES.FEED;
                 window.location.reload();
             } else {
                 this._showToast(result.message, "error");
-                this._toggleBtnLoading(btn, false, 'CONCLUIR CADASTRO <i class="fas fa-check-circle ms-2"></i>');
+                this._toggleBtnLoading(btn, false, "CONCLUIR CADASTRO ACADÊMICO");
             }
         } catch (err) {
-            this._showToast("Falha ao registrar.", "error");
-            this._toggleBtnLoading(btn, false, "CONCLUIR");
+            this._showToast("Falha no motor de registro.", "error");
+            this._toggleBtnLoading(btn, false, "CONCLUIR CADASTRO");
         }
     }
 
+    // Lógica de Recuperação - Passo 1
     async _handleRecoveryRequest(form) {
         const email = form.querySelector('#recovery-email').value;
         const btn = form.querySelector('button[type="submit"]');
         
         this._toggleBtnLoading(btn, true);
-        this._state.recoveryEmail = email; // Armazena para o próximo passo
+        this._state.recoveryEmail = email; // Persistência em memória para o passo 2
 
-        const result = await window.VlogAuth.requestPasswordReset(email);
-        if (result) {
-            this._showToast("PIN enviado para seu inbox!", "success");
-            // Transição Interna Stamped
-            const s1 = document.getElementById('recovery-step-1');
-            const s2 = document.getElementById('recovery-step-2');
-            if(s1) s1.classList.add('d-none');
-            if(s2) s2.classList.remove('d-none');
-        } else {
-            this._showToast("Estudante não localizado.", "error");
-            this._toggleBtnLoading(btn, false, 'ENVIAR CÓDIGO <i class="fas fa-paper-plane ms-2"></i>');
+        try {
+            const success = await window.VlogAuth.requestPasswordReset(email);
+            if (success) {
+                this._showToast("Código PIN enviado ao seu e-mail.", "success");
+                // Transição de tela local (Fidelity Recovery UI)
+                if (window.VlogRecoveryUI) {
+                    window.VlogRecoveryUI.showStep2();
+                } else {
+                    // Fallback se o objeto da view não estiver pronto
+                    document.getElementById('recovery-step-1').classList.add('d-none');
+                    document.getElementById('recovery-step-2').classList.remove('d-none');
+                }
+            } else {
+                this._showToast("Estudante não identificado na base.", "error");
+                this._toggleBtnLoading(btn, false, "ENVIAR CÓDIGO");
+            }
+        } catch (e) {
+            this._showToast("Erro ao solicitar PIN.", "error");
+            this._toggleBtnLoading(btn, false, "ENVIAR CÓDIGO");
         }
     }
 
+    // Lógica de Recuperação - Passo 2 (Reset)
     async _handleRecoveryReset(form) {
         const pin = form.querySelector('#recovery-pin').value;
         const pass = form.querySelector('#recovery-new-password').value;
-        const confirm = form.querySelector('#recovery-confirm-password').value;
         const btn = form.querySelector('button[type="submit"]');
-
-        if (pass !== confirm) return this._showToast("As senhas não coincidem.", "error");
 
         this._toggleBtnLoading(btn, true);
 
-        const result = await window.VlogAuth.confirmPasswordReset(this._state.recoveryEmail, pin, pass);
-        if (result) {
-            this._showToast("Senha redefinida com sucesso!", "success");
-            window.location.hash = this.ROUTES.LOGIN;
-        } else {
-            this._showToast("PIN inválido ou expirado.", "error");
-            this._toggleBtnLoading(btn, false, 'ATUALIZAR ACESSO <i class="fas fa-sync-alt ms-2"></i>');
+        try {
+            const success = await window.VlogAuth.confirmPasswordReset(this._state.recoveryEmail, pin, pass);
+            if (success) {
+                this._showToast("Segurança atualizada! Faça login.", "success");
+                window.location.hash = this.ROUTES.LOGIN;
+            } else {
+                this._showToast("PIN inválido ou expirado.", "error");
+                this._toggleBtnLoading(btn, false, "ATUALIZAR SENHA");
+            }
+        } catch (e) {
+            this._showToast("Erro na redefinição de chave.", "error");
+            this._toggleBtnLoading(btn, false, "ATUALIZAR SENHA");
         }
     }
 
@@ -273,16 +299,17 @@ class VlogMainOrchestrator {
         if (this._state.isProcessingRoute) return;
         this._state.isProcessingRoute = true;
 
-        // Limpeza de Hash (Sanitização de URL)
+        // Sanitização de Hash (URL Clean)
         const hash = window.location.hash || '#/home/feed';
         const path = hash.split('?')[0].replace('#', '');
         
         console.log(`%c[ROUTER] SPA Navigating to: ${path}`, "color: #00FBFF;");
 
         // A. ROUTE GUARD (SEGURANÇA ACADÊMICA)
+        // Bloqueia acesso a rotas privadas se não houver autenticação validada
         const isAuthRoute = path.includes('/auth/');
         if (!isAuthRoute && (!window.VlogAuth || !window.VlogAuth.isAuthenticated)) {
-            console.warn("[ROUTER] Acesso restrito. Encaminhando para Login.");
+            console.warn("[ROUTER] Área restrita detectada. Redirecionando para Login.");
             window.location.hash = this.ROUTES.LOGIN;
             this._state.isProcessingRoute = false;
             return;
@@ -291,12 +318,12 @@ class VlogMainOrchestrator {
         this._showGlobalLoader(true);
 
         try {
-            // B. BUSCA DE TEMPLATE HTML
+            // B. BUSCA DE TEMPLATE HTML ASSÍNCRONO
             const response = await fetch(`/views${path}.html`);
-            if (!response.ok) throw new Error(`Status ${response.status}: View não localizada.`);
+            if (!response.ok) throw new Error(`Status ${response.status}: Componente não localizado.`);
             const html = await response.text();
 
-            // C. INJEÇÃO ATÔMICA E ANIMAÇÃO
+            // C. INJEÇÃO ATÔMICA E ANIMAÇÃO DE ENTRADA (STAMPED)
             this._ui.appView.classList.add('animate__animated', 'animate__fadeOut', 'animate__faster');
             
             setTimeout(() => {
@@ -304,17 +331,17 @@ class VlogMainOrchestrator {
                 this._ui.appView.classList.remove('animate__fadeOut');
                 this._ui.appView.classList.add('animate__fadeIn');
 
-                // D. INICIALIZAÇÃO DE MÓDULOS ESPECÍFICOS (JS SYNC)
+                // D. SINCRONIZAÇÃO DE MÓDULOS ESPECÍFICOS (JS SYNC)
                 this._initializeViewModules(path);
 
-                // E. ATUALIZAÇÃO DA UI GLOBAL (NAVBAR, TITLES)
+                // E. ATUALIZAÇÃO DA UI GLOBAL (NAVBAR, ESTADOS)
                 this._updateGlobalUIState(path);
                 
                 window.scrollTo(0, 0);
             }, 150);
 
         } catch (error) {
-            console.error("[ROUTER_ERR]", error);
+            console.error("[ROUTER_ERR] Falha ao carregar view:", error);
             this._handleRoutingError(error);
         } finally {
             this._showGlobalLoader(false);
@@ -335,6 +362,7 @@ class VlogMainOrchestrator {
      * 5. GESTÃO DE UI E ATMOSFERA
      * ========================================================================
      */
+
     _exitSplashScreen() {
         if (this._state.isAppReady || !this._ui.splash) return;
 
@@ -355,8 +383,10 @@ class VlogMainOrchestrator {
         const isAuth = path.includes('/auth/');
         const isVisible = window.VlogAuth && window.VlogAuth.isAuthenticated && !isAuth;
         
+        // Exibe ou esconde a barra de navegação baseada no estado de login
         this._ui.navContainer.style.display = isVisible ? 'block' : 'none';
 
+        // Atualiza a classe 'active' no item de navegação correspondente
         if (isVisible) {
             document.querySelectorAll('.nav-item').forEach(item => {
                 const link = item.getAttribute('href').replace('#', '');
@@ -378,17 +408,18 @@ class VlogMainOrchestrator {
 
     /**
      * ========================================================================
-     * 6. MONITORAMENTO E NOTIFICAÇÕES (REATIVIDADE)
+     * 6. MONITORAMENTO E NOTIFICAÇÕES (SYSTEM KERNEL)
      * ========================================================================
      */
-    _registerNetworkHandlers() {
-        window.addEventListener('online', () => this._showToast("Conexão restaurada.", "success"));
-        window.addEventListener('offline', () => this._showToast("Você está desconectado.", "warning"));
+    _registerSystemHandlers() {
+        // Monitoramento de Conectividade Internet
+        window.addEventListener('online', () => this._showToast("Conexão restabelecida.", "success"));
+        window.addEventListener('offline', () => this._showToast("Você está offline. Algumas funções podem falhar.", "warning"));
 
-        // Handler global para 401 Unauthorized do Auth Kernel
+        // Handler Global para 401 Unauthorized (Expulsão por token inválido)
         window.addEventListener('vlog_unauthorized', () => {
-            this._showToast("Sessão expirada. Faça login.", "error");
-            window.VlogAuth.logout();
+            this._showToast("Sua sessão expirou. Faça login novamente.", "error");
+            if (window.VlogAuth) window.VlogAuth.logout();
         });
     }
 
@@ -403,7 +434,12 @@ class VlogMainOrchestrator {
         const toast = document.createElement('div');
         toast.className = `vlog-toast glass-morphism border-${type} p-3 animate__animated animate__slideInRight shadow-lg`;
         
-        const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+        const icons = { 
+            success: 'fa-check-circle', 
+            error: 'fa-times-circle', 
+            warning: 'fa-exclamation-triangle', 
+            info: 'fa-info-circle' 
+        };
         
         toast.innerHTML = `
             <div class="d-flex align-items-center">
@@ -414,6 +450,7 @@ class VlogMainOrchestrator {
 
         container.appendChild(toast);
 
+        // Auto-destruição do Toast
         setTimeout(() => {
             toast.classList.replace('animate__slideInRight', 'animate__fadeOutRight');
             setTimeout(() => toast.remove(), 600);
@@ -425,32 +462,30 @@ class VlogMainOrchestrator {
             <div class="vh-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
                 <i class="fas fa-satellite-dish text-neon mb-4" style="font-size: 5rem;"></i>
                 <h2 class="text-white fw-black">FALHA DE SINCRONIA</h2>
-                <p class="text-muted">Não conseguimos sintonizar o campus. Tente recarregar.</p>
-                <button class="btn-vlog-primary mt-4" onclick="location.reload()">RECONECTAR SISTEMA</button>
-                <p class="text-xxs text-white-50 mt-4 opacity-25">ERROR_REF: ${err.message}</p>
+                <p class="text-muted">Não conseguimos sintonizar os dados desta tela. Verifique sua conexão.</p>
+                <button class="btn-fidelity-primary mt-4 px-5" onclick="location.reload()">RECONECTAR SISTEMA</button>
+                <p class="text-xxs text-white-50 mt-4 opacity-25">STAMP_REF: ${err.message}</p>
             </div>
         `;
-    }
-
-    _handleCriticalFailure(err) {
-        console.error("CRITICAL_SYSTEM_FAILURE", err);
-        this._showToast("Instabilidade no núcleo Node.js.", "error");
     }
 }
 
 /**
  * ============================================================================
- * BOOTSTRAP: Inicialização da Instância Mestre
+ * BOOTSTRAP: Inicialização Automática da Instância Mestre
  * ============================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // Registra o Singleton Global
     window.VlogMain = new VlogMainOrchestrator();
+
+    // Dispara a ignição do ecossistema
     window.VlogMain.start();
 });
 
 /**
  * ============================================================================
  * FIM DO MASTER ORCHESTRATOR v51.0.0
- * ZERO OMISSÕES | INDUSTRIAL ARCHITECTURE | MASTER READY
+ * ESTE CÓDIGO É A ESPINHA DORSAL DO FRONTEND VLOGSTUDENTS ENTERPRISE.
  * ============================================================================
  */
