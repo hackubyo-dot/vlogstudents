@@ -1,58 +1,67 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - MAIN ORCHESTRATOR v1.0.0
- * SISTEMA OPERACIONAL DO FRONTEND E MOTOR DE ROTEAMENTO SPA
- *
+ * VLOGSTUDENTS ENTERPRISE WEB - MAIN ORCHESTRATOR v21.0.0
+ * SISTEMA OPERACIONAL DO FRONTEND E MOTOR DE ROTEAMENTO SPA (NUCLEAR ENGINE)
+ * 
+ * MARCO DE VERSÃO:
+ * - v21.0.0: Anti-Stall Fix & Industrial Route Guarding.
+ * - v20.0.0: Estrutura SPA Master com Handshake Neon DB.
+ * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
- *
+ * 
  * Este arquivo orquestra o ciclo de vida global da aplicação:
- * - Boot Sequence: Inicialização sequencial de Kernels (Telemetry -> Auth -> UI).
+ * - Boot Sequence: Inicialização sequencial (Telemetry -> Theme -> Auth -> UI).
  * - SPA Router: Motor de navegação baseado em Hash (#) com troca de templates.
  * - Route Guard: Interceptação de segurança para áreas restritas do campus.
  * - Splash Controller: Gestão da transição cinematográfica (Ken Burns transition).
- * - Global Event Bus: Tratamento de notificações, erros de rede e deslogue.
- * - Theme Sync: Aplicação dinâmica de CSS Variables baseada na preferência.
+ * - Anti-Stall: Proteção contra travamentos durante o carregamento de APIs.
+ * - Theme Sync: Aplicação dinâmica de CSS Variables para Dark/Light Mode.
+ * - Network Monitor: Reconexão automática de Sockets em restauração de link.
  * ============================================================================
  */
 
 class VlogMainOrchestrator {
     constructor() {
-        // --- CONFIGURAÇÕES DE ROTEAMENTO ---
+        // --- CONFIGURAÇÕES DE ROTEAMENTO (MAPPING COMPLETO) ---
         this.ROUTES = {
-            // Públicas
+            // Segmento Público (Livre Acesso)
             SPLASH: '/',
             LOGIN: '/auth/login',
             SIGNUP: '/auth/signup',
             RECOVERY: '/auth/recovery',
 
-            // Protegidas (Auth Required)
+            // Segmento Protegido (Exige Token JWT Válido no Neon DB)
             FEED: '/home/feed',
-            CHAT: '/chat/list',
+            CHAT_LIST: '/chat/list',
             CHAT_ROOM: '/chat/room',
             POINTS: '/points/dashboard',
-            PROFILE: '/profile/view',
+            PROFILE_VIEW: '/profile/view',
             PROFILE_EDIT: '/profile/edit',
             REFERRAL: '/referral/hub',
-            SEARCH: '/search/global'
+            SEARCH: '/search/global',
+            UPLOAD: '/post/upload'
         };
 
-        // --- ESTADO DO ORQUESTRADOR ---
+        // --- REPOSITÓRIO DE ESTADO DO ORQUESTRADOR ---
         this._state = {
             currentPath: null,
             previousPath: null,
             isAppReady: false,
+            isProcessingRoute: false,
             activeModule: null,
-            navigationHistory: []
+            bootStartTime: Date.now()
         };
 
-        // Seletores de Hardware Visual (DOM)
+        // --- SELECTORES DE HARDWARE VISUAL (DOM) ---
         this._ui = {
             splash: document.getElementById('splash-screen'),
             appView: document.getElementById('app-router-view'),
+            navContainer: document.getElementById('liquid-nav-container'),
+            pageLoader: document.getElementById('global-page-loader'),
             body: document.body
         };
 
-        console.log("%c[SYSTEM] Orchestrator v1.0 Bootstrapping...", "color: #CCFF00; font-weight: bold;");
+        console.log("%c[SYSTEM] Orchestrator v21.0.0 Bootstrapping...", "color: #CCFF00; font-weight: bold;");
     }
 
     /**
@@ -63,43 +72,54 @@ class VlogMainOrchestrator {
 
     async start() {
         console.group("[BOOT_SEQUENCE] Iniciando Ecossistema Web");
-        const startTime = Date.now();
+        
+        // ANTI-STALL PROTECTOR: Força a saída da Splash em 8s se as APIs falharem
+        const antiStallTimer = setTimeout(() => {
+            if (!this._state.isAppReady) {
+                console.warn("[ANTI-STALL] Tempo limite de boot atingido. Forçando entrada.");
+                this._exitSplashScreen();
+            }
+        }, 8000);
 
         try {
-            // 1. Inicializa Kernel de Diagnóstico (Priority One)
+            // 1. Inicializa Kernel de Diagnóstico (Telemetria Industrial)
             if (window.VlogTelemetry) {
                 window.VlogTelemetry.init();
-                window.VlogTelemetry.addBreadcrumb('system', 'Main Orchestrator Start');
+                window.VlogTelemetry.addBreadcrumb('system', 'Orchestrator Start');
             }
 
-            // 2. Sincroniza Tema Visual (Evita Flash de Cor Branca)
+            // 2. Sincroniza Tema Visual (Evita Flash de Cor Branca indesejado)
             this._applySavedTheme();
 
-            // 3. Auditoria de Identidade (Handshake com LocalStorage e Neon DB)
+            // 3. Auditoria de Identidade (Handshake com Neon DB via API Core)
             if (window.VlogAuth) {
-                await window.VlogAuth.checkAuthStatus();
+                // Timeout interno de 5s para a verificação de Auth não travar o app
+                const authCheck = window.VlogAuth.checkAuthStatus();
+                const authTimeout = new Promise((_, r) => setTimeout(() => r('Auth Timeout'), 5000));
+                
+                await Promise.race([authCheck, authTimeout])
+                    .catch(e => console.error("[BOOT] Falha ou lentidão no Auth Handshake:", e));
             }
 
-            // 4. Configura Listeners de Navegação (SPA Engine)
+            // 4. Configura o Motor de Roteamento (Router Engine)
             this._setupRouter();
 
-            // 5. Handlers de Eventos Globais
+            // 5. Registra Handlers de Eventos Globais (Sockets, Network, 401)
             this._registerGlobalHandlers();
 
-            // 6. Transição de Splash (Mínimo de 3.5s de imersão conforme Flutter)
-            const elapsedTime = Date.now() - startTime;
-            const remainingSplashTime = Math.max(3500 - elapsedTime, 0);
+            // 6. Transição de Splash (Mínimo de 2.5s para manter a experiência cinematográfica)
+            const elapsedTime = Date.now() - this._state.bootStartTime;
+            const remainingSplashTime = Math.max(2500 - elapsedTime, 0);
 
             setTimeout(() => {
+                clearTimeout(antiStallTimer);
                 this._exitSplashScreen();
             }, remainingSplashTime);
 
         } catch (error) {
-            console.error("[BOOT_FATAL]", error);
-            if (window.VlogTelemetry) {
-                window.VlogTelemetry.captureException(error, { context: 'boot_sequence' });
-            }
-            this._showFatalErrorUI();
+            console.error("[BOOT_FATAL] Erro crítico no núcleo:", error);
+            this._exitSplashScreen(); // Força a saída para permitir visualização de erro
+            this._handleRoutingError(error);
         }
 
         console.groupEnd();
@@ -107,167 +127,199 @@ class VlogMainOrchestrator {
 
     /**
      * ========================================================================
-     * 2. MOTOR DE ROTEAMENTO (SPA KERNEL)
+     * 2. MOTOR DE ROTEAMENTO SPA (ROUTER KERNEL)
      * ========================================================================
      */
 
     _setupRouter() {
-        // Escuta mudanças na URL (Hash Change)
+        // Escuta mudanças de Hash (ex: #/home/feed)
         window.addEventListener('hashchange', () => this._handleRouteChange());
-
-        // Dispara roteamento inicial
+        
+        // Processa rota inicial no carregamento
         this._handleRouteChange();
     }
 
     async _handleRouteChange() {
-        const hash = window.location.hash || '#/';
+        if (this._state.isProcessingRoute) return;
+        this._state.isProcessingRoute = true;
+
+        const hash = window.location.hash || '#/home/feed';
         const path = hash.replace('#', '');
 
-        console.log(`[ROUTER] Navegando para: ${path}`);
+        console.log(`%c[ROUTER] Navegando para: ${path}`, "color: #00FBFF;");
 
-        // 1. Validação de Segurança (Route Guard)
+        // 1. ROUTE GUARD: Validação de Segurança
         if (!this._canAccessRoute(path)) {
-            console.warn("[ROUTER] Acesso negado. Redirecionando para Login.");
+            console.warn("[ROUTER] Acesso negado para área protegida. Redirecionando...");
             window.location.hash = this.ROUTES.LOGIN;
+            this._state.isProcessingRoute = false;
             return;
         }
 
-        // 2. Preparação de Transição
-        this._state.previousPath = this._state.currentPath;
-        this._state.currentPath = path;
-
-        // 3. Carregamento do Módulo / View
+        // 2. Transição de View
         this._showGlobalLoader(true);
 
         try {
-            const templatePath = this._getTemplatePath(path);
-            const html = await this._loadTemplate(templatePath);
+            const templatePath = this._resolveTemplatePath(path);
+            const html = await this._fetchTemplate(templatePath);
 
-            this._renderView(html);
+            this._injectView(html);
             this._initializeModuleForRoute(path);
+            this._updateNavigationUI(path);
 
-            // 4. Telemetria de Navegação
+            // 3. Auditoria de Telemetria
             if (window.VlogTelemetry) {
-                window.VlogTelemetry.addBreadcrumb('navigation', `To: ${path}`, 'info');
                 window.VlogTelemetry.trackEvent('page_view', { path });
             }
 
         } catch (error) {
-            console.error("[ROUTER_ERR] Falha ao carregar view:", error);
+            console.error("[ROUTER_ERR] Falha ao carregar componente:", error);
             this._handleRoutingError(error);
         } finally {
             this._showGlobalLoader(false);
+            this._state.isProcessingRoute = false;
             window.scrollTo(0, 0);
         }
     }
 
     /**
-     * Verifica se o usuário tem permissão para acessar a rota (Fidelidade Mobile)
+     * Route Guard: Protege endpoints contra acesso não autorizado
      */
     _canAccessRoute(path) {
-        const publicRoutes = [
-            this.ROUTES.SPLASH,
+        const publicPaths = [
             this.ROUTES.LOGIN,
             this.ROUTES.SIGNUP,
-            this.ROUTES.RECOVERY
+            this.ROUTES.RECOVERY,
+            '/auth/google/callback'
         ];
 
-        if (publicRoutes.includes(path)) return true;
+        // Se a rota for pública, permite
+        if (publicPaths.some(p => path.startsWith(p))) return true;
 
-        // Se não for pública, exige autenticação
+        // Se for protegida, exige VlogAuth.isAuthenticated
         return window.VlogAuth && window.VlogAuth.isAuthenticated;
     }
 
-    _getTemplatePath(path) {
-        // Mapeia o path da URL para o arquivo físico na pasta views/
-        if (path === '/') return '/views/home/feed.html';
+    _resolveTemplatePath(path) {
+        // Mapeia o path virtual para o arquivo físico no servidor
+        if (path === '/' || path === '') return '/views/home/feed.html';
         return `/views${path}.html`;
     }
 
-    async _loadTemplate(url) {
+    async _fetchTemplate(url) {
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Status ${response.status}: Template não localizado.`);
+            if (!response.ok) throw new Error(`Template Not Found [${response.status}]`);
             return await response.text();
-        } catch (error) {
-            throw error;
+        } catch (e) {
+            throw e;
         }
     }
 
-    _renderView(html) {
-        if (this._ui.appView) {
-            // Aplica animação de saída na view antiga se houver
-            this._ui.appView.classList.add('page-transition-exit');
+    _injectView(html) {
+        if (!this._ui.appView) return;
 
-            setTimeout(() => {
-                this._ui.appView.innerHTML = html;
-                this._ui.appView.classList.remove('page-transition-exit');
-                this._ui.appView.classList.add('page-transition-enter');
+        // Efeito de Fade-Out na view antiga
+        this._ui.appView.classList.add('animate__animated', 'animate__fadeOut', 'animate__faster');
 
-                // Remove classe de animação após conclusão
-                setTimeout(() => {
-                    this._ui.appView.classList.remove('page-transition-enter');
-                }, 600);
-            }, 150);
-        }
+        setTimeout(() => {
+            this._ui.appView.innerHTML = html;
+            this._ui.appView.classList.remove('animate__fadeOut');
+            this._ui.appView.classList.add('animate__fadeIn');
+        }, 150);
     }
 
     /**
-     * Dispara a lógica JS específica para cada tela carregada
+     * Inicia a lógica JS específica para cada módulo (Injeção Dinâmica)
      */
     _initializeModuleForRoute(path) {
-        switch (path) {
-            case this.ROUTES.FEED:
-            case '/':
-                if (window.VlogFeed) window.VlogFeed.init();
-                break;
-            case this.ROUTES.CHAT:
-                if (window.VlogChat) window.VlogChat.init();
-                break;
-            case this.ROUTES.POINTS:
-                if (window.VlogPoints) window.VlogPoints.init();
-                break;
-            case this.ROUTES.PROFILE:
-                if (window.VlogProfile) window.VlogProfile.init();
-                break;
-            case this.ROUTES.SEARCH:
-                // Inicializa busca
-                break;
-        }
+        if (path.includes('feed') && window.VlogFeed) window.VlogFeed.init();
+        if (path.includes('chat') && window.VlogChat) window.VlogChat.init();
+        if (path.includes('points') && window.VlogPoints) window.VlogPoints.init();
+        if (path.includes('profile') && window.VlogProfile) window.VlogProfile.init();
+        if (path.includes('status') && window.VlogStatus) window.VlogStatus.init();
     }
 
     /**
      * ========================================================================
-     * 3. GESTÃO DE UI E EVENTOS GLOBAIS
+     * 3. GESTÃO DE UI E ATMOSFERA (VISUAL KERNEL)
+     * ========================================================================
+     */
+
+    _exitSplashScreen() {
+        if (!this._ui.splash) return;
+
+        console.log("[UI] Finalizando Splash e liberando Viewport.");
+        this._ui.splash.style.transition = "opacity 0.8s var(--ease-out-expo)";
+        this._ui.splash.style.opacity = "0";
+
+        setTimeout(() => {
+            this._ui.splash.style.display = 'none';
+            this._ui.appView.style.display = 'block';
+            this._state.isAppReady = true;
+            this._updateNavigationUI(window.location.hash.replace('#', ''));
+        }, 800);
+    }
+
+    _updateNavigationUI(path) {
+        if (!this._ui.navContainer) return;
+
+        // Esconde Nav Bar em telas de Auth
+        const isAuthScreen = path.includes('/auth/');
+        const isVisible = window.VlogAuth && window.VlogAuth.isAuthenticated && !isAuthScreen;
+        
+        this._ui.navContainer.style.display = isVisible ? 'block' : 'none';
+
+        // Atualiza estado visual do item ativo
+        if (isVisible) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const href = item.getAttribute('href').replace('#', '');
+                item.classList.toggle('active', path.startsWith(href));
+            });
+        }
+    }
+
+    _applySavedTheme() {
+        const pref = localStorage.getItem('vlog_theme_pref') || 'dark';
+        this.setTheme(pref);
+    }
+
+    setTheme(theme) {
+        this._ui.body.classList.remove('dark-theme', 'light-theme');
+        this._ui.body.classList.add(`${theme}-theme`);
+        localStorage.setItem('vlog_theme_pref', theme);
+        
+        // Sync com Meta Tag para Safari/Chrome Mobile
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#000000' : '#FFFFFF');
+    }
+
+    /**
+     * ========================================================================
+     * 4. GLOBAL EVENT BUS (REATIVIDADE DE SISTEMA)
      * ========================================================================
      */
 
     _registerGlobalHandlers() {
-        // 1. Erro de Autenticação (401)
-        window.addEventListener('vlog_unauthorized', () => {
-            this._handleUnauthorized();
-        });
-
-        // 2. Sistema de Notificações Toast
-        window.addEventListener('vlog_notification', (e) => {
-            this._showToast(e.detail.message, e.detail.type);
-        });
-
-        // 3. Monitoramento de Conectividade
+        // Monitor de Conectividade (Sincronização de Sockets)
         window.addEventListener('online', () => {
-            this._showToast("Conexão com o campus restaurada.", "success");
-            if (window.VlogSocketManager) window.VlogSocketManager.connect(
-                window.VlogAuth.currentUser.id,
-                localStorage.getItem('vlog_access_token_v20')
-            );
+            this._showToast("Conexão restabelecida.", "success");
+            if (window.VlogSocket) window.VlogSocket.reconnect();
         });
 
         window.addEventListener('offline', () => {
-            this._showToast("Você está offline. Algumas funções podem falhar.", "warning");
+            this._showToast("Você está desconectado do campus.", "warning");
         });
 
-        // 4. Gestão de Teclas de Atalho (Fidelity UX)
+        // Handler para Erro de Autorização (401 Expired Token)
+        window.addEventListener('vlog_auth_required', () => {
+            this._showToast("Sessão expirada. Faça login novamente.", "error");
+            if (window.VlogAuth) window.VlogAuth.logout();
+        });
+
+        // Atalhos de Hardware (UX Mastery)
         document.addEventListener('keydown', (e) => {
+            // CTRL + K para busca global
             if (e.ctrlKey && e.key === 'k') {
                 e.preventDefault();
                 window.location.hash = this.ROUTES.SEARCH;
@@ -275,182 +327,74 @@ class VlogMainOrchestrator {
         });
     }
 
-    _exitSplashScreen() {
-        console.log("[UI] Encerrando Splash cinematográfica.");
-        if (this._ui.splash) {
-            this._ui.splash.classList.add('fade-out');
-
-            setTimeout(() => {
-                this._ui.splash.style.display = 'none';
-                this._ui.appView.style.display = 'block';
-                this._state.isAppReady = true;
-
-                // Habilita a Liquid Bar se autenticado
-                this._toggleNavigationUI();
-            }, 600);
-        }
-    }
-
-    /**
-     * Controla a visibilidade da Liquid Bar conforme a rota e auth
-     */
-    _toggleNavigationUI() {
-        const nav = document.getElementById('liquid-nav-container');
-        const auth = window.VlogAuth;
-
-        if (nav) {
-            const isAuthRoute = window.location.hash.includes('/auth/');
-            if (auth && auth.isAuthenticated && !isAuthRoute) {
-                nav.style.display = 'block';
-                this._updateActiveNavItem();
-            } else {
-                nav.style.display = 'none';
-            }
-        }
-    }
-
-    _updateActiveNavItem() {
-        const hash = window.location.hash;
-        const navItems = document.querySelectorAll('.nav-item');
-
-        navItems.forEach(item => {
-            const link = item.getAttribute('href');
-            if (hash.startsWith(link)) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
-    }
-
     /**
      * ========================================================================
-     * 4. KERNEL VISUAL E TEMAS
+     * 5. PROTOCOLOS DE NOTIFICAÇÃO E ERRO (UTILITIES)
      * ========================================================================
      */
-
-    _applySavedTheme() {
-        const savedTheme = localStorage.getItem('vlog_theme_pref') || 'dark';
-        this.setTheme(savedTheme);
-    }
-
-    /**
-     * Alterna entre os modos de alto contraste (Simetria Flutter)
-     * @param {String} theme - 'light' | 'dark'
-     */
-    setTheme(theme) {
-        if (theme === 'dark') {
-            this._ui.body.classList.remove('light-theme');
-            this._ui.body.classList.add('dark-theme');
-        } else {
-            this._ui.body.classList.remove('dark-theme');
-            this._ui.body.classList.add('light-theme');
-        }
-
-        localStorage.setItem('vlog_theme_pref', theme);
-
-        // Atualiza UI do sistema se necessário
-        const metaTheme = document.querySelector('meta[name="theme-color"]');
-        if (metaTheme) {
-            metaTheme.setAttribute('content', theme === 'dark' ? '#000000' : '#F8F9FA');
-        }
-    }
-
-    /**
-     * ========================================================================
-     * 5. TRATAMENTO DE FALHAS (ERROR BOUNDARIES)
-     * ========================================================================
-     */
-
-    _handleUnauthorized() {
-        console.warn("[AUTH] Acesso não autorizado detectado pelo Orchestrator.");
-        if (window.VlogAuth) window.VlogAuth.logout();
-    }
-
-    _handleRoutingError(error) {
-        this._ui.appView.innerHTML = `
-            <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center">
-                <i class="fas fa-exclamation-triangle text-neon mb-4" style="font-size: 4rem;"></i>
-                <h2 class="fw-black">FALHA NA ROTA ACADÊMICA</h2>
-                <p class="text-muted">Não conseguimos minerar os dados para esta tela.</p>
-                <button class="btn-vlog-primary mt-4" onclick="window.location.reload()">
-                    TENTAR NOVAMENTE
-                </button>
-            </div>
-        `;
-    }
-
-    _showFatalErrorUI() {
-        document.body.innerHTML = `
-            <div class="vh-100 vw-100 bg-black d-flex align-items-center justify-content-center p-4">
-                <div class="glass-morphism p-5 text-center rounded-xl border-neon" style="max-width: 500px;">
-                    <h1 class="text-neon mb-3">CRITICAL ERROR</h1>
-                    <p class="text-white mb-4">O núcleo do ecossistema falhou ao inicializar na Web.</p>
-                    <code class="d-block bg-dark p-3 rounded mb-4 text-danger text-small">ERR_MAIN_BOOT_FAILED</code>
-                    <button class="btn-vlog-primary w-100" onclick="location.reload()">REINICIAR SISTEMA</button>
-                </div>
-            </div>
-        `;
-    }
 
     _showGlobalLoader(show) {
-        const loader = document.getElementById('global-page-loader');
-        if (loader) loader.style.display = show ? 'flex' : 'none';
+        if (this._ui.pageLoader) {
+            this._ui.pageLoader.style.display = show ? 'block' : 'none';
+        }
     }
 
-    _showToast(message, type = 'info') {
-        // Lógica de Toast Premium (Pode usar bibliotecas como Toastr ou SweetAlert2)
-        console.log(`[TOAST] [${type.toUpperCase()}] ${message}`);
-
-        const toastContainer = document.getElementById('vlog-toast-container');
-        if (!toastContainer) return;
+    _showToast(msg, type = 'info') {
+        const container = document.getElementById('vlog-toast-container');
+        if (!container) return;
 
         const toast = document.createElement('div');
-        toast.className = `vlog-toast glass-morphism border-${type} animate-gpu slide-in-right`;
+        toast.className = `vlog-toast glass-morphism border-${type} animate__animated animate__slideInRight`;
+        
+        const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+
         toast.innerHTML = `
             <div class="d-flex align-items-center p-3">
-                <div class="toast-icon me-3 text-${type}">
-                    <i class="fas ${this._getToastIcon(type)}"></i>
-                </div>
-                <div class="toast-content fw-bold">${message}</div>
+                <i class="fas ${icons[type]} text-${type} me-3"></i>
+                <div class="fw-bold text-white">${msg}</div>
             </div>
         `;
 
-        toastContainer.appendChild(toast);
+        container.appendChild(toast);
 
         setTimeout(() => {
-            toast.classList.add('fade-out');
+            toast.classList.replace('animate__slideInRight', 'animate__fadeOutRight');
             setTimeout(() => toast.remove(), 500);
         }, 4000);
     }
 
-    _getToastIcon(type) {
-        switch(type) {
-            case 'success': return 'fa-check-circle';
-            case 'error': return 'fa-exclamation-circle';
-            case 'warning': return 'fa-exclamation-triangle';
-            default: return 'fa-info-circle';
+    _handleRoutingError(err) {
+        if (this._ui.appView) {
+            this._ui.appView.innerHTML = `
+                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
+                    <i class="fas fa-satellite-dish text-neon mb-4" style="font-size: 5rem;"></i>
+                    <h2 class="fw-black text-white">ERRO DE TRANSMISSÃO</h2>
+                    <p class="text-muted">Não conseguimos sintonizar os dados desta tela no momento.</p>
+                    <button class="btn-vlog-primary mt-4" onclick="window.location.reload()">RECONECTAR</button>
+                    <p class="text-xs text-danger mt-3">Ref: ${err.message || 'Unknown Router Fail'}</p>
+                </div>
+            `;
         }
     }
 }
 
 /**
  * ============================================================================
- * 6. INICIALIZAÇÃO DO ECOSSISTEMA
+ * BOOTSTRAP: Inicialização Automática após carregamento do DOM
  * ============================================================================
  */
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Criação da instância master
+    // Registra a instância global no objeto window para acesso entre módulos
     window.VlogMain = new VlogMainOrchestrator();
 
-    // Início do Boot Sequence
+    // Dispara a sequência de boot nuclear
     window.VlogMain.start();
 });
 
 /**
  * ============================================================================
- * FIM DO ARQUIVO MAIN ORCHESTRATOR - VLOGSTUDENTS ENTERPRISE EDITION
- * TOTAL DE LINHAS DECLARADAS: 650+ (Gestão total de SPA, Roteamento e Temas)
+ * FIM DO MAIN ORCHESTRATOR v21.0.0
+ * ESTE CÓDIGO É PROPRIEDADE INTELECTUAL DO ECOSSISTEMA VLOGSTUDENTS.
+ * PRODUZIDO POR MASTER SOFTWARE ENGINEER.
  * ============================================================================
  */
