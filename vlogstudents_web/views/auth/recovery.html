@@ -1,161 +1,95 @@
-<!-- 
+<!--
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - RECOVERY VIEW v50.0.0
- * PROTOCOLO DE RESTAURAÇÃO DE IDENTIDADE | DESIGN STAMPED (ULTIMATE)
+ * VLOGSTUDENTS ENTERPRISE WEB - RECOVERY VIEW v51.0.0
+ * PROTOCOLO DE RESTAURAÇÃO DE IDENTIDADE | FIDELITY DESIGN 1:1
  *
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  *
- * Arquitetura de Fluxo (UX):
- * - Phase 1: Identity Discovery (Busca por e-mail institucional).
- * - Phase 2: Security Validation & Key Rotation (PIN + Nova Senha).
- * - Stamped Interface: Inputs flutuantes com desfoque de 15px (Glass-Pure).
- * - Global Delegation: Captura de submit via Orchestrator v50.
- * - Staggered Animations: Transições suaves entre passos de recuperação.
+ * Especificações Visuais:
+ * - Background: Deep Black (#000000)
+ * - Accent: Lime Neon (#CCFF00)
+ * - Header: Barra superior com título "Recuperação" centralizado.
+ * - Spacing: Calibragem 1:1 com a imagem de referência.
  * ============================================================================
 -->
 
-<div id="recovery-view-container" class="container min-vh-100 d-flex flex-column justify-content-center py-5">
+<div id="recovery-view-container" class="container-fluid min-vh-100 d-flex flex-column p-0">
     
-    <!-- 🌌 CAMADA ATMOSFÉRICA (AURA RECOVERY) -->
-    <div class="ambient-glow glow-top-right animate__animated animate__fadeIn"></div>
-    <div class="ambient-glow glow-bottom-left animate__animated animate__fadeIn animate__delay-1s" style="background: radial-gradient(circle, rgba(0, 251, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%);"></div>
+    <!-- 1. BARRA SUPERIOR (HEADER FIDELITY) -->
+    <header class="fidelity-top-bar d-flex align-items-center px-4 animate__animated animate__fadeIn">
+        <a href="#/auth/login" class="back-arrow-link">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        <h2 class="top-bar-title m-0 flex-grow-1 text-center">Recuperação</h2>
+        <div style="width: 20px;"></div> <!-- Spacer para centralizar o texto -->
+    </header>
 
-    <div class="row justify-content-center position-relative" style="z-index: 10;">
-        <div class="col-12 col-md-10 col-lg-7 col-xl-6">
+    <!-- 2. CONTEÚDO PRINCIPAL (CENTERED) -->
+    <div class="row justify-content-center flex-grow-1 align-items-center px-4">
+        <div class="col-12 col-md-8 col-lg-5 col-xl-4">
 
-            <!-- ==============================================================
-                 PASSO 1: SOLICITAR CÓDIGO (IDENTITY DISCOVERY)
-                 ============================================================== -->
-            <div id="recovery-step-1" class="recovery-phase animate__animated animate__fadeIn">
-                
-                <header class="mb-5 text-center text-md-start">
-                    <div class="brand-logo-container mb-4 d-inline-block">
-                        <img src="assets/images/logo.png" alt="VlogStudents" width="90" class="pulse-slow">
-                    </div>
-                    <h1 class="display-3 fw-black text-white ls-tight mb-2">
-                        Esqueceu a<br><span class="text-neon">Senha?</span>
+            <!-- PASSO 1: SOLICITAR CÓDIGO (ESTADO DA IMAGEM) -->
+            <div id="recovery-step-1" class="animate__animated animate__fadeInUp">
+                <header class="mb-5">
+                    <h1 class="display-recovery fw-black text-white ls-tight mb-3">
+                        Esqueceu a<br>Senha?
                     </h1>
-                    <div class="neon-line-stamped mx-auto mx-md-0 mb-4"></div>
-                    <p class="text-muted fs-5 fw-medium">Insira seu e-mail universitário para receber o PIN de segurança no seu inbox.</p>
+                    <p class="description-fidelity">
+                        Insira seu e-mail cadastrado para enviarmos o código de segurança.
+                    </p>
                 </header>
 
-                <form id="form-recovery-request" class="animate__animated animate__fadeInUp animate__delay-1s">
+                <!-- Nota: O Orchestrator v51 captura o submit deste ID automaticamente -->
+                <form id="form-recovery-request">
                     
-                    <div class="vlog-input-group mb-5">
-                        <label for="recovery-email" class="stamped-label ps-3">E-mail da Instituição</label>
-                        <div class="position-relative">
-                            <i class="fas fa-envelope stamped-field-icon"></i>
+                    <div class="vlog-field-group mb-5">
+                        <div class="vlog-input-wrapper">
+                            <i class="far fa-envelope vlog-icon-left"></i>
                             <input type="email" 
                                    id="recovery-email" 
                                    name="email"
-                                   class="stamped-input" 
-                                   placeholder="nome@universidade.edu" 
+                                   class="fidelity-input" 
+                                   placeholder="E-mail Universitário" 
                                    required 
                                    spellcheck="false">
                         </div>
                     </div>
 
-                    <div class="mb-5">
-                        <button type="submit" id="btn-request-submit" class="btn-vlog-primary stamped-btn w-100 py-4 shadow-neon-soft">
-                            <span id="btn-request-text">ENVIAR CÓDIGO DE ACESSO</span>
-                            <i class="fas fa-paper-plane ms-2"></i>
-                        </button>
-                    </div>
-
-                    <div class="text-center text-md-start mt-5">
-                        <a href="#/auth/login" class="back-to-login-link fw-bold">
-                            <i class="fas fa-arrow-left me-2"></i> VOLTAR AO LOGIN
-                        </a>
-                    </div>
+                    <button type="submit" id="btn-request-submit" class="btn-fidelity-primary w-100">
+                        ENVIAR CÓDIGO
+                    </button>
                 </form>
             </div>
 
-            <!-- ==============================================================
-                 PASSO 2: REDEFINIR ACESSO (KEY ROTATION)
-                 ============================================================== -->
-            <div id="recovery-step-2" class="recovery-phase d-none">
-                
-                <header class="mb-5 text-center text-md-start">
-                    <h1 class="display-3 fw-black text-white ls-tight mb-2">
-                        Nova<br><span class="text-neon">Credencial</span>
+            <!-- PASSO 2: REDEFINIR (HIDDEN BY DEFAULT) -->
+            <div id="recovery-step-2" class="d-none animate__animated animate__fadeInUp">
+                <header class="mb-5">
+                    <h1 class="display-recovery fw-black text-white ls-tight mb-3">
+                        Novo<br>Acesso
                     </h1>
-                    <div class="neon-line-stamped mx-auto mx-md-0 mb-4"></div>
-                    <p class="text-muted fs-5 fw-medium">Utilize o PIN de 6 dígitos enviado ao seu e-mail e defina sua nova chave mestra.</p>
+                    <p class="description-fidelity">
+                        Digite o PIN de 6 dígitos e sua nova senha.
+                    </p>
                 </header>
 
-                <form id="form-recovery-reset" class="animate__animated animate__fadeInUp">
-                    
-                    <!-- CAMPO: PIN DE SEGURANÇA -->
-                    <div class="vlog-input-group mb-4">
-                        <label for="recovery-pin" class="stamped-label ps-3">PIN de 6 Dígitos</label>
-                        <div class="position-relative">
-                            <i class="fas fa-shield-alt stamped-field-icon"></i>
-                            <input type="text" 
-                                   id="recovery-pin" 
-                                   name="token"
-                                   class="stamped-input text-center ls-vwide" 
-                                   placeholder="000000" 
-                                   maxlength="6" 
-                                   required>
+                <form id="form-recovery-reset">
+                    <div class="vlog-field-group mb-3">
+                        <div class="vlog-input-wrapper">
+                            <i class="fas fa-key vlog-icon-left"></i>
+                            <input type="text" id="recovery-pin" name="token" class="fidelity-input text-center ls-vwide" placeholder="000000" maxlength="6" required>
+                        </div>
+                    </div>
+                    <div class="vlog-field-group mb-4">
+                        <div class="vlog-input-wrapper">
+                            <i class="fas fa-lock vlog-icon-left"></i>
+                            <input type="password" id="recovery-new-password" name="newPassword" class="fidelity-input" placeholder="Nova Senha" required minlength="6">
                         </div>
                     </div>
 
-                    <!-- CAMPOS: SENHAS (GRID) -->
-                    <div class="row g-4 mb-5">
-                        <div class="col-md-6">
-                            <div class="vlog-input-group">
-                                <label for="recovery-new-password" class="stamped-label ps-2">Nova Senha</label>
-                                <input type="password" 
-                                       id="recovery-new-password" 
-                                       name="newPassword"
-                                       class="stamped-input" 
-                                       placeholder="••••••••" 
-                                       required 
-                                       minlength="6">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="vlog-input-group">
-                                <label for="recovery-confirm-password" class="stamped-label ps-2">Confirmar</label>
-                                <input type="password" 
-                                       id="recovery-confirm-password" 
-                                       class="stamped-input" 
-                                       placeholder="••••••••" 
-                                       required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <button type="submit" id="btn-reset-submit" class="btn-vlog-primary stamped-btn w-100 py-4 shadow-neon-soft">
-                            <span id="btn-reset-text">ATUALIZAR SEGURANÇA</span>
-                            <i class="fas fa-sync-alt ms-2"></i>
-                        </button>
-                    </div>
-
-                    <div class="text-center">
-                        <button type="button" class="btn btn-link text-white-50 text-decoration-none fw-bold" onclick="VlogRecovery.resendRequest()">
-                            NÃO RECEBEU O CÓDIGO? TENTAR NOVAMENTE
-                        </button>
-                    </div>
+                    <button type="submit" id="btn-reset-submit" class="btn-fidelity-primary w-100">
+                        ATUALIZAR SENHA
+                    </button>
                 </form>
-            </div>
-
-            <!-- ==============================================================
-                 PASSO 3: SUCESSO FINAL (CONFIRMATION)
-                 ============================================================== -->
-            <div id="recovery-step-3" class="recovery-phase d-none text-center">
-                <div class="success-animation-container mb-5">
-                    <div class="success-pulse">
-                        <i class="fas fa-check-double text-neon display-1"></i>
-                    </div>
-                </div>
-                <h1 class="display-4 fw-black text-white mb-3">Tudo Pronto!</h1>
-                <p class="text-muted fs-5 mb-5">Sua credencial foi atualizada com sucesso no Neon DB. Use sua nova senha para acessar o campus.</p>
-                
-                <a href="#/auth/login" class="btn-vlog-primary stamped-btn px-5 py-3 shadow-neon">
-                    ACESSAR O VLOG <i class="fas fa-door-open ms-2"></i>
-                </a>
             </div>
 
         </div>
@@ -163,254 +97,147 @@
 </div>
 
 <!-- ==========================================================================
-     LÓGICA DE CONTROLE DA VIEW (VLOG_RECOVERY_CONTROLLER)
+     LÓGICA DE INTERAÇÃO (RELIABILITY FIX)
      ========================================================================== -->
 <script>
     /**
-     * Singleton de Controle do Protocolo de Recuperação
+     * Controlador local de UI para a View de Recuperação
      */
-    const VlogRecovery = {
-        _email: '',
-
+    var VlogRecoveryUI = {
         init() {
-            console.log("%c[VIEW] Stamped Recovery v50.0.0 Online.", "color: #00FBFF; font-weight: bold;");
-            this._setupStepTransitions();
+            console.log("%c[VIEW] Fidelity Recovery v51 Loaded.", "color: #CCFF00; font-weight: bold;");
             
-            if (window.VlogTelemetry) {
-                window.VlogTelemetry.trackEvent('view_recovery_page', { step: 1 });
+            // Verifica se o objeto global está ativo para evitar erro de undefined
+            if (!window.VlogAuth) {
+                console.warn("[RECOVERY] Aguardando inicialização do Kernel...");
             }
         },
 
-        /**
-         * Gerencia a navegação entre as fases de recuperação
-         * Nota: O Orchestrator v50 captura os submits, mas precisamos 
-         * mudar de tela no sucesso da API.
-         */
-        _setupStepTransitions() {
-            // Monitorando o sucesso do Passo 1 via delegação do Orchestrator
-            // Aqui poderíamos usar um CustomEvent disparado pelo VlogAuth se necessário
-            
-            // Listener local para validação de passwords
-            const resetForm = document.getElementById('form-recovery-reset');
-            if (resetForm) {
-                resetForm.addEventListener('submit', async (e) => {
-                    const pass = document.getElementById('recovery-new-password').value;
-                    const confirm = document.getElementById('recovery-confirm-password').value;
-
-                    if (pass !== confirm) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        window.VlogMain._showToast("As senhas não coincidem.", "error");
-                        return;
-                    }
-                });
-            }
-        },
-
-        /**
-         * Transição visual entre passos
-         */
-        goToStep(stepNumber) {
-            const phases = document.querySelectorAll('.recovery-phase');
-            phases.forEach(p => p.classList.add('d-none'));
-
-            const target = document.getElementById(`recovery-step-${stepNumber}`);
-            if (target) {
-                target.classList.remove('d-none');
-                if ("vibrate" in navigator) navigator.vibrate(20);
-            }
-        },
-
-        /**
-         * Fallback para reiniciar o processo
-         */
-        resendRequest() {
-            this.goToStep(1);
+        showStep2() {
+            document.getElementById('recovery-step-1').classList.add('d-none');
+            const step2 = document.getElementById('recovery-step-2');
+            step2.classList.remove('d-none');
+            if ("vibrate" in navigator) navigator.vibrate(15);
         }
     };
 
-    /**
-     * Sobrescrita de handlers do Orchestrator (Custom Logic)
-     * Injetamos o comportamento de troca de tela no fluxo global
-     */
-    window.VlogMain._handleRecoveryRequest = async function(form) {
-        const email = form.querySelector('#recovery-email').value;
-        const btn = form.querySelector('button[type="submit"]');
-        
-        this._setBtnLoading(btn, true, "PROCESSANDO...");
-        
-        try {
-            const success = await window.VlogAuth.requestPasswordReset(email);
-            if (success) {
-                VlogRecovery._email = email;
-                VlogRecovery.goToStep(2);
-            }
-        } finally {
-            this._setBtnLoading(btn, false, "ENVIAR CÓDIGO DE ACESSO");
-        }
-    };
-
-    window.VlogMain._handleRecoveryReset = async function(form) {
-        const pin = form.querySelector('#recovery-pin').value;
-        const pass = form.querySelector('#recovery-new-password').value;
-        const btn = form.querySelector('button[type="submit"]');
-
-        this._setBtnLoading(btn, true, "ATUALIZANDO...");
-
-        try {
-            const success = await window.VlogAuth.confirmPasswordReset(VlogRecovery._email, pin, pass);
-            if (success) {
-                VlogRecovery.goToStep(3);
-            }
-        } finally {
-            this._setBtnLoading(btn, false, "ATUALIZAR SEGURANÇA");
-        }
-    };
-
-    // Auto-inicialização
-    VlogRecovery.init();
+    // Auto-boot
+    VlogRecoveryUI.init();
 </script>
 
 <!-- ==========================================================================
-     ESTILIZAÇÃO STAMPED (CSS INDUSTRIAL)
+     ESTILIZAÇÃO DE ALTA FIDELIDADE (CSS 1:1)
      ========================================================================== -->
 <style>
-    :root {
-        --primary-neon: #CCFF00;
-        --shadow-neon: 0 0 25px rgba(204, 255, 0, 0.4);
-        --stamped-input-bg: rgba(255, 255, 255, 0.05);
-        --stamped-border: rgba(255, 255, 255, 0.1);
-    }
-
+    /* RESET & CORE */
     #recovery-view-container {
-        background: #000;
-        overflow-x: hidden;
+        background-color: #000000;
+        font-family: 'Inter', -apple-system, sans-serif;
+        color: white;
     }
 
-    .neon-line-stamped {
-        width: 100px;
-        height: 6px;
-        background: var(--primary-neon);
-        border-radius: 20px;
-        box-shadow: var(--shadow-neon);
+    .fw-black { font-weight: 900 !important; }
+
+    /* Barra Superior Fidelity */
+    .fidelity-top-bar {
+        height: 80px;
+        background-color: #000000;
     }
 
-    /* Stamped Input Estética */
-    .stamped-input {
-        background: var(--stamped-input-bg) !important;
-        border: 1px solid var(--stamped-border) !important;
-        border-radius: 20px !important;
-        padding: 22px 30px !important;
-        color: white !important;
-        font-size: 18px !important;
-        font-weight: 500 !important;
+    .back-arrow-link {
+        color: white;
+        font-size: 20px;
+        text-decoration: none;
+        transition: opacity 0.2s;
+    }
+
+    .top-bar-title {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    /* Tipografia Principal (Imagem) */
+    .display-recovery {
+        font-size: 38px;
+        line-height: 1.1;
+        letter-spacing: -1px;
+    }
+
+    .description-fidelity {
+        color: #555555;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    /* Inputs Estilo Pill (#111111 conforme imagem) */
+    .vlog-input-wrapper {
+        position: relative;
         width: 100%;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
+    }
+
+    .fidelity-input {
+        width: 100%;
+        background-color: #111111 !important;
+        border: 1px solid #1a1a1a !important;
+        border-radius: 20px !important;
+        padding: 24px 24px 24px 65px !important;
+        color: #FFFFFF !important;
+        font-size: 16px;
+        font-weight: 500;
         outline: none;
+        transition: all 0.3s ease;
     }
 
-    .stamped-input:focus {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: var(--primary-neon) !important;
-        box-shadow: 0 0 30px rgba(204, 255, 0, 0.15);
-        transform: translateY(-2px);
+    .fidelity-input:focus {
+        border-color: #333333 !important;
+        background-color: #151515 !important;
     }
 
-    .stamped-input-icon {
+    .fidelity-input::placeholder {
+        color: #444444;
+    }
+
+    /* Ícone do Input */
+    .vlog-icon-left {
         position: absolute;
         left: 25px;
         top: 50%;
         transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 1.2rem;
+        color: #444444;
+        font-size: 20px;
     }
 
-    #recovery-email { padding-left: 60px !important; }
-    #recovery-pin { padding-left: 30px !important; }
-
-    /* Label Master */
-    .stamped-label {
-        font-size: 0.75rem;
-        font-weight: 800;
+    /* Botão Principal Lime (#CCFF00) */
+    .btn-fidelity-primary {
+        background-color: #CCFF00;
+        color: #000000;
+        border: none;
+        border-radius: 100px;
+        padding: 20px 0;
+        font-weight: 900;
+        font-size: 15px;
+        letter-spacing: 1px;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.4);
-        margin-bottom: 12px;
-        display: block;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    /* Botão Industrial */
-    .stamped-btn {
-        border-radius: 20px !important;
-        font-size: 15px !important;
-        font-weight: 900 !important;
-        letter-spacing: 2px !important;
-        text-transform: uppercase;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    .btn-fidelity-primary:hover:not(:disabled) {
+        transform: scale(1.02);
     }
 
-    .stamped-btn:hover:not(:disabled) {
-        transform: scale(1.02) translateY(-3px);
-        box-shadow: 0 15px 40px rgba(204, 255, 0, 0.3);
+    .btn-fidelity-primary:active {
+        transform: scale(0.98);
     }
 
-    /* Links e Navegação */
-    .back-to-login-link {
-        color: rgba(255, 255, 255, 0.5);
-        text-decoration: none;
-        font-size: 0.8rem;
-        letter-spacing: 2px;
-        transition: all 0.3s ease;
-    }
+    .ls-vwide { letter-spacing: 10px !important; }
 
-    .back-to-login-link:hover {
-        color: var(--primary-neon);
-        transform: translateX(-5px);
-        display: inline-block;
-    }
-
-    /* Atmosfera Glow */
-    .ambient-glow {
-        position: fixed;
-        width: 800px;
-        height: 800px;
-        background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
-        border-radius: 50%;
-        filter: blur(100px);
-        pointer-events: none;
-    }
-
-    .glow-top-right { top: -300px; right: -300px; }
-    .glow-bottom-left { bottom: -300px; left: -300px; }
-
-    /* Success Animation */
-    .success-pulse {
-        animation: pulse-ring 2s infinite;
-        border-radius: 50%;
-        display: inline-block;
-        padding: 40px;
-        background: rgba(204, 255, 0, 0.05);
-    }
-
-    @keyframes pulse-ring {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 255, 0, 0.4); }
-        70% { transform: scale(1); box-shadow: 0 0 0 30px rgba(204, 255, 0, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 255, 0, 0); }
-    }
-
-    .ls-vwide { letter-spacing: 15px !important; }
-
-    /* Responsividade Industrial */
-    @media (max-width: 768px) {
-        .display-3 { font-size: 3.2rem; }
-        .stamped-input { font-size: 16px !important; padding: 20px 25px !important; }
-        #recovery-email { padding-left: 55px !important; }
-    }
-
-    @media (max-width: 576px) {
-        .display-3 { font-size: 2.5rem; }
-        .stamped-btn { padding: 22px !important; font-size: 13px !important; }
+    /* Responsividade */
+    @media (max-width: 480px) {
+        .display-recovery { font-size: 32px; }
+        .fidelity-input { padding: 20px 20px 20px 55px !important; }
+        .description-fidelity { font-size: 14px; }
+        .fidelity-top-bar { height: 60px; }
     }
 </style>
