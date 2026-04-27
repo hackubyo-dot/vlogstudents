@@ -1,33 +1,40 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS MASTER ROUTER ORCHESTRATOR v32.0.0 (ENTERPRISE EDITION)
- * ZERO 404 | ZERO MISMATCH | FULL BACKEND INTEGRATION | READY FOR FLUTTER
+ * VLOGSTUDENTS MASTER ROUTER ORCHESTRATOR v32.0.0 - ULTIMATE ENTERPRISE
+ * IDENTITY | CONTENT | SOCIAL | REALTIME CHAT | ECONOMY | STATUS
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Este arquivo é o ponto central de roteamento do ecossistema.
- * Gerencia a segurança via Middlewares JWT e a distribuição de carga para os
- * controladores especializados (Auth, Reels, Chat, Social, Economy).
+ * Este orquestrador é o coração do ecossistema VlogStudents. 
+ * Ele gerencia o fluxo de tráfego entre o Flutter (Mobile/Web) e os núcleos 
+ * de processamento do Node.js.
+ * 
+ * LOG DE ATUALIZAÇÕES v32.0.0:
+ * - Implementação de Confirmação de Leitura (Read Receipts) no Chat.
+ * - Integração do Google Federated Identity (Google Sign-In).
+ * - Sincronização de Sinais de Chamada e Metadados de Status.
+ * - Proteção de Rotas via JWT Middleware (Zero Trust Architecture).
  * ============================================================================
  */
 
 const express = require('express');
 const router = express.Router();
+const db = require('../config/db'); // Acesso direto para operações atômicas rápidas
 
 /**
  * ============================================================================
- * 🔐 MIDDLEWARES DE SEGURANÇA E INFRAESTRUTURA
+ * 🔐 MIDDLEWARES DE INFRAESTRUTURA
  * ============================================================================
  */
-// auth: Validação de Token JWT e Injeção de req.user
+// auth: Validação de integridade do token JWT e injeção do objeto req.user
 const auth = require('../middlewares/auth');
 
-// upload: Motor Multer para processamento de arquivos binários (Multipart/Form-Data)
+// upload: Gerenciador de buffer multipart/form-data para mídias (Multer)
 const upload = require('../middlewares/upload');
 
 /**
  * ============================================================================
- * 🎯 INJEÇÃO DE CONTROLADORES (ENTERPRISE CONTROLLERS)
+ * 🎯 INJEÇÃO DE CONTROLADORES DE NEGÓCIO (BUSINESS UNITS)
  * ============================================================================
  */
 const authCtrl = require('../controllers/authController');
@@ -40,50 +47,48 @@ const statusCtrl = require('../controllers/statusController');
 
 /**
  * ============================================================================
- * 🔓 MÓDULO DE IDENTIDADE (PUBLIC ROUTES)
- * Endpoints acessíveis sem necessidade de token de sessão.
+ * 🔓 MÓDULO DE AUTENTICAÇÃO E IDENTIDADE (PUBLIC)
+ * Endpoints abertos para handshake e criação de conta.
  * ============================================================================
  */
 
-// 🌐 NOVO: GOOGLE FEDERATED IDENTITY (v32.0.0)
-// Integração direta com Google Sign-In do Flutter
+// 🌐 GOOGLE IDENTITY: Login/Registro automático via Google Cloud
 router.post('/auth/google', authCtrl.googleAuth);
 
-// 📝 Registro Acadêmico Tradicional
+// 📝 REGISTER: Criação de conta tradicional com sistema de indicação
 router.post('/auth/register', authCtrl.register);
 
-// 🔑 Login via E-mail e Senha
+// 🔑 LOGIN: Autenticação via e-mail e senha institucional
 router.post('/auth/login', authCtrl.login);
 
-// 📩 Recuperação de Conta (Envio de PIN OTP)
+// 📩 RECOVERY REQUEST: Solicitação de PIN OTP para reset de senha
 router.post('/auth/recovery/request', authCtrl.requestRecovery);
 
-// 🔁 Redefinição de Senha (Validação de PIN + Nova Senha)
+// 🔁 RECOVERY RESET: Validação de PIN e definição de nova chave mestra
 router.post('/auth/recovery/reset', authCtrl.resetPassword);
 
 /**
  * ============================================================================
- * 👤 MÓDULO DE USUÁRIOS (PROTECTED ROUTES)
- * Gerenciamento de perfil e metadados do estudante.
+ * 👤 MÓDULO DE USUÁRIOS E NETWORKING (PROTECTED)
  * ============================================================================
  */
 
-// Obter dados do próprio usuário (Handshake inicial)
+// Obter dados do próprio perfil (Handshake inicial do App)
 router.get('/users/me', auth, userCtrl.getMe);
 
-// Visualizar perfil público de qualquer estudante (ID ou 'me')
+// Obter perfil público de qualquer estudante do campus
 router.get('/users/profile/:userId', auth, userCtrl.getProfile);
 
-// Auditoria de métricas sociais (Seguidores, Seguindo, Likes recebidos)
+// Auditoria de métricas: Seguidores, Seguindo e Reações acumuladas
 router.get('/users/social/metrics/:userId', auth, userCtrl.getSocialMetrics);
 
-// Global Campus Search: Busca inteligente de usuários por nome ou curso
+// Global Search: Busca de estudantes por nome, e-mail ou curso
 router.get('/users/search', auth, userCtrl.searchUsers);
 
-// Sincronização de metadados de perfil (Bio, Telefone, Universidade)
+// Sincronização de Metadados: Atualizar bio, telefone e universidade
 router.patch('/users/update', auth, userCtrl.updateProfile);
 
-// Pipeline de Biometria Visual: Upload de Avatar (Supabase Sync)
+// Media Pipeline: Upload de foto de perfil (Avatar) para Supabase
 router.post(
     '/users/profile/avatar',
     auth,
@@ -91,29 +96,25 @@ router.post(
     userCtrl.updateAvatar
 );
 
-// Protocolo de Encerramento: Desativação de conta (Soft Delete)
+// Account Deletion: Protocolo de encerramento de conta (Soft Delete)
 router.delete('/users/delete', auth, userCtrl.deleteAccount);
-
-// Estatísticas de Indicação: Quem entrou com seu Referral Code
-router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
 
 /**
  * ============================================================================
- * 🎬 MÓDULO DE CONTEÚDO (REELS / SHORTS)
- * Gerenciamento de vídeo de alta performance.
+ * 🎬 MÓDULO DE CONTEÚDO VERTICAL (REELS / VLOGS)
  * ============================================================================
  */
 
-// Feed Principal: Algoritmo de descoberta acadêmica
+// Discovery Feed: Algoritmo de entrega de vídeos curtos
 router.get('/reels', auth, reelCtrl.getFeed);
 
-// Galeria de Vídeos: Reels de um usuário específico
+// User Gallery: Lista todos os vídeos de um autor específico
 router.get('/reels/user/:userId', auth, reelCtrl.getUserReels);
 
-// Atomic Data: Detalhes completos de um vídeo específico
+// Reel Detail: Dados atômicos de um vídeo específico
 router.get('/reels/:id', auth, reelCtrl.getById);
 
-// Industrial Upload: Transmissão de vídeo para o Storage
+// Industrial Upload: Publicação de novo vídeo (Multipart)
 router.post(
     '/reels/create',
     auth,
@@ -121,128 +122,176 @@ router.post(
     reelCtrl.create
 );
 
-// Modificação de Metadados: Editar legenda ou tags do Reel
+// Metadata Update: Editar título, descrição ou tags do Reel
 router.patch('/reels/update/:id', auth, reelCtrl.update);
 
-// Purga de Conteúdo: Deletar Reel (Com limpeza de cache)
+// Content Purge: Remoção definitiva de conteúdo do servidor
 router.delete('/reels/delete/:id', auth, reelCtrl.delete);
 
-// Counter Sync: Incrementar visualização de forma assíncrona
+// View Counter: Incremento transacional de visualização (Auditado)
 router.post('/reels/:id/view', auth, reelCtrl.incrementView);
 
 /**
  * ============================================================================
- * ❤️ MÓDULO SOCIAL (INTERAÇÕES E NETWORKING)
+ * ❤️ MÓDULO SOCIAL E INTERAÇÕES
  * ============================================================================
  */
 
-// Feedback Visual: Curtir/Descurtir vídeos
+// Reel Like: Sistema de alternância (Toggle) de curtidas
 router.post('/social/like', auth, socialCtrl.toggleLike);
 
-// Comentários: Suporta Texto ou Áudio (Voices) via Multipart
+// Comments: Adicionar comentário (Suporta áudio voices via Multipart)
 router.post(
-    '/social/comment', 
-    auth, 
-    upload.single('file'), 
+    '/social/comment',
+    auth,
+    upload.single('file'),
     socialCtrl.addComment
 );
 
-// Listagem Cronológica de comentários de um vídeo
+// Comment Feed: Lista cronológica de comentários de um vídeo
 router.get('/social/comments/:reelId', auth, socialCtrl.getComments);
 
-// Reações Dinâmicas (🔥, 👏, 🧠) em comentários específicos
+// Reactions: Reações dinâmicas (🔥, 👏, 🧠) em comentários
 router.post('/social/comment/react', auth, socialCtrl.toggleReaction);
 
-// Networking: Seguir ou Deixar de seguir outro estudante
+// Networking: Seguir ou deixar de seguir um estudante
 router.post('/social/follow', auth, socialCtrl.toggleFollow);
 
 /**
  * ============================================================================
- * ⏳ MÓDULO DE STATUS (STORIES ACADÊMICOS)
- * Conteúdo efêmero com expiração automática (24h).
+ * 💬 MÓDULO DE COMUNICAÇÃO REALTIME (CHAT)
  * ============================================================================
  */
 
-// Buscar Círculo de Status: Apenas status ativos dos seguidos
+// Inbox: Listar todas as salas de conversa ativas do usuário
+router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
+
+// Room Orchestrator: Cria ou recupera uma sala entre dois estudantes
+router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
+
+// Message History: Recuperação de mensagens de uma sala (Paginação)
+router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
+
+// HTTP Message Fallback: Envio de mensagem via API (Sincronização Socket)
+router.post('/chat/messages', auth, chatCtrl.sendMessage);
+
+/**
+ * 🛠 FIX: READ ENDPOINT (CONFIRMAÇÃO DE LEITURA)
+ * Este endpoint resolve o erro 404 ao abrir salas de chat.
+ * Sincroniza o status 'visto' no banco de dados Neon.
+ */
+router.post('/chat/rooms/:roomId/read', auth, async (req, res) => {
+    const transactionId = `TX_${Date.now()}`;
+    try {
+        const { roomId } = req.params;
+        const userId = req.user.id;
+
+        console.log(`[CHAT_SYNC] ${transactionId} | Sala: ${roomId} | User: ${userId}`);
+
+        // Atualiza todas as mensagens não lidas onde o usuário é o destinatário
+        const updateResult = await db.query(
+            `UPDATE chat_messages 
+             SET is_read = true 
+             WHERE room_id = $1 
+             AND sender_id != $2 
+             AND is_read = false`,
+            [roomId, userId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Status de leitura sincronizado.',
+            affectedRows: updateResult.rowCount,
+            traceId: transactionId
+        });
+    } catch (error) {
+        console.error(`[CHAT_SYNC_ERROR] ${transactionId}`, error);
+        return res.status(500).json({
+            success: false,
+            message: 'Falha interna ao sincronizar leitura.',
+            traceId: transactionId
+        });
+    }
+});
+
+/**
+ * ============================================================================
+ * ⏳ MÓDULO DE STATUS (CAMPUS STORIES)
+ * ============================================================================
+ */
+
+// Stories Feed: Buscar todos os status ativos nas últimas 24h
 router.get('/status/active', auth, statusCtrl.getActive);
 
-// Publicação de Status: Suporta Mídia Binária (Foto/Vídeo)
+// Story Create: Publicar novo status (Suporta imagem/vídeo via Multipart)
 router.post(
-    '/status/create', 
-    auth, 
-    upload.single('file'), 
+    '/status/create',
+    auth,
+    upload.single('file'),
     statusCtrl.create
 );
 
 /**
  * ============================================================================
- * 💬 MÓDULO DE COMUNICAÇÃO (REALTIME CHAT)
+ * 💰 MÓDULO ECONÔMICO (GAMIFICATION & VOICES)
  * ============================================================================
  */
 
-// Listar salas de conversa ativas (Inbox)
-router.get('/chat/rooms', auth, chatCtrl.getMyRooms);
-
-// Criar canal de comunicação privado (1-on-1)
-router.post('/chat/rooms/create', auth, chatCtrl.createOrGetRoom);
-
-// Recuperar histórico de mensagens (Suporte a paginação)
-router.get('/chat/rooms/:roomId/messages', auth, chatCtrl.getMessages);
-
-// Envio de Mensagem (Fallback via HTTP se o Socket estiver instável)
-router.post('/chat/messages', auth, chatCtrl.sendMessage);
-
-/**
- * ============================================================================
- * 💰 MÓDULO ECONÔMICO (VOICES GAMIFICATION)
- * Sincronização com o Neon DB Ledger.
- * ============================================================================
- */
-
-// Histórico Financeiro: Entradas e saídas de Voices
+// Points History: Extrato de ganhos e gastos de Voices (Pontos)
 router.get('/economy/history', auth, economyCtrl.getHistory);
 
-// Campus Leaderboard: Ranking de estudantes com mais pontos
+// Campus Leaderboard: Ranking global de pontos do ecossistema
 router.get('/economy/leaderboard', auth, economyCtrl.getLeaderboard);
+
+// Referral Metrics: Dados sobre bônus de indicações concluídas
+router.get('/users/referrals/stats', auth, economyCtrl.getReferralStats);
 
 /**
  * ============================================================================
- * 📦 UTILS & SYSTEM TOOLS
+ * 📦 UTILS E SISTEMA
  * ============================================================================
  */
 
-// Uploader Genérico: Para documentos acadêmicos ou anexos avulsos
-router.post('/upload', auth, upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ success: false, message: "Ficheiro não recebido." });
-    return res.json({
-        success: true,
-        message: "Arquivo processado no núcleo com sucesso.",
-        file: req.file
-    });
+// Health Check Master: Monitoramento profundo de latência e conexão
+router.get('/health', async (req, res) => {
+    const start = Date.now();
+    try {
+        await db.query('SELECT 1'); // Ping no Neon DB
+        const latency = Date.now() - start;
+        res.json({
+            success: true,
+            status: 'OPERATIONAL',
+            version: '32.0.0',
+            db_latency: `${latency}ms`,
+            timestamp: new Date()
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, status: 'DEGRADED', error: e.message });
+    }
 });
 
-// Gateway Health Check: Monitoramento de latência e versão
-router.get('/health', (req, res) => {
-    res.json({
+// Generic Upload: Gateway para arquivos diversos (Documentos/Imagens)
+router.post('/upload', auth, upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: "Buffer vazio." });
+    return res.json({
         success: true,
-        message: 'VLOGSTUDENTS ENTERPRISE GATEWAY ONLINE 🚀',
-        version: '32.0.0',
-        environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date()
+        message: "Arquivo processado com sucesso.",
+        file: req.file
     });
 });
 
 /**
  * ============================================================================
  * ⚠️ PROTOCOLO DE ERRO 404 (FALLBACK)
- * Captura qualquer rota não mapeada no ecossistema.
+ * Captura qualquer tentativa de acesso a endpoints não mapeados.
  * ============================================================================
  */
 router.use((req, res) => {
-    console.error(`[ROUTE_NOT_FOUND] Erro de destino: ${req.method} ${req.originalUrl}`);
+    console.warn(`[ROUTE_404] Tentativa de acesso: ${req.method} ${req.originalUrl} de IP: ${req.ip}`);
     res.status(404).json({
         success: false,
-        message: `Este endpoint não existe no campus VlogStudents: ${req.method} ${req.originalUrl}`
+        message: `O endpoint acadêmico ${req.method} ${req.originalUrl} não foi localizado no servidor.`,
+        protocol: 'VLOGSTUDENTS_ENTERPRISE_CORE'
     });
 });
 
@@ -255,7 +304,7 @@ module.exports = router;
 
 /**
  * ============================================================================
- * FIM DO ROUTER ORCHESTRATOR v32.0.0
- * ESTE CÓDIGO É PROPRIEDADE INTELECTUAL DO ECOSSISTEMA VLOGSTUDENTS.
+ * FIM DO MASTER ROUTER ORCHESTRATOR v32.0.0
+ * TOTAL DE LINHAS DE LÓGICA E DOCUMENTAÇÃO: MÁXIMA COBERTURA.
  * ============================================================================
  */
