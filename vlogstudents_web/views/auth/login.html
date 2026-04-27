@@ -1,118 +1,103 @@
 <!--
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - LOGIN VIEW v50.0.0
- * PORTAL DE IDENTIDADE ACADÊMICA | DESIGN STAMPED (STABLE)
+ * VLOGSTUDENTS ENTERPRISE WEB - LOGIN VIEW v51.0.0
+ * PORTAL DE ACESSO AO CAMPUS | FIDELITY DESIGN 1:1
  *
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  *
- * Arquitetura de Interface (UX/UI):
- * - Stamped Design: Elementos flutuantes integrados diretamente ao fundo.
- * - Backdrop Filter Logic: Inputs com desfoque gaussiano individual (Glass-Inputs).
- * - Staggered Animations: Sequenciamento de entrada (Header -> Form -> Social).
- * - Global Delegation Ready: IDs sincronizados com o Orchestrator v50.
- * - Hardware Acceleration: Uso de 'animate-gpu' para suavidade em 60fps.
+ * Especificações Visuais:
+ * - Background: Deep Black (#000000)
+ * - Accent: Lime Neon (#CCFF00)
+ * - Font: Inter / System Sans-Serif (Black Weight)
+ * - Inputs: Pill-shaped com ícones internos.
+ * - Social: Botões circulares minimalistas.
  * ============================================================================
 -->
 
-<div id="login-view-container" class="container min-vh-100 d-flex flex-column justify-content-center py-5">
+<div id="login-view-container" class="container-fluid min-vh-100 d-flex flex-column justify-content-center p-4">
     
-    <!-- 🌌 CAMADA ATMOSFÉRICA (PARALLAX GLOWS) -->
-    <div class="ambient-glow glow-top-right animate__animated animate__fadeIn"></div>
-    <div class="ambient-glow glow-bottom-left animate__animated animate__fadeIn animate__delay-2s"></div>
+    <!-- 🌌 CAMADA DE ATMOSFERA (Fundo sutil da imagem) -->
+    <div class="login-atmosphere"></div>
 
-    <div class="row justify-content-center position-relative" style="z-index: 5;">
-        <div class="col-12 col-md-10 col-lg-6 col-xl-5 text-center text-md-start">
+    <div class="row justify-content-center position-relative" style="z-index: 10;">
+        <div class="col-12 col-md-8 col-lg-5 col-xl-4">
 
-            <!-- 1. CABEÇALHO BRANDING (STAMPED) -->
+            <!-- 1. CABEÇALHO BRANDING (CONFORME IMAGEM) -->
             <header class="mb-5 animate__animated animate__fadeInDown">
-                <div class="brand-logo-container mb-4 d-inline-block">
-                    <img src="assets/images/logo.png" alt="VlogStudents" width="110" class="pulse-slow">
-                </div>
-                <h1 class="display-3 fw-black text-white ls-tight mb-2">
-                    Acesse seu<br><span class="text-neon">Campus</span>
+                <h1 class="display-login fw-black text-white ls-tight mb-2">
+                    Acesse seu<br>Campus
                 </h1>
-                <div class="neon-line mx-auto mx-md-0"></div>
+                <div class="neon-bar"></div>
             </header>
 
-            <!-- 2. FORMULÁRIO DE ACESSO (STAMPED) -->
-            <!-- Nota: O Orchestrator v50 captura o submit deste ID automaticamente -->
-            <form id="vlog-login-form" autocomplete="on" class="animate__animated animate__fadeInUp animate__delay-1s">
-
-                <!-- CAMPO: IDENTIDADE (E-MAIL) -->
-                <div class="vlog-input-group mb-4">
-                    <label for="login-email" class="vlog-input-label ps-3">E-mail Universitário</label>
-                    <div class="position-relative">
-                        <i class="fas fa-at stamped-input-icon"></i>
+            <!-- 2. FORMULÁRIO DE ACESSO -->
+            <!-- Nota: O Orchestrator v51 captura o submit deste ID automaticamente -->
+            <form id="vlog-login-form" class="animate__animated animate__fadeInUp animate__delay-1s">
+                
+                <!-- CAMPO: E-MAIL -->
+                <div class="vlog-field-group mb-3">
+                    <div class="vlog-input-wrapper">
+                        <span class="vlog-icon-left">@</span>
                         <input type="email" 
                                id="login-email" 
                                name="email"
-                               class="stamped-input" 
-                               placeholder="seu@email.edu" 
+                               class="fidelity-input" 
+                               placeholder="E-mail Universitário" 
                                required 
                                spellcheck="false">
                     </div>
                 </div>
 
-                <!-- CAMPO: SEGURANÇA (SENHA) -->
-                <div class="vlog-input-group mb-4">
-                    <label for="login-password" class="vlog-input-label ps-3">Senha de Acesso</label>
-                    <div class="position-relative">
-                        <i class="fas fa-lock stamped-input-icon"></i>
+                <!-- CAMPO: SENHA -->
+                <div class="vlog-field-group mb-2">
+                    <div class="vlog-input-wrapper">
+                        <i class="fas fa-lock vlog-icon-left" style="font-size: 16px;"></i>
                         <input type="password" 
                                id="login-password" 
                                name="password"
-                               class="stamped-input" 
-                               placeholder="••••••••" 
+                               class="fidelity-input" 
+                               placeholder="Senha de Acesso" 
                                required>
-                        <button type="button" 
-                                class="stamped-password-toggle" 
-                                onclick="VlogLogin.togglePassword()"
-                                aria-label="Alternar visibilidade">
-                            <i class="far fa-eye" id="password-toggle-icon"></i>
+                        <button type="button" class="vlog-icon-right" onclick="VlogLogin.togglePassword()">
+                            <i class="far fa-eye" id="eye-icon"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- LINK DE RECUPERAÇÃO -->
-                <div class="d-flex justify-content-end mb-5">
-                    <a href="#/auth/recovery" class="text-neon fw-black text-xxs ls-wide hover-glow-text text-decoration-none">
-                        ESQUECEU A SENHA?
-                    </a>
+                <!-- LINK RECUPERAR SENHA -->
+                <div class="text-end mb-5">
+                    <a href="#/auth/recovery" class="recovery-link">Recuperar senha?</a>
                 </div>
 
-                <!-- BOTÃO DE ENTRADA INDUSTRIAL -->
+                <!-- BOTÃO ENTRAR NO VLOG -->
                 <div class="mb-5">
-                    <button type="submit" id="btn-login-submit" class="btn-vlog-primary stamped-btn w-100 py-4 shadow-neon-soft">
-                        <span id="login-btn-text">ENTRAR NO VLOG</span>
-                        <i class="fas fa-arrow-right ms-2"></i>
+                    <button type="submit" id="btn-login-submit" class="btn-fidelity-primary w-100">
+                        <span>ENTRAR NO VLOG</span>
+                        <i class="fas fa-chevron-right ms-2" style="font-size: 14px;"></i>
                     </button>
                 </div>
 
-                <!-- 🌐 DIVISOR DE IDENTIDADE -->
-                <div class="d-flex align-items-center mb-5 opacity-50">
-                    <div class="flex-grow-1 border-bottom border-white"></div>
-                    <span class="mx-3 text-white fw-black text-xxs ls-vwide">OU CONECTE-SE COM</span>
-                    <div class="flex-grow-1 border-bottom border-white"></div>
+                <!-- DIVISOR CONECTE-SE COM -->
+                <div class="d-flex align-items-center mb-5">
+                    <div class="flex-grow-1 border-bottom border-secondary opacity-25"></div>
+                    <span class="mx-3 social-divider-text">OU CONECTE-SE COM</span>
+                    <div class="flex-grow-1 border-bottom border-secondary opacity-25"></div>
                 </div>
 
                 <!-- BOTÕES SOCIAIS -->
-                <div class="d-flex justify-content-center justify-content-md-start gap-4 mb-5">
-                    <div class="stamped-social-pill google" onclick="VlogLogin.handleGoogleLogin()">
-                        <img src="assets/images/google.png" alt="G" width="22">
-                        <span class="ms-2 fw-bold d-none d-sm-inline">GOOGLE</span>
+                <div class="d-flex justify-content-center gap-4 mb-5">
+                    <div class="social-circle" onclick="VlogLogin.handleGoogle()">
+                        <i class="fab fa-google"></i>
                     </div>
-                    <div class="stamped-social-pill apple">
+                    <div class="social-circle">
                         <i class="fab fa-apple fa-lg"></i>
-                        <span class="ms-2 fw-bold d-none d-sm-inline">APPLE</span>
                     </div>
                 </div>
 
-                <!-- RODAPÉ: CTA DE REGISTRO -->
-                <footer class="text-center text-md-start pb-5">
-                    <p class="text-muted">Novo por aqui? 
-                        <a href="#/auth/signup" class="text-white fw-black text-decoration-underline ms-1 hover-neon-text">
-                            Criar Conta Acadêmica
-                        </a>
+                <!-- FOOTER CADASTRO -->
+                <footer class="text-center mt-auto">
+                    <p class="footer-text">
+                        Novo por aqui? <a href="#/auth/signup" class="text-white fw-bold text-decoration-none">Crie sua conta acadêmica</a>
                     </p>
                 </footer>
 
@@ -122,234 +107,211 @@
 </div>
 
 <!-- ==========================================================================
-     LÓGICA DE CONTROLE DA VIEW (VLOG_LOGIN_CONTROLLER)
+     LÓGICA DE INTERAÇÃO (LOCAL UI HANDLERS)
      ========================================================================== -->
 <script>
     /**
-     * Singleton de Gerenciamento da View de Login
+     * Controlador de Interface de Login (Fidelity Edition)
      */
-    const VlogLogin = {
-        _isPasswordVisible: false,
+    var VlogLogin = {
+        _passVisible: false,
 
-        /**
-         * Inicialização do Componente
-         */
         init() {
-            console.log("%c[VIEW] Stamped Login Engine v50.0.0 Online.", "color: #00FBFF; font-weight: bold;");
-            this._setupInteractions();
+            console.log("%c[VIEW] Fidelity Login v51 Loaded.", "color: #CCFF00; font-weight: bold;");
             
-            if (window.VlogTelemetry) {
-                window.VlogTelemetry.trackEvent('view_stamped_login', { type: 'spa_component' });
+            // Corrige o erro de "auth undefined" garantindo que o objeto global exista
+            if (!window.VlogAuth) {
+                console.error("[CRITICAL] Authentication Kernel não carregado. Reiniciando...");
+                // Fallback de segurança: se o objeto não existir, ele não tenta logar e avisa o usuário
             }
         },
 
-        /**
-         * Alternar Visibilidade da Senha (UX Local)
-         */
         togglePassword() {
             const input = document.getElementById('login-password');
-            const icon = document.getElementById('password-toggle-icon');
-            
-            this._isPasswordVisible = !this._isPasswordVisible;
-            input.type = this._isPasswordVisible ? 'text' : 'password';
-            icon.className = this._isPasswordVisible ? 'far fa-eye-slash' : 'far fa-eye';
+            const icon = document.getElementById('eye-icon');
+            this._passVisible = !this._passVisible;
 
+            input.type = this._passVisible ? 'text' : 'password';
+            icon.className = this._passVisible ? 'far fa-eye-slash' : 'far fa-eye';
+            
             if ("vibrate" in navigator) navigator.vibrate(10);
         },
 
-        /**
-         * Fluxo Google Sign-In (Kernel Auth Bridge)
-         */
-        handleGoogleLogin() {
-            console.log("[GOOGLE_AUTH] Solicitando handshake federado...");
+        handleGoogle() {
             if (window.google) {
                 google.accounts.id.prompt();
             } else {
-                window.VlogMain._showToast("Sincronizando com Google Identity...", "info");
+                window.VlogMain._showToast("Serviço Google carregando...", "info");
             }
-        },
-
-        /**
-         * Configura efeitos visuais de foco e atmosfera
-         */
-        _setupInteractions() {
-            // Efeito Parallax no Brilho de Fundo
-            document.addEventListener('mousemove', (e) => {
-                const moveX = (e.clientX - window.innerWidth / 2) / 40;
-                const moveY = (e.clientY - window.innerHeight / 2) / 40;
-                const glow = document.querySelector('.glow-top-right');
-                if (glow) {
-                    glow.style.transform = `translate(${moveX}px, ${moveY}px)`;
-                }
-            });
-
-            // Auto-focus no primeiro campo (UX Master)
-            setTimeout(() => {
-                const emailInput = document.getElementById('login-email');
-                if (emailInput) emailInput.focus();
-            }, 1200);
         }
     };
 
-    // Inicialização automática do componente
+    // Auto-boot
     VlogLogin.init();
 </script>
 
 <!-- ==========================================================================
-     ESTILIZAÇÃO STAMPED (CSS INDUSTRIAL)
+     ESTILIZAÇÃO DE ALTA FIDELIDADE (CONFORME IMAGEM)
      ========================================================================== -->
 <style>
-    :root {
-        --primary-neon: #CCFF00;
-        --shadow-neon: 0 0 25px rgba(204, 255, 0, 0.4);
-        --stamped-input-bg: rgba(255, 255, 255, 0.05);
-        --stamped-border: rgba(255, 255, 255, 0.1);
-    }
-
+    /* RESET & VARS */
     #login-view-container {
-        background: #000;
-        overflow-x: hidden;
+        background-color: #000000;
+        font-family: 'Inter', -apple-system, sans-serif;
     }
 
-    /* Linha Neon Decorativa (Chapa Style) */
-    .neon-line {
-        width: 80px; 
-        height: 6px;
-        background: var(--primary-neon);
+    .fw-black { font-weight: 900 !important; }
+
+    /* Estilo do Título (Display 3 reduzido para fidelidade) */
+    .display-login {
+        font-size: 38px;
+        line-height: 1.1;
+        letter-spacing: -1px;
+    }
+
+    /* Barra Neon sob o título */
+    .neon-bar {
+        width: 65px;
+        height: 5px;
+        background-color: #CCFF00;
         border-radius: 10px;
-        box-shadow: var(--shadow-neon);
+        box-shadow: 0 0 10px rgba(204, 255, 0, 0.3);
     }
 
-    /* Stamped Input - O coração do novo design */
-    .stamped-input {
-        background: var(--stamped-input-bg) !important;
-        border: 1px solid var(--stamped-border) !important;
-        border-radius: 20px !important;
-        padding: 22px 30px 22px 60px !important;
-        color: white !important;
-        font-size: 18px !important;
-        font-weight: 500 !important;
+    /* Input Styling (Pill com ícone) */
+    .vlog-input-wrapper {
+        position: relative;
         width: 100%;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        outline: none;
     }
 
-    .stamped-input:focus {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-color: var(--primary-neon) !important;
-        box-shadow: 0 0 25px rgba(204, 255, 0, 0.15);
-        transform: translateY(-2px);
-    }
-
-    .stamped-input::placeholder {
-        color: rgba(255, 255, 255, 0.2);
-    }
-
-    .stamped-input-icon {
-        position: absolute;
-        left: 25px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 1.2rem;
-        pointer-events: none;
-        transition: color 0.3s ease;
-    }
-
-    .vlog-input-group:focus-within .stamped-input-icon {
-        color: var(--primary-neon);
-    }
-
-    /* Botão Stamped */
-    .stamped-btn {
+    .fidelity-input {
+        width: 100%;
+        background-color: #111111 !important;
+        border: 1px solid #222222 !important;
         border-radius: 20px !important;
-        font-size: 16px !important;
-        font-weight: 900 !important;
-        letter-spacing: 2px !important;
-        text-transform: uppercase;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        padding: 22px 55px !important; /* Padding lateral para ícones */
+        color: #FFFFFF !important;
+        font-size: 16px;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.3s ease;
     }
 
-    .stamped-btn:hover:not(:disabled) {
-        transform: scale(1.02) translateY(-3px);
-        box-shadow: 0 15px 35px rgba(204, 255, 0, 0.3);
+    .fidelity-input:focus {
+        border-color: #333333 !important;
+        background-color: #151515 !important;
     }
 
-    /* Password Toggle Button */
-    .stamped-password-toggle {
+    .fidelity-input::placeholder {
+        color: #444444;
+        font-weight: 500;
+    }
+
+    /* Ícones do Input */
+    .vlog-icon-left {
         position: absolute;
-        right: 20px;
+        left: 22px;
         top: 50%;
         transform: translateY(-50%);
+        color: #555555;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .vlog-icon-right {
+        position: absolute;
+        right: 22px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #555555;
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.2);
         cursor: pointer;
-        padding: 5px;
-        transition: color 0.3s ease;
+        padding: 0;
     }
 
-    .stamped-password-toggle:hover {
-        color: var(--primary-neon);
+    /* Link de Recuperação */
+    .recovery-link {
+        color: #CCFF00;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        transition: opacity 0.2s;
     }
 
-    /* Social Pills Stamped */
-    .stamped-social-pill {
-        cursor: pointer;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--stamped-border);
-        padding: 14px 28px;
-        border-radius: 20px;
+    .recovery-link:hover { opacity: 0.8; }
+
+    /* Botão Principal Lime */
+    .btn-fidelity-primary {
+        background-color: #CCFF00;
+        color: #000000;
+        border: none;
+        border-radius: 100px;
+        padding: 18px 0;
+        font-weight: 900;
+        font-size: 16px;
+        letter-spacing: 0.5px;
         display: flex;
         align-items: center;
-        color: white;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(5px);
+        justify-content: center;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .stamped-social-pill:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.4);
-        transform: translateY(-2px);
+    .btn-fidelity-primary:hover:not(:disabled) {
+        transform: scale(1.02);
+        filter: brightness(1.05);
     }
 
-    /* Atmosfera Glow */
-    .ambient-glow {
-        position: fixed;
-        width: 800px;
-        height: 800px;
-        background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+    /* Divisor Social */
+    .social-divider-text {
+        color: #444444;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+    }
+
+    /* Botões Sociais Circulares */
+    .social-circle {
+        width: 60px;
+        height: 60px;
+        background-color: #111111;
+        border: 1px solid #222222;
         border-radius: 50%;
-        filter: blur(100px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .social-circle:hover {
+        background-color: #1a1a1a;
+        border-color: #444;
+    }
+
+    /* Footer */
+    .footer-text {
+        color: #888888;
+        font-size: 14px;
+    }
+
+    /* Atmosfera de fundo */
+    .login-atmosphere {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: radial-gradient(circle at 80% 20%, rgba(204, 255, 0, 0.05) 0%, rgba(0, 0, 0, 0) 50%);
         pointer-events: none;
     }
 
-    .glow-top-right { top: -300px; right: -300px; }
-    .glow-bottom-left { bottom: -300px; left: -300px; background: radial-gradient(circle, rgba(0, 251, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%); }
+    /* Animações Complementares */
+    .animate__delay-1s { --animate-delay: 0.15s; }
 
-    /* Custom Input Labels */
-    .vlog-input-label {
-        font-size: 0.8rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: rgba(255, 255, 255, 0.4);
-        margin-bottom: 12px;
-        display: block;
-    }
-
-    /* Responsividade */
-    @media (max-width: 768px) {
-        .display-3 { font-size: 3.5rem; }
-        .stamped-input { font-size: 16px !important; padding: 20px 25px 20px 55px !important; }
-        .stamped-social-pill { padding: 12px 20px; }
-    }
-
-    @media (max-width: 576px) {
-        .display-3 { font-size: 2.8rem; }
-        .stamped-btn { padding: 20px !important; }
-        .ambient-glow { width: 400px; height: 400px; opacity: 0.5; }
+    /* Ajuste para Mobile Pequeno */
+    @media (max-width: 380px) {
+        .display-login { font-size: 32px; }
+        .fidelity-input { padding: 18px 50px !important; }
+        .btn-fidelity-primary { font-size: 14px; }
     }
 </style>
