@@ -3,44 +3,44 @@
 <head>
     <!--
      * ============================================================================
-     * VLOGSTUDENTS ENTERPRISE WEB - SUPREME ENTRYPOINT v20.0.0
-     * ORQUESTRADOR CENTRAL DE INFRAESTRUTURA VISUAL E LOGICA
+     * VLOGSTUDENTS ENTERPRISE WEB - SUPREME ENTRYPOINT v41.0.0
+     * ORQUESTRADOR CENTRAL DE INFRAESTRUTURA VISUAL E LOGICA (NUCLEAR)
      *
      * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
      *
-     * Arquitetura de Cabeçalho:
-     * - Meta-Data Industrial: SEO, Social Graph (OG), Mobile Safe-Area.
-     * - Vendor Bridge: Bootstrap 5, FontAwesome 6 Pro, Animate.css.
-     * - Design Tokens: Injeção de variáveis CSS e motores de Glassmorphism.
-     * - Google Identity: Configuração GIS (Google Identity Services) para Web.
+     * Arquitetura de Interface:
+     * - Purified Splash: Imersão total sem distrações visuais de branding.
+     * - Meta-Data Industrial: SEO, Social Graph (OG), Viewport-fit cover.
+     * - Global Design Tokens: Matriz cromática neon e motores de Glassmorphism.
+     * - Google Identity: Configuração GIS integrada para handshake Node.js.
      * ============================================================================
     -->
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <meta name="description" content="VlogStudents Enterprise - A rede social exclusiva para a elite universitária.">
+    <meta name="description" content="VlogStudents Enterprise - O epicentro acadêmico digital.">
 
     <title>VlogStudents | Campus Web Master</title>
 
-    <!-- FAVICON & APP ICONS (FIDELITY ASSETS) -->
+    <!-- FAVICON & APP ICONS -->
     <link rel="icon" type="image/png" href="/assets/images/logo.png">
     <link rel="apple-touch-icon" href="/assets/images/logo.png">
 
-    <!-- GOOGLE IDENTITY SERVICES CLIENT ID (WEB LOGIN FIX) -->
+    <!-- GOOGLE IDENTITY SERVICES CLIENT ID (WEB SYNC) -->
     <meta name="google-signin-client_id" content="435332250244-vh9rravt3cmf1vmng29rbbs4vj3iccle.apps.googleusercontent.com">
 
-    <!-- VENDOR CSS (BIBLIOTECAS EXTERNAS) -->
+    <!-- VENDOR CSS (EXTERNAL CORE) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
-    <!-- DNA VISUAL VLOGSTUDENTS (CSS KERNELS) -->
-    <link rel="stylesheet" href="/assets/css/variables.css">      <!-- Design Tokens & Matriz Cromática -->
-    <link rel="stylesheet" href="/assets/css/style.css">          <!-- Global Style & Layout Resets -->
-    <link rel="stylesheet" href="/assets/css/glassmorphism.css">   <!-- Motor de Transparência Gaussiana -->
-    <link rel="stylesheet" href="/assets/css/animations.css">     <!-- Cinematic Transitions & Keyframes -->
-    <link rel="stylesheet" href="/assets/css/components.css">     <!-- UI Kit: Pill Bars, Cards, Avatars -->
+    <!-- DNA VISUAL VLOGSTUDENTS (INDUSTRIAL KERNELS) -->
+    <link rel="stylesheet" href="/assets/css/variables.css">      <!-- Matriz Cromática -->
+    <link rel="stylesheet" href="/assets/css/style.css">          <!-- Global Layouts -->
+    <link rel="stylesheet" href="/assets/css/glassmorphism.css">   <!-- Glass Engine -->
+    <link rel="stylesheet" href="/assets/css/animations.css">     <!-- Keyframes & Transitions -->
+    <link rel="stylesheet" href="/assets/css/components.css">     <!-- UI Kit Master -->
 
     <!-- FONTES ACADÊMICAS (LATÊNCIA ZERO) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,77 +48,79 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS INLINE PARA CARREGAMENTO CRÍTICO (ANTI-FLASH) */
-        body { background-color: #000000; margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        /* CSS CRÍTICO (ANTI-FLASH & BOOTSTRAP VISUAL) */
+        body { background-color: #000000; margin: 0; overflow: hidden; height: 100vh; width: 100vw; font-family: 'Inter', sans-serif; }
         
+        /* SPLASH SCREEN PURIFICADA (APENAS ATMOSFERA E LOADING) */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #000000; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.8s ease-out;
+            transition: opacity 1s cubic-bezier(0.19, 1, 0.22, 1);
         }
         
         .splash-bg {
             position: absolute; width: 100%; height: 100%;
             background-image: url('/assets/images/background.png');
-            background-size: cover; background-position: center; opacity: 0.3;
+            background-size: cover; background-position: center; 
+            opacity: 0.5; /* Opacidade aumentada conforme solicitado */
         }
 
+        /* CONTAINER SPA (INJEÇÃO DE CONTEÚDO) */
+        #app-router-view { 
+            position: relative; width: 100%; height: 100vh; 
+            display: none; z-index: 10;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* BARRA DE PROGRESSO DE ROTA (VIRTUAL LOADER) */
         #global-page-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 3px;
             background: linear-gradient(to right, var(--primary-neon), var(--accent-cyan));
-            z-index: 10000; display: none; box-shadow: 0 0 10px var(--primary-neon);
+            z-index: 10000; display: none;
+            box-shadow: 0 0 12px var(--primary-neon);
         }
 
+        /* TOAST SYSTEM CONTAINER */
         #vlog-toast-container {
             position: fixed; top: 20px; right: 20px; z-index: 10001;
-            display: flex; flex-direction: column; gap: 10px;
+            display: flex; flex-direction: column; gap: 12px;
         }
 
+        /* CUSTOM SPINNER NEON */
         .spinner-neon { 
-            border-color: var(--primary-neon); 
-            border-right-color: transparent; 
-        }
-
-        /* Garantir que o conteúdo principal ocupe a tela toda */
-        #app-router-view { 
-            position: relative; 
-            width: 100%; 
-            min-height: 100vh; 
-            display: none; 
+            width: 4rem; height: 4rem; border-width: 0.15em; 
+            color: var(--primary-neon) !important;
         }
     </style>
 </head>
 <body class="dark-theme">
 
-    <!-- 1. CAMADA ATMOSFÉRICA (AMBIENT GLOWS) -->
+    <!-- 1. CAMADA ATMOSFÉRICA (GLOWS FIXOS DE CAMPUS) -->
     <div class="app-background-container">
         <div class="ambient-glow glow-top-right"></div>
         <div class="ambient-glow glow-bottom-left"></div>
     </div>
 
-    <!-- 2. LOADER DE ROTA (BARRA DE PROGRESSO SUPERIOR) -->
+    <!-- 2. LOADER DE ROTA (PROGRESSIVE BAR) -->
     <div id="global-page-loader"></div>
 
-    <!-- 3. MOTOR DE SPLASH CINEMÁTICO (KEN BURNS TRANSITION) -->
+    <!-- 3. SPLASH SCREEN PURIFICADA (THE CLEAN BOOT) -->
     <div id="splash-screen">
         <div class="splash-bg ken-burns"></div>
-        <div class="text-center position-relative">
-            <img src="/assets/images/logo.png" alt="VlogStudents" class="pulse-animation mb-4" width="120">
-            <div class="d-flex flex-column align-items-center">
-                <div class="spinner-border text-info mb-3" style="width: 3rem; height: 3rem; border-width: 0.25em;"></div>
-                <h5 class="text-info fw-bold ls-vwide animate__animated animate__fadeInUp">SINCRONIZANDO CAMPUS</h5>
-                <p class="text-muted text-xs fw-bold mt-2">v20.0.0 Master Edition</p>
-            </div>
-        </div>
+        <!-- Removido branding e textos: Apenas animação de pulso industrial -->
+        <div class="spinner-border spinner-neon" role="status"></div>
     </div>
 
-    <!-- 4. APP ROUTER VIEW (MAIN VIEWPORT) -->
+    <!-- 4. MAIN VIEWPORT (CONTEÚDO DINÂMICO SPA) -->
+    <!-- Este container recebe os templates do /views via Orchestrator -->
     <main id="app-router-view"></main>
 
-    <!-- 5. LIQUID GLASS NAVIGATION BAR (FLOATING MASTER NAV) -->
+    <!-- 5. LIQUID GLASS NAVIGATION HUB (FLOATING MASTER) -->
+    <!-- Visibilidade controlada dinamicamente via Main Orchestrator -->
     <div id="liquid-nav-container" class="liquid-nav-container" style="display: none;">
-        <nav class="liquid-nav-bar glass-morphism glass-reflect glass-noise">
+        <nav class="liquid-nav-bar glass-morphism glass-reflect">
             <a href="#/home/feed" class="nav-item active" data-nav="feed">
                 <i class="fas fa-home"></i>
                 <span>FEED</span>
@@ -131,7 +133,7 @@
                 <span>CHAT</span>
             </a>
 
-            <!-- BOTAO CENTRAL DE UPLOAD -->
+            <!-- AÇÃO CENTRAL: UPLOAD HUB -->
             <a href="#/post/upload" class="nav-plus-btn">
                 <i class="fas fa-plus"></i>
             </a>
@@ -147,10 +149,10 @@
         </nav>
     </div>
 
-    <!-- 6. CONTAINER DE NOTIFICAÇÕES (TOAST SYSTEM) -->
+    <!-- 6. CONTAINER DE NOTIFICAÇÕES (TOAST KIT) -->
     <div id="vlog-toast-container"></div>
 
-    <!-- 7. MODAIS GLOBAIS -->
+    <!-- 7. MODAL ROOT (OVERLAYS ACADÊMICOS) -->
     <div id="global-modals-root"></div>
 
     <!-- 
@@ -183,19 +185,20 @@
     <script src="/assets/js/modules/profile.js"></script> <!-- User Metadata CRUD -->
     
     <!-- E. MAIN ORCHESTRATOR (O GRANDE MAESTRO) -->
-    <script src="/assets/js/main.js"></script>           <!-- SPA Router & Bootstrap -->
+    <!-- Este script inicia o boot sequencial v41 -->
+    <script src="/assets/js/main.js"></script>
 
     <script>
         /**
          * Watchdog de Performance e Proteção de Interface
          */
         window.addEventListener('load', () => {
-            console.log('%c VLOGSTUDENTS ENTERPRISE %c Campus Web Master Online ', 
+            console.log('%c VLOGSTUDENTS ENTERPRISE %c Online ', 
                 'background: #CCFF00; color: #000; font-weight: bold; padding: 5px;', 
                 'background: #000; color: #CCFF00; padding: 5px;');
         });
 
-        // Previne menu de contexto em produção para manter a imersão
+        // Previne menu de contexto em produção para manter a estética industrial
         document.addEventListener('contextmenu', (e) => {
             if (window.location.hostname !== 'localhost') e.preventDefault();
         });
