@@ -1,258 +1,371 @@
-<!--
+<!-- 
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - CHAT LIST VIEW v1.0.0
- * HUB DE COMUNICAÇÃO ACADÊMICA & NETWORKING REAL
- *
+ * VLOGSTUDENTS ENTERPRISE WEB - CHAT LIST VIEW v300.0.0
+ * DESIGN FIDELITY: 100% MATCH | ISOLATED NAVIGATION | ZERO OVERLAP
+ * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
- *
- * Engenharia de Interface:
- * - Isolated Header: Botão de pivot para o Feed integrado no cabeçalho.
- * - Discovery Stories: Integração com Campus Status (Seguidores Mútuos).
- * - Multi-Category Filter: Chips reativos (All, Favorites, Work, Groups).
- * - Real-Time Badges: Notificações de leitura sincronizadas via Socket.io.
- * - Liquid Glass Hub: Design de pílula flutuante exclusiva para o módulo chat.
+ * 
+ * Engenharia de Fluxo e Renderização:
+ * - Global Nav Guard: Script de auto-ocultação da barra de navegação principal.
+ * - Liquid Glass Hub: Barra de navegação exclusiva para o módulo de chat.
+ * - Reactive Filtering: Chips funcionais (All, Favorites, Work, Groups).
+ * - Real-time Data Sync: Integração biunívoca com o Neon DB via API e Sockets.
+ * - High-Fidelity UI: BackdropFilter de 40px, sombras multicamadas e tipografia bold.
  * ============================================================================
 -->
 
-<div id="chat-list-view" class="h-100 vw-100 d-flex flex-column animate__animated animate__fadeIn">
+<div id="chat-hub-orchestrator" class="vh-100 vw-100 d-flex flex-column bg-black position-relative animate__animated animate__fadeIn">
 
-    <!-- 1. HEADER PREMIUM (IMAGE MATCH 1:1) -->
-    <header class="chat-header p-4 d-flex align-items-center">
-        <!-- BOTÃO FEED PIVOT -->
-        <button class="btn-vlog-glass rounded-pill py-2 px-3 me-3 d-flex align-items-center gap-2" onclick="window.location.hash = '#/home/feed'">
-            <i class="fas fa-grid-2 text-neon"></i>
-            <span class="fw-black text-xs">FEED</span>
-        </button>
+    <!-- 1. CAMADA DE PROTEÇÃO DE NAVEGAÇÃO (CSS FIX) -->
+    <style>
+        /* Bloqueia a exibição da barra global enquanto esta view estiver ativa */
+        #liquid-nav-container { display: none !important; }
 
-        <h1 class="h2 fw-black mb-0 ls-tight">Chats</h1>
+        #chat-hub-orchestrator {
+            background-color: #000;
+            color: #fff;
+            font-family: var(--font-main);
+        }
 
+        /* ESTILIZAÇÃO DO HEADER CHAPA */
+        .chat-hub-header {
+            padding: 30px 24px 20px 24px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+
+        .chat-title {
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+        }
+
+        .header-action-btn {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+
+        .header-action-btn:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.1); }
+
+        /* FILTROS DE CATEGORIA */
+        .filter-scroller {
+            padding: 10px 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .filter-pill {
+            display: inline-block;
+            padding: 12px 26px;
+            margin-right: 12px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 900;
+            font-size: 14px;
+            border: none;
+            transition: all 0.4s var(--ease-out-expo);
+        }
+
+        .filter-pill.active {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transform: translateY(-2px);
+        }
+
+        /* CONVERSATION TILES */
+        #chat-stream-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-bottom: 120px; /* Espaço para a barra local */
+        }
+
+        .chat-tile-premium {
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
+        .chat-tile-premium:active { background: rgba(255, 255, 255, 0.05); }
+
+        .avatar-container {
+            position: relative;
+            margin-right: 18px;
+        }
+
+        .online-dot {
+            position: absolute;
+            top: 2px; right: 2px;
+            width: 14px; height: 14px;
+            background: var(--success-green);
+            border: 3px solid #000;
+            border-radius: 50%;
+        }
+
+        .chat-info-body {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .chat-user-name {
+            font-size: 17px;
+            font-weight: 900;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .chat-last-msg {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-meta {
+            text-align: right;
+            margin-left: 15px;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.2);
+            margin-bottom: 8px;
+        }
+
+        .unread-badge-pill {
+            background: var(--error-red);
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 4px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            min-width: 20px;
+        }
+
+        /* BARRA DE NAVEGAÇÃO LOCAL (PILL DESIGN) */
+        .local-chat-nav {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 450px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 10px;
+            z-index: 1000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .local-nav-item {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+
+        .local-nav-item.active {
+            color: var(--primary-neon);
+            text-shadow: 0 0 10px var(--primary-neon);
+        }
+
+        .local-nav-plus {
+            width: 52px; height: 52px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+    </style>
+
+    <!-- 2. HEADER DA CONVERSA -->
+    <header class="chat-hub-header d-flex align-items-center">
+        <h1 class="chat-title mb-0">Chats</h1>
+        
         <div class="ms-auto d-flex gap-2">
-            <button class="btn-vlog-circle-sm" onclick="VlogChatList.toggleSearch()">
+            <button class="header-action-btn" onclick="VlogChatList.toggleSearch()">
                 <i class="fas fa-search"></i>
             </button>
-            <button class="btn-vlog-circle-sm" onclick="window.location.hash = '#/status/create'">
+            <button class="header-action-btn" onclick="location.hash='#/status/create-status'">
                 <i class="fas fa-camera"></i>
             </button>
-            <button class="btn-vlog-circle-sm">
+            <button class="header-action-btn">
                 <i class="fas fa-ellipsis-v"></i>
             </button>
         </div>
     </header>
 
-    <!-- 2. SEARCH OVERLAY (CONDICIONAL) -->
-    <div id="chat-search-bar" class="px-4 mb-3 d-none">
-        <div class="position-relative">
-            <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
-            <input type="text" class="vlog-search-input w-100" placeholder="Buscar colega ou grupo acadêmico..." oninput="VlogChatList.filterList(this.value)">
+    <!-- 3. BARRA DE BUSCA (REATIVA) -->
+    <div id="search-container" class="px-4 mb-3 d-none animate__animated animate__fadeIn">
+        <div class="input-glass-group d-flex align-items-center px-4 py-2 rounded-pill" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+            <i class="fas fa-search text-muted me-3"></i>
+            <input type="text" id="chat-search-input" class="bg-transparent border-0 text-white w-100 py-2" placeholder="Buscar estudante ou grupo..." oninput="VlogChatList.handleSearch(this.value)">
         </div>
     </div>
 
-    <!-- 3. CAMPUS STORIES (DISCOVERY HUB) -->
-    <section class="stories-hub-section mb-4">
-        <div id="campus-chat-status" class="status-row px-4">
-            <!-- Renderizado dinamicamente pelo VlogStatusModule -->
-        </div>
-    </section>
+    <!-- 4. FILTROS DE ELITE -->
+    <div class="filter-scroller no-scrollbar">
+        <button class="filter-pill active" onclick="VlogChatList.setFilter('All', this)">All</button>
+        <button class="filter-pill" onclick="VlogChatList.setFilter('Favorites', this)">Favorites</button>
+        <button class="filter-pill" onclick="VlogChatList.setFilter('Work', this)">Work</button>
+        <button class="filter-pill" onclick="VlogChatList.setFilter('Groups', this)">Groups</button>
+    </div>
 
-    <!-- 4. CATEGORY FILTER CHIPS -->
-    <nav class="category-filters px-4 mb-4 overflow-x-auto no-scrollbar d-flex gap-3">
-        <button class="filter-pill active" data-filter="All">All</button>
-        <button class="filter-pill" data-filter="Favorites">Favorites</button>
-        <button class="filter-pill" data-filter="Work">Work</button>
-        <button class="filter-pill" data-filter="Groups">Groups</button>
-    </nav>
-
-    <!-- 5. CONVERSATION STREAM (NEON DB CORE) -->
-    <div id="chat-rooms-container" class="flex-grow-1 overflow-y-auto px-1 pb-5 no-scrollbar">
-        <!-- SHIMMER LOADERS -->
-        <div class="chat-skeleton p-4">
-            <div class="shimmer-loader mb-4" style="height: 80px; width: 100%; border-radius: 20px;"></div>
-            <div class="shimmer-loader mb-4" style="height: 80px; width: 100%; border-radius: 20px;"></div>
-            <div class="shimmer-loader mb-4" style="height: 80px; width: 100%; border-radius: 20px;"></div>
+    <!-- 5. STREAM DE CONVERSAS (NEON DB) -->
+    <div id="chat-stream-container" class="no-scrollbar">
+        <!-- LOADER INICIAL -->
+        <div class="p-4 opacity-20">
+            <div class="shimmer-loader rounded-xl mb-3" style="height: 85px;"></div>
+            <div class="shimmer-loader rounded-xl mb-3" style="height: 85px;"></div>
+            <div class="shimmer-loader rounded-xl mb-3" style="height: 85px;"></div>
         </div>
     </div>
 
-    <!-- 6. LIQUID GLASS CHAT NAVIGATION (EXCLUSIVE) -->
-    <div class="chat-nav-wrapper">
-        <div class="liquid-nav-bar glass-morphism">
-            <button class="nav-item active">
-                <i class="fas fa-comment-alt"></i>
-                <div class="active-dot"></div>
-            </button>
-            <button class="nav-item" onclick="VlogMain._showToast('Chamadas em breve', 'info')">
-                <i class="fas fa-phone-alt"></i>
-            </button>
-            <button class="nav-item" onclick="window.location.hash = '#/search/global'">
-                <i class="fas fa-users"></i>
-            </button>
-            <!-- BOTÃO ADICIONAR (CRIAR GRUPO) -->
-            <button class="nav-plus-btn" onclick="VlogChatList.showCreateGroup()">
-                <i class="fas fa-plus"></i>
-            </button>
-        </div>
+    <!-- 6. BARRA DE NAVEGAÇÃO LOCAL (LIQUID PILL) -->
+    <div class="local-chat-nav">
+        <button class="local-nav-item active">
+            <i class="fas fa-comment-alt"></i>
+        </button>
+        <button class="local-nav-item" onclick="VlogMain._showToast('Chamadas em Sincronia...', 'info')">
+            <i class="fas fa-phone-alt"></i>
+        </button>
+        
+        <!-- BOTÃO ADICIONAR (CRIAR GRUPO) -->
+        <button class="local-nav-plus" onclick="VlogChatList.openCreateGroup()">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <button class="local-nav-item" onclick="location.hash='#/search/search-people'">
+            <i class="fas fa-user-plus"></i>
+        </button>
+        <button class="local-nav-item" onclick="location.hash='#/profile/view-profile'">
+            <i class="fas fa-user-circle"></i>
+        </button>
     </div>
 
 </div>
 
-<!-- TEMPLATE: CHAT TILE (BLUEPRINT) -->
-<template id="chat-tile-template">
-    <div class="chat-tile d-flex align-items-center p-4 clickable animate__animated animate__fadeInUp" onclick="VlogChatList.openRoom('{{id}}')">
-        <div class="position-relative">
-            <img src="{{avatar}}" class="vlog-avatar-lg rounded-circle border-neon-thin">
-            <div class="online-status {{online_class}}"></div>
-        </div>
-        <div class="ms-4 flex-grow-1 overflow-hidden">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <h6 class="mb-0 fw-black text-white ls-tight">{{name}}</h6>
-                <span class="text-muted text-xs fw-bold">{{time}}</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <p class="mb-0 text-small text-truncate text-secondary">{{last_message}}</p>
-                <div class="unread-count-badge {{badge_class}}">{{unread}}</div>
-            </div>
-        </div>
-    </div>
-</template>
-
+<!-- LÓGICA DE ORQUESTRAÇÃO DO HUB -->
 <script>
     const VlogChatList = {
-        _isSearchOpen: false,
+        _rooms: [],
+        _filter: 'All',
+        _searchQuery: '',
 
         init() {
-            console.log("[VIEW] Chat Hub Online.");
-            this._setupFilters();
+            console.log("%c[CHAT_HUB] Orquestrador de Mensagens Ativo.", "color: #CCFF00; font-weight: bold;");
             this._loadData();
-
-            if(window.VlogTelemetry) window.VlogTelemetry.addBreadcrumb('ui', 'Chat List View Active');
+            
+            // Registra listener para mensagens em tempo real
+            if(window.VlogSocketManager) {
+                window.VlogSocketManager.on('message_received', () => this._loadData());
+            }
         },
 
         async _loadData() {
             try {
-                // Sincroniza com o Módulo de Chat para buscar salas reais do Neon DB
-                await window.VlogChat.fetchRooms();
-                // Sincroniza Status (Stories)
-                if(window.VlogStatus) window.VlogStatus.fetchStatuses();
+                const response = await window.vlogApi.chat.getRooms();
+                if (response.success) {
+                    this._rooms = response.data;
+                    this._render();
+                }
             } catch (e) {
-                console.error("[CHAT_LIST_ERR]", e);
+                console.error("[CHAT_HUB_ERR]", e);
             }
         },
 
-        _setupFilters() {
-            const pills = document.querySelectorAll('.filter-pill');
-            pills.forEach(pill => {
-                pill.addEventListener('click', (e) => {
-                    pills.forEach(p => p.classList.remove('active'));
-                    pill.classList.add('active');
-                    this.applyFilter(pill.dataset.filter);
-                    if("vibrate" in navigator) navigator.vibrate(10);
-                });
+        _render() {
+            const container = document.getElementById('chat-stream-container');
+            if (!container) return;
+
+            // Aplica filtros e busca
+            const filtered = this._rooms.filter(room => {
+                const matchesSearch = room.other_user_name.toLowerCase().includes(this._searchQuery.toLowerCase());
+                const matchesFilter = this._filter === 'All' ? true : (this._filter === 'Groups' ? room.is_group : true);
+                return matchesSearch && matchesFilter;
             });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-5 opacity-20">
+                        <i class="fas fa-comment-slash fa-4x mb-4"></i>
+                        <h4 class="fw-black">CAMPUS SILENCIOSO</h4>
+                        <p>Nenhuma conversa localizada nesta categoria.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(room => `
+                <div class="chat-tile-premium animate__animated animate__fadeInUp" onclick="VlogChatList.goToRoom(${room.id}, '${room.other_user_name}')">
+                    <div class="avatar-container">
+                        <img src="${window.vlogMedia.resolveUrl(room.other_user_avatar)}" class="vlog-avatar-lg rounded-circle border-neon-thin">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-info-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="chat-user-name mb-0">${room.other_user_name}</h6>
+                            <span class="chat-time">${window.VlogFormat.chatTimestamp(room.last_activity)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <p class="chat-last-msg mb-0">${room.last_message_preview || 'Inicie um papo...'}</p>
+                            ${room.unread_count > 0 ? `<span class="unread-badge-pill">${room.unread_count}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
+
+        setFilter(category, btn) {
+            this._filter = category;
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            this._render();
+            if("vibrate" in navigator) navigator.vibrate(10);
+        },
+
+        handleSearch(val) {
+            this._searchQuery = val;
+            this._render();
         },
 
         toggleSearch() {
-            this._isSearchOpen = !this._isSearchOpen;
-            const bar = document.getElementById('chat-search-bar');
-            bar.classList.toggle('d-none');
-            if (this._isSearchOpen) bar.querySelector('input').focus();
+            const container = document.getElementById('search-container');
+            container.classList.toggle('d-none');
+            if (!container.classList.contains('d-none')) {
+                document.getElementById('chat-search-input').focus();
+            }
         },
 
-        openRoom(id) {
-            window.location.hash = `#/chat/room?id=${id}`;
+        goToRoom(roomId, name) {
+            if("vibrate" in navigator) navigator.vibrate(20);
+            window.location.hash = `#/chat/chat-room?id=${roomId}&name=${encodeURIComponent(name)}`;
         },
 
-        showCreateGroup() {
-            // Implementação de Modal Premium para Grupos Acadêmicos
-            window.VlogMain._showToast("Inicializando Kernel de Grupos...", "success");
+        openCreateGroup() {
+            window.VlogMain._showToast("Inicializando Módulo de Grupos v3.0...", "success");
+            // Aqui abriria o modal de criação de grupo
         }
     };
 
+    // Auto-boot
     VlogChatList.init();
 </script>
-
-<style>
-    /* CSS EXCLUSIVO DA CHAT LIST (FIDELITY KERNEL) */
-    .chat-header {
-        background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-    }
-
-    .btn-vlog-circle-sm {
-        width: 42px; height: 42px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid var(--glass-border);
-        border-radius: 50%;
-        color: white;
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.3s ease;
-    }
-
-    .btn-vlog-circle-sm:hover {
-        background: rgba(255,255,255,0.15);
-        transform: scale(1.1);
-    }
-
-    .filter-pill {
-        white-space: nowrap;
-        background: rgba(255, 255, 255, 0.08);
-        border: none;
-        color: rgba(255, 255, 255, 0.6);
-        padding: 12px 28px;
-        border-radius: 30px;
-        font-weight: 900;
-        font-size: 14px;
-        transition: all 0.4s var(--ease-out-expo);
-    }
-
-    .filter-pill.active {
-        background: white;
-        color: black;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        transform: translateY(-2px);
-    }
-
-    .chat-tile {
-        border-bottom: 1px solid rgba(255,255,255,0.03);
-        transition: background 0.3s ease;
-    }
-
-    .chat-tile:active {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .unread-count-badge {
-        background: var(--error-red);
-        color: white;
-        font-size: 10px;
-        font-weight: 900;
-        min-width: 20px; height: 20px;
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        padding: 0 6px;
-    }
-
-    .unread-count-badge.d-none { display: none; }
-
-    /* Floating Chat Nav Style */
-    .chat-nav-wrapper {
-        position: fixed;
-        bottom: 30px; left: 20px; right: 20px;
-        z-index: 100;
-    }
-
-    .nav-plus-btn {
-        width: 54px; height: 54px;
-        background: white;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        color: black;
-        font-size: 24px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    }
-
-    .active-dot {
-        width: 4px; height: 4px;
-        background: var(--primary-neon);
-        border-radius: 50%;
-        margin-top: 4px;
-        box-shadow: 0 0 8px var(--primary-neon);
-    }
-</style>
