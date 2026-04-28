@@ -1,99 +1,301 @@
-<!--
+<!-- 
  * ============================================================================
  * VLOGSTUDENTS ENTERPRISE WEB - PROFILE EDITOR v1.0.0
- * FORMULÁRIO DE GESTÃO DE METADADOS ACADÊMICOS
+ * GESTÃO DE IDENTIDADE ACADÊMICA & BIOMETRIA VISUAL
+ * 
+ * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
+ * 
+ * Engenharia de Interface:
+ * - Smart Media Picker: Seleção de avatar com preview instantâneo em pílula de vidro.
+ * - Multi-Step Cloud Sync: Orquestração de Upload (Supabase) e Update (Neon).
+ * - Stamped Input Engine: Campos de dados flutuantes com BackdropFilter.
+ * - Pulse Animation Kernel: Aura neon no avatar sinalizando estado de edição.
+ * - Transmission Shield: Overlay de proteção durante o processamento Master.
  * ============================================================================
 -->
 
-<div id="edit-profile-view" class="h-100 vw-100 bg-black animate__animated animate__slideInRight">
+<div id="edit-profile-orchestrator" class="vh-100 vw-100 bg-black overflow-y-auto no-scrollbar animate__animated animate__slideInRight">
 
-    <!-- HEADER -->
-    <header class="navbar-glass py-3 px-4 d-flex align-items-center gap-3">
-        <button class="btn-vlog-circle-sm" onclick="window.history.back()">
+    <!-- 1. CAMADA ATMOSFÉRICA (AURA PURPLE) -->
+    <div class="ambient-glow glow-top-right opacity-30" style="background: radial-gradient(circle, var(--a-purple-30) 0%, transparent 70%);"></div>
+
+    <!-- 2. HEADER MODERNO (CHAPA) -->
+    <header class="navbar-glass sticky-top py-3 px-4 d-flex align-items-center justify-content-between">
+        <button class="btn-vlog-circle-sm hover-neon" onclick="window.history.back()">
             <i class="fas fa-times"></i>
         </button>
-        <h1 class="h4 fw-black text-white mb-0 ls-tight">Editar Perfil</h1>
+        
+        <h1 class="h5 fw-black text-white mb-0 ls-vwide">EDITAR PERFIL</h1>
+        
+        <div style="width: 42px;"></div> <!-- Equilíbrio visual -->
     </header>
 
     <div class="container py-5 px-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6 col-xl-5">
 
-        <form id="profile-edit-form" class="animate__animated animate__fadeInUp animate__delay-1s">
+                <!-- 3. AVATAR PICKER KERNEL -->
+                <section class="text-center mb-5 position-relative">
+                    <div class="avatar-picker-container d-inline-block position-relative">
+                        <!-- Aura de Brilho Pulsante -->
+                        <div class="avatar-pulse-ring"></div>
+                        
+                        <div class="avatar-preview-box rounded-circle border-neon-thin overflow-hidden">
+                            <img id="edit-avatar-preview" src="" class="w-100 h-100 object-fit-cover">
+                        </div>
 
-            <!-- SECTION: IDENTIDADE -->
-            <div class="mb-5">
-                <label class="vlog-input-label">DADOS DO CAMPUS</label>
+                        <!-- Botão de Gatilho de Hardware -->
+                        <button class="btn-camera-trigger position-absolute bottom-0 end-0" onclick="VlogProfileEdit.triggerFilePicker()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <p class="text-muted text-xs fw-black mt-4 ls-wide">TOQUE NA CÂMERA PARA ALTERAR FOTO</p>
+                    
+                    <!-- Campo de arquivo oculto -->
+                    <input type="file" id="avatar-input" class="d-none" accept="image/*">
+                </section>
 
-                <div class="vlog-input-group">
-                    <input type="text" id="edit-fullname" class="vlog-input-field" placeholder="Nome Completo" required>
-                </div>
+                <!-- 4. FORMULÁRIO DE IDENTIDADE ACADÊMICA -->
+                <form id="profile-master-form" class="animate__animated animate__fadeInUp">
+                    
+                    <!-- SEÇÃO: DADOS DE CAMPUS -->
+                    <div class="mb-5">
+                        <label class="vlog-input-label">Identidade Acadêmica</label>
+                        
+                        <div class="vlog-input-group position-relative mb-4">
+                            <i class="fas fa-user-circle position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="text" id="field-fullname" class="stamped-input ps-5" placeholder="Nome Completo" required>
+                        </div>
 
-                <div class="vlog-input-group">
-                    <input type="text" id="edit-university" class="vlog-input-field" placeholder="Sua Universidade" required>
-                </div>
+                        <div class="vlog-input-group position-relative mb-4">
+                            <i class="fas fa-university position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="text" id="field-university" class="stamped-input ps-5" placeholder="Sua Instituição" required>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO: SOBRE VOCÊ -->
+                    <div class="mb-5">
+                        <label class="vlog-input-label">Sua Jornada (Bio)</label>
+                        <div class="vlog-input-group">
+                            <textarea id="field-bio" class="stamped-input" rows="4" placeholder="Conte um pouco sobre seus estudos e interesses..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO: CONTATO ACADÊMICO -->
+                    <div class="mb-5">
+                        <label class="vlog-input-label">Conexão Externa</label>
+                        <div class="vlog-input-group position-relative">
+                            <i class="fas fa-phone-alt position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+                            <input type="tel" id="field-phone" class="stamped-input ps-5" placeholder="WhatsApp / Celular">
+                        </div>
+                    </div>
+
+                    <!-- 5. ACTION BUTTON (FIXED BOTTOM STYLE) -->
+                    <div class="py-4">
+                        <button type="submit" class="btn-vlog-primary stamped-btn w-100 py-3">
+                            <i class="fas fa-sync-alt me-2"></i>SINCRONIZAR PERFIL
+                        </button>
+                    </div>
+
+                </form>
+
             </div>
-
-            <!-- SECTION: SOBRE -->
-            <div class="mb-5">
-                <label class="vlog-input-label">SUA JORNADA (BIO)</label>
-                <div class="vlog-input-group">
-                    <textarea id="edit-bio" class="vlog-input-field" rows="4" placeholder="Conte um pouco sobre seus estudos..."></textarea>
-                </div>
-            </div>
-
-            <!-- SECTION: CONTATO -->
-            <div class="mb-5">
-                <label class="vlog-input-label">CONTATO ACADÊMICO</label>
-                <div class="vlog-input-group">
-                    <input type="tel" id="edit-phone" class="vlog-input-field" placeholder="WhatsApp / Celular">
-                </div>
-            </div>
-
-            <!-- ACTION BUTTON -->
-            <div class="fixed-bottom p-4 bg-black border-top-glass">
-                <button type="submit" class="btn-vlog-primary w-100 py-3">
-                    <i class="fas fa-sync-alt me-2"></i>SINCRONIZAR PERFIL
-                </button>
-            </div>
-
-        </form>
-
+        </div>
     </div>
+
+    <!-- 6. TRANSMISSION SHIELD (SYNC OVERLAY) -->
+    <div id="sync-overlay" class="fixed-top w-100 h-100 bg-black bg-opacity-80 d-none flex-column align-items-center justify-content-center" style="z-index: 2000; backdrop-filter: blur(15px);">
+        <div class="spinner-border text-neon mb-4" style="width: 4rem; height: 4rem; border-width: 0.2em;"></div>
+        <h4 class="text-white fw-black ls-vwide animate__animated animate__pulse animate__infinite">SINCRONIZANDO NÚCLEO</h4>
+        <p class="text-muted text-small mt-2">Atualizando banco de dados Neon...</p>
+    </div>
+
 </div>
 
+<!-- LÓGICA DE CONTROLE DO EDITOR -->
 <script>
     const VlogProfileEdit = {
+        _selectedFile: null,
+
         init() {
-            console.log("[VIEW] Editor de Perfil Ativo.");
-            this._hydrateForm();
-            this._setupSubmit();
+            console.log("[VIEW] Identity Editor Ativo.");
+            this._hydrateData();
+            this._setupListeners();
         },
 
-        _hydrateForm() {
+        /**
+         * Hidrata o formulário com dados reais do AuthManager
+         */
+        _hydrateData() {
             const user = window.VlogAuth.currentUser;
             if (user) {
-                document.getElementById('edit-fullname').value = user.fullName;
-                document.getElementById('edit-university').value = user.universityName;
-                document.getElementById('edit-bio').value = user.biography || "";
-                document.getElementById('edit-phone').value = user.phoneNumber || "";
+                document.getElementById('field-fullname').value = user.fullName || "";
+                document.getElementById('field-university').value = user.universityName || "";
+                document.getElementById('field-bio').value = user.biography || "";
+                document.getElementById('field-phone').value = user.phoneNumber || "";
+                
+                document.getElementById('edit-avatar-preview').src = 
+                    window.vlogMedia.resolveUrl(user.avatarUrl, 'avatar');
             }
         },
 
-        _setupSubmit() {
-            document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
+        _setupListeners() {
+            // Monitor de Upload de Arquivo
+            const fileInput = document.getElementById('avatar-input');
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this._selectedFile = file;
+                    // Preview local instantâneo
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        document.getElementById('edit-avatar-preview').src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                    if ("vibrate" in navigator) navigator.vibrate(10);
+                }
+            });
 
-                const data = {
-                    fullName: document.getElementById('edit-fullname').value,
-                    university: document.getElementById('edit-university').value,
-                    bio: document.getElementById('edit-bio').value,
-                    phone: document.getElementById('edit-phone').value
+            // Monitor de Submissão Master
+            document.getElementById('profile-master-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.save();
+            });
+        },
+
+        triggerFilePicker() {
+            document.getElementById('avatar-input').click();
+        },
+
+        /**
+         * PROTOCOLO DE SALVAMENTO (NEON + SUPABASE)
+         */
+        async save() {
+            this._showShield(true);
+            
+            try {
+                // 1. Fase de Upload (Binário)
+                if (this._selectedFile) {
+                    console.log("[SYNC] Iniciando transmissão de biometria visual...");
+                    await window.VlogProfile.uploadProfileAvatar(this._selectedFile);
+                }
+
+                // 2. Fase de Metadados (Neon DB)
+                const payload = {
+                    fullName: document.getElementById('field-fullname').value,
+                    university: document.getElementById('field-university').value,
+                    bio: document.getElementById('field-bio').value,
+                    phone: document.getElementById('field-phone').value
                 };
 
-                const success = await window.VlogProfile.saveProfileEdits(data);
-                if (success) window.history.back();
-            });
+                const success = await window.VlogProfile.saveProfileEdits(payload);
+                
+                if (success) {
+                    if ("vibrate" in navigator) navigator.vibrate([30, 50, 30]);
+                    window.history.back(); // Retorna ao perfil
+                }
+
+            } catch (err) {
+                console.error("[SYNC_ERR]", err);
+                window.dispatchEvent(new CustomEvent('vlog_notification', {
+                    detail: { message: "Erro fatal ao sincronizar. Tente novamente.", type: "error" }
+                }));
+            } finally {
+                this._showShield(false);
+            }
+        },
+
+        _showShield(show) {
+            const shield = document.getElementById('sync-overlay');
+            shield.classList.toggle('d-none', !show);
+            shield.classList.toggle('d-flex', show);
         }
     };
 
     VlogProfileEdit.init();
 </script>
+
+<style>
+    /* 
+     * ========================================================================
+     * CSS DE ALTA FIDELIDADE - IDENTITY EDITOR
+     * ========================================================================
+     */
+
+    .avatar-preview-box {
+        width: 150px;
+        height: 150px;
+        background: var(--card-dark);
+        position: relative;
+        z-index: 2;
+    }
+
+    .avatar-pulse-ring {
+        position: absolute;
+        top: -5px; left: -5px; right: -5px; bottom: -5px;
+        border: 2px solid var(--primary-neon);
+        border-radius: 50%;
+        opacity: 0.3;
+        animation: avatar-pulse 2s infinite ease-in-out;
+        z-index: 1;
+    }
+
+    @keyframes avatar-pulse {
+        0% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.05); opacity: 0.6; box-shadow: 0 0 20px var(--p-neon-30); }
+        100% { transform: scale(1); opacity: 0.3; }
+    }
+
+    .btn-camera-trigger {
+        background: var(--primary-neon);
+        color: black;
+        border: 4px solid var(--bg-dark);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: var(--shadow-md);
+        z-index: 10;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-camera-trigger:active {
+        transform: scale(0.85);
+    }
+
+    /* Stamped Input Design */
+    .stamped-input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 20px !important;
+        padding: 20px 25px !important;
+        color: white !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        width: 100%;
+        transition: all 0.3s var(--ease-out-expo);
+        backdrop-filter: blur(15px);
+    }
+
+    .stamped-input:focus {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--primary-neon) !important;
+        box-shadow: 0 0 25px rgba(204, 255, 0, 0.1);
+        outline: none;
+    }
+
+    .stamped-btn {
+        border-radius: 20px !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        letter-spacing: 2px !important;
+        box-shadow: var(--neon-shadow);
+    }
+
+    .border-top-glass {
+        border-top: 1px solid var(--glass-border);
+    }
+</style>
