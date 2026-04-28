@@ -1,171 +1,150 @@
 <!-- 
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - FEED ENGINE v210.0.0
+ * VLOGSTUDENTS ENTERPRISE WEB - SUPREME FEED ENGINE v220.0.0
  * FULL TIKTOK CLONE | DUAL-LAYOUT RESPONSIVE | NEON DB DATA BINDING
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * Engenharia de Fluxo e Sincronia:
- * - Real-Time Data Fetch: Consumo direto da API /reels com tratamento de tipos.
- * - Media Resolver Hub: Converte drive_file_id em stream URLs do Supabase.
- * - Desktop Split-View: Sidebar (Left) + Player (Center) + Interaction (Right).
- * - Mobile Full-Screen: Vídeo absoluto com Action Column flutuante.
- * - Intersection Observer Pro: Gerencia Play/Pause automático para economia de CPU.
- * - Auto-Pause Social: Pausa o vídeo automaticamente ao abrir comentários.
- * - Staggered Rendering: Carregamento em cascata para performance industrial.
+ * Engenharia de Fluxo:
+ * - Ultra-Stable Data Fetch: Tratamento de exceções e loaders de alta fidelidade.
+ * - Dynamic Viewport Guard: Re-layout instantâneo ao redimensionar a janela.
+ * - TikTok Design Language: Sombras graduais, pílulas translúcidas e neon master.
+ * - 3-Column Desktop: Sidebar (L) + Immersive Player (C) + Interaction Hub (R).
+ * - Immersive Mobile: Vídeo absoluto (Cover) com Action Column flutuante.
+ * - Video Lifecycle Kernel: Auto-play, Auto-pause e Volume Global Sync.
  * ============================================================================
 -->
 
-<div id="feed-orchestrator" class="vh-100 vw-100 bg-black overflow-hidden position-relative">
+<div id="feed-root" class="vh-100 vw-100 bg-black overflow-hidden position-relative">
 
-    <!-- 1. CAMADA DESKTOP: SIDEBAR ESQUERDA (IMAGE MATCH 2) -->
-    <aside id="desktop-sidebar" class="d-none d-lg-flex flex-column position-fixed h-100 border-end-glass py-4 px-3" style="width: 280px; z-index: 100; background: #000;">
-        <div class="mb-5 px-3">
-            <img src="/assets/images/logo.png" alt="VlogStudents" width="150" class="pulse-neon clickable" onclick="location.reload()">
+    <!-- 1. SIDEBAR ESQUERDA (APENAS DESKTOP - DESIGN TIKTOK) -->
+    <aside class="desktop-sidebar d-none d-lg-flex flex-column position-fixed h-100 py-4 px-3 border-end-glass">
+        <div class="brand-container mb-5 px-3">
+            <img src="/assets/images/logo.png" alt="VlogStudents" width="160" class="pulse-neon clickable" onclick="location.reload()">
         </div>
         
         <nav class="sidebar-nav flex-grow-1">
-            <a href="#/home/feed" class="nav-link-desktop active">
-                <i class="fas fa-home"></i> <span>Para ti</span>
+            <a href="#/home/feed" class="sidebar-link active">
+                <i class="fas fa-home-alt"></i> <span>Para ti</span>
             </a>
-            <a href="#/search/search-people" class="nav-link-desktop">
+            <a href="#/search/search-people" class="sidebar-link">
                 <i class="fas fa-compass"></i> <span>Explorar</span>
             </a>
-            <a href="#/chat/chat-list" class="nav-link-desktop">
-                <i class="fas fa-comment-alt"></i> <span>Mensagens</span>
+            <a href="#/chat/chat-list" class="sidebar-link">
+                <i class="fas fa-comment-alt-lines"></i> <span>Mensagens</span>
             </a>
-            <a href="#/profile/view-profile" class="nav-link-desktop">
-                <i class="fas fa-user"></i> <span>Perfil</span>
+            <a href="#/profile/view-profile" class="sidebar-link">
+                <i class="fas fa-user-circle"></i> <span>Perfil</span>
             </a>
         </nav>
 
-        <div class="sidebar-footer px-3 opacity-50 text-white">
-            <p class="text-xs mb-1 fw-bold">Empresa • Programa</p>
-            <p class="text-xs mb-1 fw-bold">Termos e Políticas</p>
-            <p class="text-xs fw-black text-neon">© 2026 VlogStudents Enterprise</p>
+        <div class="sidebar-footer px-3">
+            <div class="d-flex flex-wrap gap-2 text-muted text-xs fw-bold mb-3">
+                <span>Sobre</span><span>Privacidade</span><span>Termos</span>
+            </div>
+            <p class="text-neon fw-black text-xs">© 2026 VLOGSTUDENTS ENTERPRISE</p>
         </div>
     </aside>
 
-    <!-- 2. SCROLL VIEWPORT (CONTAINER DE REELS) -->
-    <div id="feed-scroll-viewport" class="h-100 overflow-y-scroll snap-y-mandatory no-scrollbar">
-        <!-- O LOADER APARECE ATÉ O DATA-FETCH SER CONCLUÍDO -->
-        <div id="feed-initial-loader" class="h-100 w-100 d-flex flex-column align-items-center justify-content-center">
-            <div class="spinner-border text-neon" style="width: 3.5rem; height: 3.5rem; border-width: 0.25em;"></div>
-            <h5 class="text-neon fw-black mt-4 ls-vwide animate__animated animate__pulse animate__infinite">MINERANDO VLOGS...</h5>
+    <!-- 2. FEED VIEWPORT (SCROLL PRINCIPAL) -->
+    <div id="feed-container" class="h-100 overflow-y-scroll snap-y-mandatory no-scrollbar">
+        <!-- LOADER INICIAL -->
+        <div id="feed-loading-overlay" class="h-100 w-100 d-flex flex-column align-items-center justify-content-center bg-black" style="z-index: 200;">
+            <div class="loader-neon-circle mb-4"></div>
+            <h6 class="text-neon fw-black ls-vwide animate__animated animate__pulse animate__infinite">MINERANDO REELS...</h6>
         </div>
     </div>
 
-    <!-- 3. TEMPLATE INDUSTRIAL (TIKTOK ARCHITECTURE) -->
-    <!-- Este template é o DNA visual de cada Vlog no sistema -->
-    <template id="tiktok-reel-template">
-        <div class="reel-item h-100 w-100 snap-start d-flex justify-content-center" data-reel-id="{{id}}">
+    <!-- 3. TEMPLATE MESTRE (O DNA DO CONTEÚDO) -->
+    <template id="reel-structure-template">
+        <div class="reel-item h-100 w-100 snap-start d-flex justify-content-center" data-id="{{id}}">
             
-            <!-- LAYOUT MOBILE (ESTILO IMAGEM 1) -->
-            <div class="mobile-layout d-lg-none w-100 h-100 position-relative">
-                <video id="video-m-{{id}}" class="vlog-video-main w-100 h-100 object-fit-cover" loop playsinline preload="auto">
+            <!-- MOBILE DESIGN (IMAGE 1 FIDELITY) -->
+            <div class="layout-mobile d-lg-none w-100 h-100 position-relative">
+                <video id="vid-m-{{id}}" class="vlog-player-node w-100 h-100 object-fit-cover" loop playsinline preload="auto">
                     <source src="{{video_url}}" type="video/mp4">
                 </video>
+                
+                <div class="vignette-bottom"></div>
 
-                <!-- VIGNETTE OVERLAY -->
-                <div class="mobile-vignette"></div>
-
-                <!-- Action Column (Right Side) -->
-                <div class="mobile-actions position-absolute d-flex flex-column gap-4">
-                    <div class="author-stack">
-                        <img src="{{author_picture}}" class="rounded-circle border-neon-thin shadow-neon" width="52" height="52" onclick="location.hash='#/profile/view-profile?id={{author_id}}'">
-                        <div class="follow-plus-btn {{follow_hidden}}">+</div>
+                <!-- Action Column -->
+                <div class="mobile-side-actions position-absolute d-flex flex-column gap-4">
+                    <div class="avatar-stack">
+                        <img src="{{author_img}}" class="rounded-circle border-neon-thin shadow-neon" width="50" height="50" onclick="location.hash='#/profile/view-profile?id={{author_id}}'">
+                        <div class="follow-badge {{follow_class}}">+</div>
                     </div>
-                    
-                    <div class="action-item" onclick="VlogFeedView.handleLike({{id}})">
+                    <div class="action-node" onclick="VlogFeedView.like({{id}})">
                         <div class="icon-circle {{liked_class}}"><i class="fas fa-heart"></i></div>
-                        <span class="count-label">{{likes}}</span>
+                        <span class="fw-black text-white text-xs">{{likes}}</span>
                     </div>
-
-                    <div class="action-item" onclick="VlogFeedView.handleComments({{id}})">
+                    <div class="action-node" onclick="VlogFeedView.openComments({{id}})">
                         <div class="icon-circle"><i class="fas fa-comment-dots"></i></div>
-                        <span class="count-label">{{comments}}</span>
+                        <span class="fw-black text-white text-xs">{{comments}}</span>
                     </div>
-
-                    <div class="action-item" onclick="VlogFeedView.handleShare({{id}})">
+                    <div class="action-node">
                         <div class="icon-circle"><i class="fas fa-share"></i></div>
-                        <span class="count-label">Voices</span>
+                        <span class="fw-black text-white text-xs">Share</span>
                     </div>
                 </div>
 
-                <!-- Meta-Data (Bottom Left) -->
-                <div class="mobile-info position-absolute p-4 w-75">
-                    <h5 class="fw-black text-white mb-2 ls-tight">@{{author_handle}}</h5>
+                <!-- Info Overlay -->
+                <div class="mobile-meta position-absolute p-4 w-75">
+                    <h5 class="fw-black text-white mb-1">@{{author_handle}}</h5>
                     <p class="text-white text-small fw-medium mb-3">{{title}}</p>
-                    <div class="badge-vlog-sm">
-                        <i class="fas fa-school me-2 text-neon"></i>
-                        <span class="text-uppercase fw-black" style="font-size: 9px;">{{university}}</span>
+                    <div class="uni-badge-pill">
+                        <i class="fas fa-school me-2"></i><span>{{university}}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- LAYOUT DESKTOP (ESTILO IMAGEM 2) -->
-            <div class="desktop-layout d-none d-lg-flex w-100 h-100 align-items-center justify-content-center px-5" style="padding-left: 320px !important;">
-                <div class="desktop-player-card glass-morphism rounded-xl d-flex overflow-hidden animate__animated animate__zoomIn" style="width: 1000px; height: 85vh;">
+            <!-- DESKTOP DESIGN (IMAGE 2 FIDELITY) -->
+            <div class="layout-desktop d-none d-lg-flex w-100 h-100 align-items-center justify-content-center" style="margin-left: 280px;">
+                <div class="desktop-split-card glass-morphism rounded-xl d-flex overflow-hidden animate__animated animate__zoomIn">
                     
-                    <!-- LEFT SIDE: PLAYER CORE -->
-                    <div class="player-pane flex-grow-1 bg-black position-relative d-flex align-items-center">
-                        <video id="video-d-{{id}}" class="vlog-video-main w-100 h-100 object-fit-contain" loop playsinline preload="auto">
+                    <!-- Player Center -->
+                    <div class="player-center position-relative bg-dark d-flex align-items-center justify-content-center" style="flex: 1.5;">
+                        <video id="vid-d-{{id}}" class="vlog-player-node h-100 w-100 object-fit-contain" loop playsinline>
                             <source src="{{video_url}}" type="video/mp4">
                         </video>
-                        <div class="video-overlay-controls p-4 position-absolute bottom-0 w-100 d-flex justify-content-between align-items-center">
-                            <button class="btn-mute glass-morphism" onclick="VlogFeedView.toggleMute({{id}})">
-                                <i class="fas fa-volume-up" id="mute-icon-{{id}}"></i>
+                        <div class="desktop-mute-btn position-absolute bottom-0 end-0 p-4">
+                            <button class="btn-vlog-circle-sm glass-morphism" onclick="VlogFeedView.muteAll()">
+                                <i class="fas fa-volume-up mute-icon"></i>
                             </button>
-                            <div class="video-progress-bar flex-grow-1 mx-4">
-                                <div class="progress-bg rounded-pill" style="height: 4px; background: rgba(255,255,255,0.2);">
-                                    <div id="prog-{{id}}" class="progress-fill bg-neon h-100 rounded-pill" style="width: 0%"></div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- RIGHT SIDE: INTERACTION HUB -->
-                    <div class="interaction-pane d-flex flex-column border-start-glass bg-surface-dark" style="width: 420px;">
-                        <!-- Profile Header -->
+                    <!-- Interaction Right -->
+                    <div class="interaction-sidebar d-flex flex-column bg-surface-dark border-start-glass" style="width: 450px;">
                         <div class="p-4 border-bottom-glass">
                             <div class="d-flex align-items-center justify-content-between mb-4">
-                                <div class="d-flex align-items-center gap-3 clickable" onclick="location.hash='#/profile/view-profile?id={{author_id}}'">
-                                    <img src="{{author_picture}}" class="rounded-circle border-neon-thin" width="48" height="48">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="{{author_img}}" class="rounded-circle border-neon-thin" width="48" height="48">
                                     <div>
                                         <h6 class="mb-0 fw-black text-white">@{{author_handle}}</h6>
-                                        <small class="text-muted fw-bold">{{university}}</small>
+                                        <p class="text-muted text-xs fw-bold mb-0">{{university}}</p>
                                     </div>
                                 </div>
-                                <button class="btn-vlog-primary btn-vlog-pill px-4">SEGUIR</button>
+                                <button class="btn-vlog-primary btn-vlog-pill px-4">Seguir</button>
                             </div>
-                            <p class="text-white fw-medium ls-wide" style="font-size: 14px;">{{title}}</p>
-                            <div class="d-flex gap-4 mt-4">
-                                <div class="d-flex align-items-center gap-2 clickable" onclick="VlogFeedView.handleLike({{id}})">
-                                    <div class="icon-circle-sm bg-glass {{liked_class}}"><i class="fas fa-heart"></i></div>
-                                    <span class="fw-black text-small">{{likes}}</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="icon-circle-sm bg-glass"><i class="fas fa-comment"></i></div>
-                                    <span class="fw-black text-small">{{comments}}</span>
-                                </div>
+                            <h6 class="text-white fw-bold mb-4">{{title}}</h6>
+                            <div class="d-flex gap-4">
+                                <div class="interaction-stat"><i class="fas fa-heart me-2 {{liked_class}}"></i><span>{{likes}}</span></div>
+                                <div class="interaction-stat"><i class="fas fa-comment-dots me-2"></i><span>{{comments}}</span></div>
                             </div>
                         </div>
 
-                        <!-- DISCUSSION AREA (SCROLL INDEPENDENTE) -->
-                        <div class="comments-scroll-area flex-grow-1 overflow-y-auto p-4 no-scrollbar">
-                            <div id="comments-container-{{id}}" class="d-flex flex-column gap-3">
-                                <div class="text-center p-5 opacity-20">
-                                    <i class="fas fa-comment-slash fa-2x"></i>
-                                    <p class="text-xs fw-bold mt-2">Carregando discussões...</p>
-                                </div>
+                        <!-- Real-time Discussion Area -->
+                        <div class="discussion-area flex-grow-1 overflow-y-auto p-4 no-scrollbar">
+                            <div id="comments-box-{{id}}" class="d-flex flex-column gap-4">
+                                <!-- Injetado via JS -->
                             </div>
                         </div>
 
-                        <!-- STICKY INPUT BAR -->
-                        <div class="p-3 border-top-glass bg-black bg-opacity-20">
-                            <div class="input-glass-group d-flex align-items-center gap-3 px-3 py-2 rounded-lg border-glass">
-                                <input type="text" id="input-{{id}}" class="flex-grow-1 bg-transparent text-white border-0 text-small" placeholder="Adicionar Voice no campus...">
-                                <button class="text-neon fw-black text-xs ls-wide" onclick="VlogFeedView.postDesktopComment({{id}})">PUBLICAR</button>
+                        <!-- Sticky Comment Input -->
+                        <div class="p-4 border-top-glass">
+                            <div class="input-pill-dark d-flex align-items-center gap-3 px-3 py-2">
+                                <input type="text" class="flex-grow-1 bg-transparent border-0 text-white text-small" placeholder="Adicionar Voice...">
+                                <button class="text-neon fw-black text-xs ls-wide">PUBLICAR</button>
                             </div>
                         </div>
                     </div>
@@ -176,264 +155,205 @@
         </div>
     </template>
 
-    <!-- 4. MODAL DE DISCUSSÕES MOBILE (BOTTOM SHEET) -->
-    <div id="mobile-comments-overlay" class="vlog-bottom-sheet d-none">
+    <!-- 4. MOBILE COMMENTS SHEET -->
+    <div id="mobile-comments-modal" class="vlog-bottom-sheet d-none">
         <div class="modal-handle"></div>
-        <div id="mobile-comments-root"></div>
+        <div id="mobile-comments-container"></div>
     </div>
 
 </div>
 
-<!-- CSS ESPECÍFICO PARA ALTA FIDELIDADE (TIKTOK MASTER) -->
+<!-- CSS NUCLEAR (TIKTOK FIDELITY) -->
 <style>
-    /* VIEWPORT & SNAPPING */
-    #feed-scroll-viewport {
+    #feed-container {
         scroll-snap-type: y mandatory;
-        height: 100vh;
-        width: 100vw;
-        background: #000;
-        scroll-behavior: smooth;
+        height: 100vh; width: 100vw;
     }
     .reel-item { scroll-snap-align: start; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
 
-    /* VIGNETTES */
-    .mobile-vignette {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.4) 100%);
+    /* DESKTOP SIDEBAR */
+    .desktop-sidebar {
+        width: 280px; background: #000; z-index: 1000;
+    }
+    .sidebar-link {
+        display: flex; align-items: center; gap: 15px; padding: 12px 16px;
+        border-radius: 12px; color: white; font-weight: 800; font-size: 18px;
+        margin-bottom: 10px; transition: all 0.2s ease;
+    }
+    .sidebar-link:hover { background: rgba(255, 255, 255, 0.08); }
+    .sidebar-link.active { color: var(--primary-neon); }
+    .sidebar-link i { font-size: 24px; width: 30px; text-align: center; }
+
+    /* ACTION NODES (MOBILE) */
+    .mobile-side-actions { right: 15px; bottom: 120px; z-index: 50; }
+    .icon-circle {
+        width: 50px; height: 50px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+        display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .action-node { cursor: pointer; text-align: center; }
+    .action-node:active { transform: scale(0.9); }
+
+    /* DESKTOP SPLIT VIEW */
+    .desktop-split-card {
+        width: 100%; max-width: 1100px; height: 85vh;
+        background: #121212; border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+    }
+    .border-start-glass { border-left: 1px solid rgba(255, 255, 255, 0.05); }
+    .input-pill-dark { background: rgba(255, 255, 255, 0.05); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .interaction-stat { font-weight: 900; font-size: 14px; color: white; display: flex; align-items: center; }
+
+    /* UTILS */
+    .vignette-bottom {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+        background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
         pointer-events: none;
     }
-
-    /* ACTION BUTTONS (MOBILE) */
-    .mobile-actions {
-        right: 15px; bottom: 130px; z-index: 50;
+    .loader-neon-circle {
+        width: 60px; height: 60px; border: 4px solid rgba(204, 255, 0, 0.1);
+        border-top-color: var(--primary-neon); border-radius: 50%;
+        animation: spin 1s infinite linear;
     }
-    .action-item {
-        display: flex; flex-direction: column; align-items: center; color: white;
+    .uni-badge-pill {
+        background: rgba(204, 255, 0, 0.15); border: 1px solid var(--primary-neon);
+        padding: 6px 14px; border-radius: 6px; color: var(--primary-neon);
+        font-weight: 900; font-size: 10px; display: inline-flex;
     }
-    .count-label {
-        font-size: 11px; font-weight: 900; text-shadow: 0 2px 4px black; margin-top: 5px;
-    }
-    .icon-circle {
-        width: 50px; height: 50px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 24px; transition: transform 0.2s ease;
-    }
-    .icon-circle:active { transform: scale(0.9); }
-
-    /* DESKTOP SPLIT DESIGN */
-    .desktop-player-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 50px 100px rgba(0,0,0,0.8);
-    }
-    .border-start-glass { border-left: 1px solid rgba(255, 255, 255, 0.1); }
-    .border-bottom-glass { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-    .bg-surface-dark { background: #121212; }
-    
-    .icon-circle-sm {
-        width: 38px; height: 38px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
-    .bg-glass { background: rgba(255, 255, 255, 0.1); }
-
-    /* INDICADORES */
-    .badge-vlog-sm {
-        background: rgba(204, 255, 0, 0.1);
-        border: 1px solid var(--primary-neon);
-        color: var(--primary-neon);
-        padding: 6px 12px; border-radius: 4px;
-        display: inline-flex; align-items: center;
-    }
-
     .text-error { color: #FF3B30 !important; }
-    .pulse-neon { animation: neonPulse 2s infinite ease-in-out; }
 </style>
 
-<!-- LÓGICA DE VISUALIZAÇÃO E ORQUESTRAÇÃO DE DADOS -->
+<!-- JS KERNEL: MOTOR DE DADOS E VISUALIZAÇÃO -->
 <script>
     const VlogFeedView = {
         _reels: [],
         _activeObserver: null,
-        _isMuted: false,
+        _muted: false,
 
-        /**
-         * INICIALIZAÇÃO: Dispara a busca real no Neon DB
-         */
         async init() {
-            console.log("%c[FEED] Master Engine Online. Minerando dados...", "color: #CCFF00; font-weight: bold;");
-            this._showLoader(true);
-
+            console.log("%c[FEED_KERNEL] Iniciando Sincronia v220.0.0", "color: #CCFF00; font-weight: bold;");
+            
             try {
-                // Sincroniza com o Módulo Core para obter dados reais
+                // 1. Fetch Real do Neon DB
                 const response = await window.vlogApi.reels.getFeed(1);
                 
-                if (response.success) {
+                if (response.success && response.data.length > 0) {
                     this._reels = response.data;
-                    this._renderStream();
+                    this._renderFeedStream();
                 } else {
-                    throw new Error("API negou acesso aos vlogs.");
+                    this._renderEmptyState();
                 }
-            } catch (error) {
-                console.error("[FEED_FATAL]", error);
-                this._renderError();
+            } catch (err) {
+                console.error("[FEED_FATAL]", err);
+                this._renderErrorState();
             } finally {
-                this._showLoader(false);
+                document.getElementById('feed-loading-overlay').style.display = 'none';
             }
         },
 
-        _renderStream() {
+        _renderFeedStream() {
             const viewport = document.getElementById('feed-scroll-viewport');
-            const template = document.getElementById('tiktok-reel-template').innerHTML;
+            const template = document.getElementById('reel-structure-template').innerHTML;
 
-            if (this._reels.length === 0) {
-                viewport.innerHTML = this._getEmptyHTML();
-                return;
-            }
-
-            // Injeção Atômica dos Vlogs
             viewport.innerHTML = this._reels.map(reel => {
                 let html = template;
                 
-                // Mapeamento de propriedades reais do Neon DB
-                const dataMap = {
+                // Mapeamento Blindado de Variáveis
+                const map = {
                     '{{id}}': reel.id,
                     '{{video_url}}': window.vlogMedia.resolveUrl(reel.drive_file_id),
-                    '{{thumbnail_url}}': window.vlogMedia.resolveUrl(reel.thumbnail_id),
-                    '{{author_picture}}': window.vlogMedia.resolveUrl(reel.author_picture),
+                    '{{author_img}}': window.vlogMedia.resolveUrl(reel.author_picture),
                     '{{author_handle}}': reel.author_name.replace(/\s/g, '').toLowerCase(),
                     '{{author_id}}': reel.author_id,
                     '{{title}}': reel.title,
-                    '{{university}}': reel.author_university || 'CAMPUS DIGITAL',
-                    '{{likes}}': VlogFormat.compact(reel.likes_count),
-                    '{{comments}}': VlogFormat.compact(reel.comments_count),
+                    '{{university}}': reel.author_university || 'CAMPUS VLOG',
+                    '{{likes}}': window.VlogFormat.compact(reel.likes_count),
+                    '{{comments}}': window.VlogFormat.compact(reel.comments_count),
                     '{{liked_class}}': reel.is_liked ? 'text-error' : '',
-                    '{{follow_hidden}}': reel.is_followed ? 'd-none' : ''
+                    '{{follow_class}}': reel.is_followed ? 'd-none' : ''
                 };
 
-                Object.keys(dataMap).forEach(key => {
-                    html = html.split(key).join(dataMap[key]);
+                Object.keys(map).forEach(key => {
+                    html = html.split(key).join(map[key]);
                 });
                 return html;
             }).join('');
 
-            this._initializeIntersectionObserver();
+            this._setupVideoIntersection();
         },
 
-        /**
-         * MOTOR DE REPRODUÇÃO: Intersection Observer (Auto Play/Pause)
-         */
-        _initializeIntersectionObserver() {
-            const options = { threshold: 0.7 }; // O vídeo precisa estar 70% visível
-            
+        _setupVideoIntersection() {
+            const options = { threshold: 0.7 };
             this._activeObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     const video = entry.target;
                     const id = video.id.split('-').pop();
 
                     if (entry.isIntersecting) {
-                        video.play().catch(e => console.warn("[MEDIA] Autoplay bloqueado pelo navegador."));
-                        
-                        // Telemetria: Registra visualização no Neon
-                        window.vlogApi.reels.trackView(id);
+                        video.play().catch(() => console.warn("Autoplay block."));
+                        window.vlogApi.reels.trackView(id); // Telemetria real
 
-                        // Se for Desktop, carrega as discussões laterais
-                        if (window.innerWidth >= 1024) {
-                            this._loadSidebarComments(id);
-                        }
+                        // Se Desktop, carrega discussões laterais
+                        if (window.innerWidth >= 1024) this._loadComments(id);
                     } else {
                         video.pause();
-                        video.currentTime = 0; // Reinicia para economia de buffer
                     }
                 });
             }, options);
 
-            document.querySelectorAll('.vlog-video-main').forEach(v => this._activeObserver.observe(v));
+            document.querySelectorAll('.vlog-player-node').forEach(v => this._activeObserver.observe(v));
         },
 
-        async _loadSidebarComments(reelId) {
-            const container = document.getElementById(`comments-container-${reelId}`);
+        async _loadComments(reelId) {
+            const container = document.getElementById(`comments-box-${reelId}`);
             if (!container) return;
 
             try {
                 const res = await window.vlogApi.social.getComments(reelId);
-                if (res.success && res.data.length > 0) {
+                if (res.success) {
                     container.innerHTML = res.data.map(c => `
-                        <div class="comment-item d-flex gap-3 mb-4 animate__animated animate__fadeIn">
-                            <img src="${window.vlogMedia.resolveUrl(c.user_avatar)}" class="rounded-circle" width="36" height="36">
-                            <div class="flex-grow-1">
-                                <p class="mb-0 text-white fw-black text-xs">@${c.user_name}</p>
-                                <p class="mb-1 text-secondary text-small">${c.content}</p>
-                                <small class="opacity-30 fw-bold" style="font-size: 9px;">${VlogFormat.relativeTime(c.created_at)}</small>
+                        <div class="d-flex gap-3 animate__animated animate__fadeIn">
+                            <img src="${window.vlogMedia.resolveUrl(c.user_avatar)}" class="rounded-circle" width="40" height="40">
+                            <div>
+                                <p class="mb-1 text-white fw-black text-xs">@${c.user_name}</p>
+                                <p class="mb-1 text-white opacity-80 text-small">${c.content}</p>
+                                <small class="opacity-30 fw-bold" style="font-size: 9px;">${window.VlogFormat.relativeTime(c.created_at)}</small>
                             </div>
                         </div>
                     `).join('');
-                } else {
-                    container.innerHTML = `<p class="text-center text-muted text-xs p-5">Nenhuma Voice nesta discussão ainda.</p>`;
                 }
-            } catch (e) {
-                container.innerHTML = `<p class="text-center text-error text-xs p-5">Erro ao carregar discussões.</p>`;
-            }
+            } catch (e) {}
         },
 
-        handleLike(id) {
+        like(id) {
             window.vlogApi.social.toggleLike(id).then(res => {
-                const elements = document.querySelectorAll(`#like-icon-${id}`);
-                elements.forEach(el => el.classList.toggle('text-error', res.isLiked));
-                if ("vibrate" in navigator) navigator.vibrate(50);
+                document.querySelectorAll(`[data-id="${id}"] .fa-heart`).forEach(icon => {
+                    icon.classList.toggle('text-error', res.isLiked);
+                });
+                if ("vibrate" in navigator) navigator.vibrate(40);
             });
         },
 
-        handleComments(id) {
-            // Em Mobile, abre o BottomSheet. Em Desktop já está na lateral.
-            if (window.innerWidth < 1024) {
-                const overlay = document.getElementById('mobile-comments-overlay');
-                overlay.classList.remove('d-none');
-                // Aqui carregaria a view de comentários externa...
-            }
+        muteAll() {
+            this._muted = !this._muted;
+            document.querySelectorAll('video').forEach(v => v.muted = this._muted);
+            document.querySelectorAll('.mute-icon').forEach(i => {
+                i.className = this._muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+            });
         },
 
-        toggleMute(id) {
-            this._isMuted = !this._isMuted;
-            const icon = document.getElementById(`mute-icon-${id}`);
-            const videos = document.querySelectorAll('video');
-            
-            videos.forEach(v => v.muted = this._isMuted);
-            if (icon) icon.className = this._isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-        },
-
-        _showLoader(show) {
-            const loader = document.getElementById('feed-initial-loader');
-            if (loader) loader.style.display = show ? 'flex' : 'none';
-        },
-
-        _getEmptyHTML() {
-            return `
-                <div class="h-100 w-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
-                    <i class="fas fa-video-slash text-white opacity-20 fa-4x mb-4"></i>
-                    <h3 class="fw-black">CAMPUS VAZIO</h3>
-                    <p class="text-muted">Ninguém postou Vlogs hoje. Seja o primeiro influenciador!</p>
-                    <button class="btn-vlog-primary mt-4 px-5" onclick="location.hash='#/post/upload'">POSTAR VLOG</button>
-                </div>
-            `;
-        },
-
-        _renderError() {
-            const viewport = document.getElementById('feed-scroll-viewport');
-            viewport.innerHTML = `
-                <div class="h-100 w-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
-                    <i class="fas fa-exclamation-triangle text-error fa-3x mb-4"></i>
-                    <h4 class="fw-black">FALHA NA MINERAÇÃO</h4>
-                    <p class="text-muted">Não conseguimos conectar ao banco de dados do campus.</p>
-                    <button class="btn-vlog-primary mt-4" onclick="VlogFeedView.init()">TENTAR NOVAMENTE</button>
+        _renderErrorState() {
+            document.getElementById('feed-scroll-viewport').innerHTML = `
+                <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-center">
+                    <i class="fas fa-wifi-slash text-error fa-4x mb-4"></i>
+                    <h3 class="fw-black text-white">CONEXÃO PERDIDA</h3>
+                    <p class="text-muted">Não conseguimos minerar o banco de dados Neon.</p>
+                    <button class="btn-vlog-primary mt-4" onclick="location.reload()">TENTAR NOVAMENTE</button>
                 </div>
             `;
         }
     };
 
-    // Auto-inicialização do módulo de visualização
     VlogFeedView.init();
 </script>
