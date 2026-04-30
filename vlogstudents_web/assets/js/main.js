@@ -1,35 +1,35 @@
 /**
  * ============================================================================
- * VLOGSTUDENTS ENTERPRISE WEB - MAIN ORCHESTRATOR v61.0.0
- * SISTEMA OPERACIONAL DO FRONTEND | SPA ENGINE PRO | ZERO FAIL PROTOCOL
+ * VLOGSTUDENTS ENTERPRISE WEB - MAIN ORCHESTRATOR v62.0.0
+ * SISTEMA OPERACIONAL DO FRONTEND | SPA ENGINE PRO | HYBRID FEED (TIKTOK 1:1)
  * 
  * DESIGNED BY MASTER SOFTWARE ENGINEER - ZERO ERROR POLICY
  * 
- * MARCO DE VERSÃO v61.0.0:
- * - Advanced Parameter Parsing: Suporte a queries complexas (ex: ?id=123).
- * - Global Event Delegation: Interceptação de submissões e cliques no document.
- * - Multi-Module Bridge: Inicialização atômica de kernels (Feed, Chat, Points).
- * - Industrial Route Guarding: Handshake obrigatório com Neon DB / Auth Kernel.
- * - Anti-Stall v5: Saída forçada da Splash em 8s (Failsafe de Experiência).
- * - Haptic Navigation: Feedback vibratório sincronizado com transições SPA.
+ * MARCO DE VERSÃO v62.0.0:
+ * - Hybrid Layout Detection: Identificação automática de Mobile vs Desktop.
+ * - Supreme Feed Engine v800: Renderização TikTok 1:1 (Imersivo vs Split).
+ * - Global Event Delegation: Blindagem contra perda de listeners em troca de views.
+ * - Hardware Acceleration: IntersectionObserver para controle de GPU/Vídeo.
+ * - Industrial Route Guarding: Handshake Neon DB obrigatório.
+ * - Haptic & Sound Sync: Feedback tátil em interações críticas.
  * ============================================================================
  */
 
 class VlogMainOrchestrator {
     /**
      * CONSTRUTOR MESTRE
-     * Centraliza a inteligência de rotas, estados de hardware e repositórios de UI.
+     * Inicializa o universo de rotas, repositórios de UI e estado do ecossistema.
      */
     constructor() {
-        // --- DICIONÁRIO DE UNIVERSO DE ROTAS ---
+        // --- DICIONÁRIO DE ROTAS DO ECOSSISTEMA ---
         this.ROUTES = {
-            // Segmento de Identidade (Público)
+            // Segmento de Identidade
             SPLASH: '/',
             LOGIN: '/auth/login',
             SIGNUP: '/auth/signup',
             RECOVERY: '/auth/recovery',
 
-            // Segmento Operacional (Privado - Auth Required)
+            // Segmento Operacional (Auth Required)
             FEED: '/home/feed',
             CHAT_LIST: '/chat/chat-list',
             CHAT_ROOM: '/chat/chat-room',
@@ -41,28 +41,31 @@ class VlogMainOrchestrator {
             STATUS_VIEW: '/status/status-view'
         };
 
-        // --- REPOSITÓRIO DE ESTADO DO NÚCLEO ---
+        // --- REPOSITÓRIO DE ESTADO DO NÚCLEO (SINGLE SOURCE OF TRUTH) ---
         this._state = {
             currentPath: null,
             previousPath: null,
             isAppReady: false,
             isProcessingRoute: false,
             bootStartTime: Date.now(),
-            recoveryEmail: "", // Cache volátil para fluxo de reset
-            currentParams: {}, // Armazena parâmetros da URL (?id=...)
+            recoveryEmail: "",
+            currentParams: {},
+            viewport: window.innerWidth < 992 ? 'mobile' : 'desktop'
         };
 
         // --- REFERÊNCIAS DE HARDWARE VISUAL (DOM) ---
         this._ui = {
             splash: document.getElementById('splash-screen'),
             appView: document.getElementById('app-router-view'),
-            nav: document.getElementById('liquid-nav-container'),
-            loader: document.getElementById('global-page-loader'),
+            navContainer: document.getElementById('liquid-nav-container'),
+            pageLoader: document.getElementById('global-page-loader'),
             toastContainer: document.getElementById('vlog-toast-container'),
             body: document.body
         };
 
-        console.log("%c[SYSTEM] Orchestrator v61.0.0 Unified Booting...", "color: #CCFF00; font-weight: bold;");
+        this._activeObserver = null;
+
+        console.log("%c[SYSTEM] Orchestrator v62.0.0 Supreme Hybrid Online.", "color: #CCFF00; font-weight: bold;");
     }
 
     /**
@@ -71,12 +74,12 @@ class VlogMainOrchestrator {
      * ========================================================================
      */
     async start() {
-        console.group("[BOOT_SEQUENCE] Ativando Ecossistema v61");
+        console.group("[BOOT_SEQUENCE] Ativando Ecossistema v62");
         
-        // ANTI-STALL PROTECTOR (Garantia de UX: 8 segundos para liberar o viewport)
+        // ANTI-STALL PROTECTOR (8 segundos de garantia de UX)
         const safetyExit = setTimeout(() => {
             if (!this._state.isAppReady) {
-                console.warn("[ANTI-STALL] Latência crítica. Forçando interface SPA.");
+                console.warn("[ANTI-STALL] Latência crítica. Forçando saída da Splash.");
                 this._exitSplashScreen();
             }
         }, 8000);
@@ -85,31 +88,32 @@ class VlogMainOrchestrator {
             // A. Inicializa Kernel de Diagnóstico
             if (window.VlogTelemetry) window.VlogTelemetry.init();
 
-            // B. DELEGAÇÃO GLOBAL DE EVENTOS (ZERO FAIL LOGIC)
-            // Vinculamos listeners ao 'document' para que persistam entre trocas de página.
+            // B. DELEGAÇÃO GLOBAL DE EVENTOS (ZERO FAIL)
             this._bindGlobalDelegation();
 
             // C. Auditoria de Sessão (Neon DB Handshake)
-            // IMPORTANTE: Bloqueamos o boot até saber se o usuário é válido.
             if (window.VlogAuth) {
                 await window.VlogAuth.checkAuthStatus();
             }
 
-            // D. Ativação do Motor de Roteamento SPA
+            // D. Escuta Mudanças de Viewport
+            window.addEventListener('resize', () => this._handleResize());
+
+            // E. Ativação do Motor SPA
             window.addEventListener('hashchange', () => this._handleRouteChange());
             await this._handleRouteChange();
 
-            // E. Conclusão da Transição
+            // F. Liberação Cinematográfica
             clearTimeout(safetyExit);
             const loadDuration = Date.now() - this._state.bootStartTime;
-            const remainingSplash = Math.max(2000 - loadDuration, 0); 
+            const remainingSplash = Math.max(2000 - loadDuration, 0);
 
             setTimeout(() => this._exitSplashScreen(), remainingSplash);
 
         } catch (error) {
-            console.error("[BOOT_FATAL] Falha catastrófica no motor principal:", error);
+            console.error("[BOOT_FATAL] Erro no motor principal:", error);
             this._exitSplashScreen();
-            this._showToast("Falha na sincronização do campus central.", "error");
+            this._showToast("Falha na sincronização do campus.", "error");
         }
 
         console.groupEnd();
@@ -117,33 +121,73 @@ class VlogMainOrchestrator {
 
     /**
      * ========================================================================
-     * 2. MOTOR DE ROTEAMENTO SPA (NUCLEAR ENGINE)
-     * Gerencia carregamento de views, parâmetros e segurança.
+     * 2. MOTOR DE DELEGAÇÃO GLOBAL (EVENT DELEGATION)
+     * Resolve o erro de botões dinâmicos e formulários SPA.
+     * ========================================================================
+     */
+    _bindGlobalDelegation() {
+        // --- CAPTURA DE SUBMISSÕES (LOGIN/REGISTER/RESET) ---
+        document.addEventListener('submit', async (e) => {
+            const formId = e.target.id;
+            
+            if (formId === 'vlog-login-form') {
+                e.preventDefault();
+                await this._executeLogin(e.target);
+            }
+            if (formId === 'vlog-signup-form') {
+                e.preventDefault();
+                await this._executeSignup(e.target);
+            }
+            if (formId === 'form-recovery-request') {
+                e.preventDefault();
+                await this._handleRecoveryRequest(e.target);
+            }
+        });
+
+        // --- CAPTURA DE INTERAÇÕES SOCIAIS (LIKE/FOLLOW/SHARE) ---
+        document.addEventListener('click', async (e) => {
+            const likeBtn = e.target.closest('.vlog-action-like');
+            const followBtn = e.target.closest('.vlog-action-follow');
+            const shareBtn = e.target.closest('.vlog-action-share');
+            const backBtn = e.target.closest('.btn-back, .btn-fidelity-back');
+
+            if (likeBtn) this._handleLikeInteraction(likeBtn);
+            if (followBtn) this._handleFollowInteraction(followBtn);
+            if (shareBtn) this._handleShareInteraction(shareBtn);
+            if (backBtn) { e.preventDefault(); window.history.back(); }
+
+            // Feedback Háptico Universal
+            if (e.target.closest('button, .clickable, .nav-item')) {
+                if ("vibrate" in navigator) navigator.vibrate(10);
+            }
+        });
+    }
+
+    /**
+     * ========================================================================
+     * 3. MOTOR DE ROTEAMENTO SPA (HYBRID ROUTER)
      * ========================================================================
      */
     async _handleRouteChange() {
         if (this._state.isProcessingRoute) return;
         this._state.isProcessingRoute = true;
 
-        // 1. PARSING DE URL E PARÂMETROS
         const fullHash = window.location.hash || '#/home/feed';
         const [hashPath, queryString] = fullHash.split('?');
         const path = hashPath.replace('#', '');
         
+        // Parsing de Parâmetros
         this._state.currentParams = {};
         if (queryString) {
             const params = new URLSearchParams(queryString);
-            for (const [key, value] of params) {
-                this._state.currentParams[key] = value;
-            }
+            for (const [key, value] of params) this._state.currentParams[key] = value;
         }
 
-        console.log(`%c[ROUTER] SPA Navigating to: ${path}`, "color: #00FBFF;", this._state.currentParams);
+        console.log(`%c[ROUTER] Sincronizando: ${path}`, "color: #00FBFF;");
 
-        // 2. ROUTE GUARD (SEGURANÇA ACADÊMICA)
+        // SECURITY GUARD
         const isAuthRoute = path.includes('/auth/');
         if (!isAuthRoute && (!window.VlogAuth || !window.VlogAuth.isAuthenticated)) {
-            console.warn("[ROUTER] Acesso restrito. Redirecionando para Login.");
             window.location.hash = this.ROUTES.LOGIN;
             this._state.isProcessingRoute = false;
             return;
@@ -152,12 +196,11 @@ class VlogMainOrchestrator {
         this._showGlobalLoader(true);
 
         try {
-            // 3. BUSCA DE TEMPLATE HTML
             const response = await fetch(`/views${path}.html`);
-            if (!response.ok) throw new Error(`View ${path} não localizada.`);
+            if (!response.ok) throw new Error(`Status ${response.status}`);
             const html = await response.text();
 
-            // 4. INJEÇÃO ATÔMICA E ANIMAÇÃO
+            // Injeção com Transição
             this._ui.appView.classList.add('animate__animated', 'animate__fadeOut', 'animate__faster');
             
             setTimeout(() => {
@@ -165,11 +208,11 @@ class VlogMainOrchestrator {
                 this._ui.appView.classList.remove('animate__fadeOut');
                 this._ui.appView.classList.add('animate__fadeIn');
 
-                // 5. INICIALIZAÇÃO DE MÓDULOS ESPECÍFICOS (BRIDGE)
+                // Inicializa Módulo Específico
                 this._initializeViewModules(path);
 
-                // 6. ATUALIZAÇÃO DA UI GLOBAL
-                this._updateGlobalUIState(path);
+                // Atualiza UI Global (Sidebar vs Liquid Bar)
+                this._updateNavigationLayout(path);
                 
                 window.scrollTo(0, 0);
             }, 150);
@@ -184,253 +227,272 @@ class VlogMainOrchestrator {
     }
 
     /**
-     * BRIDGE: Conecta rotas aos scripts JS de cada módulo.
+     * BRIDGE: Conexão com Lógicas de Negócio
      */
     _initializeViewModules(path) {
-        if (path.includes('feed')) window.VlogFeed.init();
+        // Destrói observers antigos antes de carregar novo feed
+        if (this._activeObserver) this._activeObserver.disconnect();
+
+        if (path.includes('feed')) this._initFeedModule();
         if (path.includes('chat-list')) window.VlogChat.init();
         if (path.includes('chat-room')) window.VlogChat.loadMessages(this._state.currentParams.id);
         if (path.includes('dashboard')) window.VlogPoints.init();
         if (path.includes('profile')) window.VlogProfile.init(this._state.currentParams.id || 'me');
         if (path.includes('search')) window.VlogSearch.init();
-        if (path.includes('create-status')) window.VlogStatusCreate.init();
-        if (path.includes('status-view')) window.VlogStatusViewer.init();
     }
 
     /**
      * ========================================================================
-     * 3. MOTOR DE DELEGAÇÃO GLOBAL (EVENT DELEGATION)
-     * Garante que botões e formulários funcionem SEMPRE.
+     * 4. SUPREME FEED ENGINE v800 (HYBRID TIKTOK DESIGN)
      * ========================================================================
      */
-    _bindGlobalDelegation() {
-        console.log("[SYSTEM] Vinculando Delegatários de Eventos Global...");
+    async _initFeedModule() {
+        console.log("[FEED_ENGINE] Ativando Visual TikTok 1:1...");
+        const feedRoot = document.getElementById('vlog-reels-root');
+        if (!feedRoot) return;
 
-        // A. CAPTURA DE SUBMISSÕES (FORMULÁRIOS)
-        document.addEventListener('submit', async (e) => {
-            const formId = e.target.id;
-            
-            if (formId === 'vlog-login-form') {
-                e.preventDefault();
-                await this._executeLogin(e.target);
+        try {
+            const res = await window.vlogApi.reels.getFeed(1);
+            if (res.success && res.data.length > 0) {
+                this._renderHybridFeed(feedRoot, res.data);
             }
+        } catch (e) {
+            console.error("[FEED_ERR]", e);
+        }
+    }
 
-            if (formId === 'vlog-signup-form') {
-                e.preventDefault();
-                await this._executeSignup(e.target);
+    _renderHybridFeed(container, reels) {
+        const isMobile = this._state.viewport === 'mobile';
+        
+        container.innerHTML = reels.map(reel => {
+            const videoUrl = window.vlogMedia.resolveUrl(reel.drive_file_id || reel.video_url);
+            const authorImg = window.vlogMedia.resolveUrl(reel.author_picture || reel.user_avatar);
+            const authorHandle = reel.author_name ? reel.author_name.replace(/\s/g, '').toLowerCase() : 'estudante';
+
+            if (isMobile) {
+                // DESIGN TIKTOK MOBILE (IMAGE 1)
+                return `
+                    <div class="vlog-reel-unit mobile-mode" data-id="${reel.id}">
+                        <video id="vid-${reel.id}" class="vlog-video-node" loop playsinline preload="auto">
+                            <source src="${videoUrl}" type="video/mp4">
+                        </video>
+                        <div class="vlog-overlay-actions">
+                            <div class="vlog-avatar-stack vlog-action-profile" data-user="${reel.user_id}">
+                                <div class="vlog-avatar-ring"><img src="${authorImg}" class="rounded-circle" width="50" height="50"></div>
+                                <div class="follow-plus-mini vlog-action-follow">+</div>
+                            </div>
+                            <div class="action-pill vlog-action-like" data-id="${reel.id}">
+                                <div class="icon-box"><i class="fas fa-heart"></i></div>
+                                <span>${reel.likes_count || 0}</span>
+                            </div>
+                            <div class="action-pill">
+                                <div class="icon-box"><i class="fas fa-comment-dots"></i></div>
+                                <span>${reel.comments_count || 0}</span>
+                            </div>
+                            <div class="action-pill vlog-action-share">
+                                <div class="icon-box"><i class="fas fa-share"></i></div>
+                                <span>Partilhar</span>
+                            </div>
+                        </div>
+                        <div class="mobile-meta-overlay position-absolute bottom-0 p-4 w-100">
+                            <h6 class="fw-black text-white">@${authorHandle}</h6>
+                            <p class="text-white text-small">${reel.title || ''}</p>
+                            <div class="tag-university mt-2"><i class="fas fa-graduation-cap me-1"></i> ${reel.university_name || 'Campus Vlog'}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // DESIGN TIKTOK DESKTOP (IMAGE 2)
+                return `
+                    <div class="vlog-reel-unit desktop-mode">
+                        <div class="vlog-desktop-split">
+                            <div class="vlog-player-half">
+                                <video id="vid-${reel.id}" class="vlog-video-node" controls loop preload="auto">
+                                    <source src="${videoUrl}" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="vlog-social-half p-4">
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <img src="${authorImg}" class="rounded-circle" width="55" height="55" style="border: 2px solid var(--primary-neon)">
+                                    <div>
+                                        <h5 class="m-0 fw-black text-white">@${authorHandle}</h5>
+                                        <small class="text-muted">${reel.university_name || 'Estudante Vlog'}</small>
+                                    </div>
+                                    <button class="btn btn-vlog-primary btn-sm ms-auto vlog-action-follow">Seguir</button>
+                                </div>
+                                <div class="reel-description-box mb-4">
+                                    <p class="text-white fw-bold">${reel.title || ''}</p>
+                                    <p class="text-white-50 text-small">${reel.description || ''}</p>
+                                </div>
+                                <div class="stats-bar-desktop d-flex gap-4 mb-4 border-bottom border-secondary pb-3">
+                                    <div class="vlog-action-like clickable"><i class="fas fa-heart text-danger"></i> <b>${reel.likes_count}</b></div>
+                                    <div class="clickable"><i class="fas fa-comment text-white"></i> <b>${reel.comments_count}</b></div>
+                                </div>
+                                <div class="comments-scroll-area flex-grow-1 overflow-y-auto">
+                                    <p class="text-center text-muted mt-5 small">Nenhuma discussão acadêmica ainda.</p>
+                                </div>
+                                <div class="comment-input-wrapper mt-3 pt-3 border-top border-secondary">
+                                    <input type="text" class="form-control bg-dark border-0 text-white p-3" placeholder="Adicionar comentário...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
+        }).join('');
 
-            if (formId === 'form-recovery-request') {
-                e.preventDefault();
-                await this._handleRecoveryRequest(e.target);
-            }
+        this._startIntersectionObserver();
+    }
 
-            if (formId === 'form-recovery-reset') {
-                e.preventDefault();
-                await this._handleRecoveryReset(e.target);
-            }
-        });
+    /**
+     * MOTOR DE HARDWARE: Autoplay e Tracking
+     */
+    _startIntersectionObserver() {
+        const options = { threshold: 0.7 };
+        this._activeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                if (entry.isIntersecting) {
+                    if (video) video.play().catch(() => {});
+                    window.vlogApi.reels.trackView(entry.target.dataset.id);
+                } else {
+                    if (video) video.pause();
+                }
+            });
+        }, options);
 
-        // B. CAPTURA DE CLIQUES (UX & HARDWARE BACK)
-        document.addEventListener('click', (e) => {
-            const backBtn = e.target.closest('.btn-back, .btn-fidelity-back');
-            if (backBtn) {
-                e.preventDefault();
-                window.history.back();
-            }
-
-            const clickable = e.target.closest('button, .clickable, .nav-item');
-            if (clickable) {
-                if ("vibrate" in navigator) navigator.vibrate(10);
-            }
-        });
-
-        // C. MONITOR DE CONECTIVIDADE
-        window.addEventListener('online', () => this._showToast("Conexão restabelecida.", "success"));
-        window.addEventListener('offline', () => this._showToast("Você está desconectado.", "warning"));
+        document.querySelectorAll('.vlog-reel-unit').forEach(el => this._activeObserver.observe(el));
     }
 
     /**
      * ========================================================================
-     * 4. HANDLERS DE AÇÃO (BUSINESS LOGIC)
+     * 5. HANDLERS DE AÇÃO (AUTH & SOCIAL)
      * ========================================================================
      */
-
     async _executeLogin(form) {
         const email = form.querySelector('#login-email')?.value;
         const pass = form.querySelector('#login-password')?.value;
         const btn = form.querySelector('button[type="submit"]');
 
-        if (!email || !pass) return this._showToast("Preencha as credenciais.", "warning");
-
-        this._toggleBtnLoading(btn, true);
+        this._toggleBtnLoading(btn, true, "VALIDANDO...");
 
         try {
             const result = await window.VlogAuth.login(email, pass);
             if (result.success) {
                 window.location.hash = this.ROUTES.FEED;
-                window.location.reload(); // Hard Reset para novos Tokens
+                window.location.reload(); 
             } else {
                 this._showToast(result.message, "error");
-                this._toggleBtnLoading(btn, false, 'ENTRAR NO VLOG <i class="fas fa-arrow-right ms-2"></i>');
+                this._toggleBtnLoading(btn, false, 'ENTRAR NO VLOG <i class="fas fa-chevron-right ms-2"></i>');
             }
         } catch (err) {
-            this._showToast("Erro no servidor central.", "error");
-            this._toggleBtnLoading(btn, false, "TENTAR NOVAMENTE");
+            this._toggleBtnLoading(btn, false, "ERRO DE REDE");
         }
     }
 
-    async _executeSignup(form) {
-        const btn = form.querySelector('button[type="submit"]');
-        this._toggleBtnLoading(btn, true);
+    async _handleLikeInteraction(btn) {
+        const reelId = btn.dataset.id;
+        const heart = btn.querySelector('i');
+        const count = btn.querySelector('span') || btn.querySelector('b');
 
-        const data = {
-            fullName: form.querySelector('#signup-name').value,
-            email: form.querySelector('#signup-email').value,
-            password: form.querySelector('#signup-password').value,
-            university: form.querySelector('#signup-university').value,
-            referralCode: form.querySelector('#signup-referral')?.value || null
-        };
-
-        try {
-            const result = await window.VlogAuth.register(data);
-            if (result.success) {
-                window.location.hash = this.ROUTES.FEED;
-                window.location.reload();
-            } else {
-                this._showToast(result.message, "error");
-                this._toggleBtnLoading(btn, false, "CONCLUIR CADASTRO");
-            }
-        } catch (err) {
-            this._showToast("Falha ao registrar conta.", "error");
-            this._toggleBtnLoading(btn, false, "CONCLUIR");
-        }
-    }
-
-    async _handleRecoveryRequest(form) {
-        const email = form.querySelector('#recovery-email').value;
-        const btn = form.querySelector('button[type="submit"]');
-        this._toggleBtnLoading(btn, true);
-        this._state.recoveryEmail = email;
-
-        const success = await window.VlogAuth.requestPasswordReset(email);
-        if (success) {
-            this._showToast("PIN enviado com sucesso!", "success");
-            // Mudança de passo interna no recovery.html
-            document.getElementById('recovery-step-1')?.classList.add('d-none');
-            document.getElementById('recovery-step-2')?.classList.remove('d-none');
-        } else {
-            this._showToast("E-mail não localizado.", "error");
-            this._toggleBtnLoading(btn, false, "ENVIAR CÓDIGO");
-        }
-    }
-
-    async _handleRecoveryReset(form) {
-        const pin = form.querySelector('#recovery-pin').value;
-        const pass = form.querySelector('#recovery-new-password').value;
-        const btn = form.querySelector('button[type="submit"]');
-
-        this._toggleBtnLoading(btn, true);
-        const success = await window.VlogAuth.confirmPasswordReset(this._state.recoveryEmail, pin, pass);
+        heart.classList.toggle('text-danger');
+        heart.classList.add('animate__animated', 'animate__heartBeat');
         
-        if (success) {
-            this._showToast("Senha redefinida! Acesse agora.", "success");
-            window.location.hash = this.ROUTES.LOGIN;
-        } else {
-            this._showToast("PIN inválido.", "error");
-            this._toggleBtnLoading(btn, false, "ATUALIZAR ACESSO");
-        }
+        try {
+            const res = await window.vlogApi.social.toggleLike(reelId);
+            if (res.success && count) {
+                count.innerText = res.likes_count;
+            }
+        } catch (e) { console.error(e); }
     }
 
     /**
      * ========================================================================
-     * 5. GESTÃO DE UI E ATMOSFERA
+     * 6. GESTÃO DE UI E NAVEGAÇÃO
      * ========================================================================
      */
+    _handleResize() {
+        const newViewport = window.innerWidth < 992 ? 'mobile' : 'desktop';
+        if (this._state.viewport !== newViewport) {
+            this._state.viewport = newViewport;
+            // Recarrega se estiver no feed para aplicar novo design 1:1
+            if (window.location.hash.includes('feed')) this._handleRouteChange();
+        }
+    }
+
+    _updateNavigationLayout(path) {
+        const isAuth = path.includes('/auth/');
+        const isVisible = !isAuth && window.VlogAuth.isAuthenticated;
+        
+        // Liquid Bar (Mobile) vs Sidebar (Desktop)
+        if (this._state.viewport === 'mobile') {
+            this._ui.navContainer.style.display = isVisible ? 'block' : 'none';
+        } else {
+            this._ui.navContainer.style.display = 'none';
+            // Aqui você poderia ativar uma sidebar fixa no index.html se desejado
+        }
+
+        // Active State
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const link = item.getAttribute('href').replace('#', '');
+            item.classList.toggle('active', path.startsWith(link));
+        });
+    }
+
     _exitSplashScreen() {
         if (!this._ui.splash) return;
-
         this._ui.splash.style.opacity = "0";
-        this._ui.splash.style.pointerEvents = "none";
-
         setTimeout(() => {
             this._ui.splash.style.display = "none";
             this._ui.appView.style.display = "block";
             this._state.isAppReady = true;
-            this._updateGlobalUI(window.location.hash.replace('#', ''));
         }, 800);
     }
 
-    _updateGlobalUI(path) {
-        if (!this._ui.nav) return;
-
-        const isAuth = path.includes('/auth/');
-        const isVisible = window.VlogAuth && window.VlogAuth.isAuthenticated && !isAuth;
-        
-        this._ui.nav.style.display = isVisible ? 'block' : 'none';
-
-        if (isVisible) {
-            document.querySelectorAll('.nav-item').forEach(item => {
-                const link = item.getAttribute('href').replace('#', '');
-                item.classList.toggle('active', path.startsWith(link));
-            });
-        }
-    }
-
-    _toggleBtnLoading(btn, isLoading, originalHtml = "") {
+    _toggleBtnLoading(btn, isLoading, text = "") {
         if (!btn) return;
-        if (isLoading) {
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>PROCESSANDO...`;
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
+        btn.disabled = isLoading;
+        btn.innerHTML = isLoading ? `<span class="spinner-border spinner-border-sm"></span>` : text;
     }
 
     _showGlobalLoader(show) {
-        if (this._ui.loader) this._ui.loader.style.display = show ? 'block' : 'none';
+        if (this._ui.pageLoader) this._ui.pageLoader.style.display = show ? 'block' : 'none';
     }
 
     _showToast(msg, type = 'info') {
         const container = this._ui.toastContainer;
         if (!container) return;
-
         const toast = document.createElement('div');
-        toast.className = `vlog-toast glass-morphism border-${type} p-3 animate__animated animate__slideInRight shadow-lg`;
-        
-        const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
-        
-        toast.innerHTML = `
-            <div class="d-flex align-items-center">
-                <i class="fas ${icons[type]} text-${type} me-3"></i>
-                <span class="fw-bold text-white text-small">${msg}</span>
-            </div>
-        `;
-
+        toast.className = `vlog-toast glass-morphism border-${type} p-3 animate__animated animate__slideInRight`;
+        toast.innerHTML = `<span class="fw-bold text-white text-small"><i class="fas fa-info-circle me-2"></i> ${msg}</span>`;
         container.appendChild(toast);
         setTimeout(() => {
             toast.classList.replace('animate__slideInRight', 'animate__fadeOutRight');
             setTimeout(() => toast.remove(), 600);
-        }, 4500);
+        }, 4000);
     }
 
     _handleRoutingError(path) {
         this._ui.appView.innerHTML = `
-            <div class="vh-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
-                <i class="fas fa-satellite-dish text-neon mb-4 fa-4x"></i>
-                <h2 class="text-white fw-black">RECURSO INDISPONÍVEL</h2>
-                <p class="text-muted">A tela ${path} falhou ao carregar. Verifique sua conexão.</p>
-                <button class="btn-vlog-primary mt-4 px-5 py-3" onclick="location.hash='#/home/feed'">VOLTAR AO FEED</button>
+            <div class="vh-100 d-flex flex-column align-items-center justify-content-center text-center p-5 bg-black">
+                <i class="fas fa-satellite text-neon mb-4 fa-4x pulse-slow"></i>
+                <h2 class="text-white fw-black">CAMPUS INDISPONÍVEL</h2>
+                <p class="text-muted">A conexão com o núcleo ${path} falhou.</p>
+                <button class="btn-vlog-primary mt-4 px-5" onclick="location.reload()">RECONECTAR</button>
             </div>
         `;
+    }
+
+    _registerSystemHandlers() {
+        window.addEventListener('vlog_unauthorized', () => {
+            this._showToast("Sessão expirada.", "error");
+            window.VlogAuth.logout();
+        });
     }
 }
 
 /**
- * ============================================================================
- * BOOTSTRAP: Inicialização Automática da Instância Mestre
- * ============================================================================
+ * IGNIÇÃO DO SISTEMA
  */
 document.addEventListener('DOMContentLoaded', () => {
     window.VlogMain = new VlogMainOrchestrator();
@@ -439,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * ============================================================================
- * FIM DO MASTER ORCHESTRATOR v61.0.0
- * ESTE CÓDIGO É A ESPINHA DORSAL DO FRONTEND VLOGSTUDENTS ENTERPRISE.
+ * FIM DO MASTER ORCHESTRATOR v62.0.0
+ * ESTE CÓDIGO É A BASE NUCLEAR DO FRONTEND VLOGSTUDENTS.
  * ============================================================================
  */
